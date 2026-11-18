@@ -1937,7 +1937,12 @@ test("copyStandaloneForWindows copies Next standalone directory tree dereferenci
     const webModules = join(mockStandalone, "apps", "web", "node_modules");
     mkdirSync(webModules, { recursive: true });
     const reactLink = join(webModules, "react");
-    symlinkSync("../../../node_modules/.pnpm/react@19.2.8/node_modules/react", reactLink);
+    if (process.platform === "win32") {
+      // pnpm uses absolute junction targets on native Windows.
+      symlinkSync(pnpmReactDir, reactLink, "junction");
+    } else {
+      symlinkSync("../../../node_modules/.pnpm/react@19.2.8/node_modules/react", reactLink, "dir");
+    }
 
     // 3. Create standalone files
     writeFileSync(join(mockStandalone, "apps", "web", "server.js"), "console.log('server');");
@@ -1990,7 +1995,7 @@ test("copyStandaloneForWindows fails fast on circular directory links", () => {
     mkdirSync(dirA, { recursive: true });
     writeFileSync(join(dirA, "file.txt"), "hello");
     const loopLink = join(dirA, "loop");
-    symlinkSync(dirA, loopLink);
+    symlinkSync(dirA, loopLink, process.platform === "win32" ? "junction" : "dir");
 
     assert.throws(
       () => copyStandaloneForWindows(mockStandalone, mockDest, root),

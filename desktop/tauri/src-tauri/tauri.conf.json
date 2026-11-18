@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Sumi Rust",
+  "mainBinaryName": "sumi-tauri",
+  "version": "0.3.7",
+  "identifier": "local.sumi.journal.tauri",
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "macOSPrivateApi": true,
+    "security": { "capabilities": [] }
+  },
+  "plugins": { "updater": { "pubkey": "" } },
+  "bundle": {
+    "active": true,
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "resources": { "../runtime/": "runtime/" }
+  }
+}

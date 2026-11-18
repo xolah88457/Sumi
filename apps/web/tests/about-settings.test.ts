@@ -198,6 +198,26 @@ describe("AboutSettings update functionality", () => {
     expect(text).not.toContain("Web browser mode");
   });
 
+  it("shows the Tauri runtime without an Electron label", async () => {
+    setupDesktopBridge(
+      {
+        version: "0.3.7",
+        runtime: "tauri",
+        tauriVersion: "2.12.0",
+        platform: "darwin",
+        arch: "arm64",
+      },
+      vi.fn().mockResolvedValue({ status: "unavailable", nativeUI: false, provider: "tauri" }),
+    );
+
+    await act(async () => root.render(createElement(AboutSettings)));
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Version 0.3.7 • Tauri 2.12.0 • darwin (arm64)");
+    expect(text).not.toContain("Electron");
+    expect(text).not.toContain("Web browser mode");
+  });
+
   it("shows web browser mode when bridge absent", async () => {
     delete (window as any).sumiDesktop;
 

@@ -141,6 +141,26 @@ describe("getDesktopInfo", () => {
     });
   });
 
+  it.each(["2.12.0", 42, undefined])(
+    "normalizes Tauri runtime info (version: %s)",
+    async (tauriVersion) => {
+      const platformInfo = { version: "0.3.7", platform: "darwin", arch: "arm64" };
+      const update = { status: "unavailable", nativeUI: false, provider: "tauri" };
+      (window as any).sumiDesktop = {
+        getInfo: vi
+          .fn()
+          .mockResolvedValue({ ...platformInfo, runtime: "tauri", tauriVersion, update }),
+      };
+
+      expect(await getDesktopInfo()).toStrictEqual({
+        ...platformInfo,
+        runtime: "tauri",
+        ...(typeof tauriVersion === "string" ? { tauriVersion } : {}),
+        update,
+      });
+    },
+  );
+
   it("returns null when bridge returns invalid data (missing version)", async () => {
     (window as any).sumiDesktop = {
       preferences: {},
