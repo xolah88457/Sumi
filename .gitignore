@@ -3,6 +3,9 @@ node_modules/
 
 # builds
 .desktop-cache/
+/desktop/tauri/runtime/
+/desktop/tauri/src-tauri/target/
+/desktop/tauri/src-tauri/gen/
 dist/
 .next/
 .cache/

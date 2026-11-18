@@ -686,9 +686,11 @@ export async function ensureNodeArchive(
   runtimeVersion = process.version,
   arch = process.arch,
   platform = process.platform,
+  pinnedSha = null,
 ) {
   return ensureVerifiedArchive({
     cacheDir,
+    pinnedSha,
     archiveName: getNodeArchiveName(runtimeVersion, platform, arch),
     baseUrl: `https://nodejs.org/dist/${runtimeVersion}`,
     sumsCacheName: `node-${runtimeVersion}-SHASUMS256.txt`,
@@ -918,90 +920,99 @@ export function bundlePackageWithRuntimeDeps(pkgName, startDir, targetNodeModule
  * EPERM on fs.stat(). Resolves link targets via readlink/realpath/installed package roots, and copies
  * the actual resolved package directory tree dereferenced.
  */
-export function copyStandaloneForWindows(standaloneSrc, serverDest, root) {
-  function copyRecursive(srcDir, destDir, ancestors = new Set()) {
-    mkdirSync(destDir, { recursive: true });
-    for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
-      const srcPath = join(srcDir, entry.name);
-      const destPath = join(destDir, entry.name);
+export function copyStandaloneForWindows(
+  standaloneSrc,
+  serverDest,
+  root,
+  { filter, resolveLink } = {},
+) {
+  function defaultLinkTarget(srcPath) {
+    const srcDir = dirname(srcPath);
+    let resolvedTarget = null;
 
-      if (entry.isSymbolicLink()) {
-        let resolvedTarget = null;
-
-        // 1. Read the symlink target string and resolve relative to link parent
-        try {
-          const rawLink = readlinkSync(srcPath);
-          const candidate = resolve(srcDir, rawLink);
-          if (existsSync(candidate)) {
-            resolvedTarget = candidate;
-          }
-        } catch {
-          resolvedTarget = null;
-        }
-
-        // 2. Try realpathSync fallback
-        if (!resolvedTarget) {
-          try {
-            const real = realpathSync(srcPath);
-            if (existsSync(real)) {
-              resolvedTarget = real;
-            }
-          } catch {
-            resolvedTarget = null;
-          }
-        }
-
-        // 3. Known installed package roots fallback (apps/web or root package.json)
-        if (!resolvedTarget) {
-          const pkgName = entry.name;
-          for (const start of [join(root, "apps/web/package.json"), join(root, "package.json")]) {
-            if (existsSync(start)) {
-              try {
-                const req = createRequire(start);
-                const entryFile = req.resolve(pkgName);
-                const found = findOwningPackageJson(entryFile);
-                if (found && existsSync(found.pkgDir)) {
-                  resolvedTarget = found.pkgDir;
-                  break;
-                }
-              } catch {}
-            }
-          }
-        }
-
-        // Fail closed immediately on unresolved dangling link
-        if (!resolvedTarget || !existsSync(resolvedTarget)) {
-          const relPath = relative(standaloneSrc, srcPath);
-          throw new Error(
-            `Failed to resolve standalone link target for ${relPath} (link: ${srcPath})`,
-          );
-        }
-
-        // Cycle ancestor fail-fast check
-        if (ancestors.has(resolvedTarget)) {
-          throw new Error(
-            `Circular link detected in standalone bundle: ${srcPath} -> ${resolvedTarget}`,
-          );
-        }
-        const nextAncestors = new Set(ancestors);
-        nextAncestors.add(resolvedTarget);
-
-        // Copy directory via own copyRecursive rather than blind cpSync; preserve file copy
-        const targetStat = lstatSync(resolvedTarget);
-        if (targetStat.isDirectory()) {
-          copyRecursive(resolvedTarget, destPath, nextAncestors);
-        } else {
-          copyFileSync(resolvedTarget, destPath);
-        }
-      } else if (entry.isDirectory()) {
-        copyRecursive(srcPath, destPath, ancestors);
-      } else {
-        copyFileSync(srcPath, destPath);
+    // 1. Read the symlink target string and resolve relative to link parent
+    try {
+      const rawLink = readlinkSync(srcPath);
+      const candidate = resolve(srcDir, rawLink);
+      if (existsSync(candidate)) {
+        resolvedTarget = candidate;
       }
+    } catch {
+      resolvedTarget = null;
+    }
+
+    // 2. Try realpathSync fallback
+    if (!resolvedTarget) {
+      try {
+        const real = realpathSync(srcPath);
+        if (existsSync(real)) {
+          resolvedTarget = real;
+        }
+      } catch {
+        resolvedTarget = null;
+      }
+    }
+
+    // 3. Known installed package roots fallback (apps/web or root package.json)
+    if (!resolvedTarget) {
+      const pkgName = basename(srcPath);
+      for (const start of [join(root, "apps/web/package.json"), join(root, "package.json")]) {
+        if (existsSync(start)) {
+          try {
+            const req = createRequire(start);
+            const entryFile = req.resolve(pkgName);
+            const found = findOwningPackageJson(entryFile);
+            if (found && existsSync(found.pkgDir)) {
+              resolvedTarget = found.pkgDir;
+              break;
+            }
+          } catch {}
+        }
+      }
+    }
+
+    // Fail closed immediately on unresolved dangling link
+    if (!resolvedTarget || !existsSync(resolvedTarget)) {
+      const relPath = relative(standaloneSrc, srcPath);
+      throw new Error(`Failed to resolve standalone link target for ${relPath} (link: ${srcPath})`);
+    }
+
+    return resolvedTarget;
+  }
+
+  function copyEntry(srcPath, destPath, ancestors) {
+    if (filter && !filter(srcPath)) return;
+    const key = process.platform === "win32" ? srcPath.toLowerCase() : srcPath;
+    // Cycle ancestor fail-fast check
+    if (ancestors.has(key)) {
+      throw new Error(`Circular link detected in standalone bundle: ${srcPath}`);
+    }
+    const entry = lstatSync(srcPath);
+    if (entry.isSymbolicLink() || entry.isDirectory()) {
+      ancestors.add(key);
+      if (entry.isSymbolicLink()) {
+        // A confined caller resolves raw links without following NTFS reparse
+        // points or falling back to installed packages outside the traced tree.
+        const target = resolveLink
+          ? resolveLink(srcPath, readlinkSync(srcPath))
+          : defaultLinkTarget(srcPath);
+        copyEntry(target, destPath, ancestors);
+      } else {
+        // Copy directory via own traversal rather than blind cpSync; preserve file copy
+        mkdirSync(destPath, { recursive: true });
+        for (const name of readdirSync(srcPath)) {
+          copyEntry(join(srcPath, name), join(destPath, name), ancestors);
+        }
+      }
+      ancestors.delete(key);
+    } else if (entry.isFile()) {
+      copyFileSync(srcPath, destPath);
+    } else {
+      throw new Error(`Unsupported standalone file: ${srcPath}`);
     }
   }
 
-  copyRecursive(standaloneSrc, serverDest);
+  copyEntry(resolve(standaloneSrc), serverDest, new Set());
 }
 
 /**
@@ -1272,6 +1283,232 @@ export function collectShippedLicenses(
   return [...shipped.keys()].sort();
 }
 
+/** Stages the shared standalone server, launcher, assets, and official Node runtime. */
+export async function stageBackend({
+  root,
+  resources,
+  cacheDir,
+  platform,
+  normArch,
+  appVersion,
+  runtimeVersion = process.version,
+  pinnedNodeSha,
+  filterServerFile,
+  resolveWindowsStandaloneLink,
+  validateNativeSource,
+}) {
+  mkdirSync(join(resources, "runtime"), { recursive: true });
+  mkdirSync(join(resources, "licenses"), { recursive: true });
+
+  const standaloneSrc = join(root, "apps/web/.next/standalone");
+  const serverDest = join(resources, "server");
+
+  if (platform === "win32") {
+    // Windows portable copy: avoids EPERM from cpSync({ dereference: true }) on Next directory junctions
+    copyStandaloneForWindows(standaloneSrc, serverDest, root, {
+      filter: filterServerFile,
+      resolveLink: resolveWindowsStandaloneLink,
+    });
+    augmentStandaloneDependencies(serverDest);
+  } else {
+    // macOS and Linux: preserve proven working paths with verbatim symlinks
+    cpSync(standaloneSrc, serverDest, {
+      recursive: true,
+      dereference: false,
+      verbatimSymlinks: true,
+      filter: filterServerFile,
+    });
+    if (platform === "linux") {
+      augmentStandaloneDependencies(serverDest);
+    }
+  }
+
+  const web = join(resources, "server/apps/web");
+  const entrypoint = join(web, "server.js");
+  const generated = readFileSync(entrypoint, "utf8");
+  const portFallback = "parseInt(process.env.PORT, 10) || 3000";
+  if (!generated.includes(portFallback)) {
+    throw new Error("Next's standalone entrypoint changed; review ephemeral port handling.");
+  }
+  writeFileSync(
+    entrypoint,
+    generated.replace(portFallback, `(process.env.PORT === "0" ? 0 : (${portFallback}))`),
+  );
+  cpSync(join(root, "apps/web/.next/static"), join(web, ".next/static"), {
+    recursive: true,
+    filter: filterServerFile,
+  });
+  cpSync(join(root, "apps/web/public"), join(web, "public"), {
+    recursive: true,
+    filter: filterServerFile,
+  });
+
+  console.log(
+    `Downloading and verifying official Node runtime (${runtimeVersion}) for ${platform}-${normArch}...`,
+  );
+  const { archivePath: nodeArchivePath } = await ensureNodeArchive(
+    cacheDir,
+    runtimeVersion,
+    normArch,
+    platform,
+    pinnedNodeSha,
+  );
+
+  const nodeTemp = mkdtempSync(join(tmpdir(), "sumi-node-"));
+  try {
+    if (platform === "win32") {
+      // Windows includes bsdtar with ZIP support; no Git Bash unzip required.
+      execFileSync("tar.exe", ["-xf", nodeArchivePath, "-C", nodeTemp]);
+      const runtimeDir = join(nodeTemp, `node-${runtimeVersion}-win-${normArch}`);
+      cpSync(join(runtimeDir, "node.exe"), join(resources, "runtime/node.exe"));
+      const nodeLicense = join(runtimeDir, "LICENSE");
+      if (existsSync(nodeLicense)) {
+        cpSync(nodeLicense, join(resources, "licenses/Node-LICENSE.txt"));
+      }
+    } else {
+      execFileSync("tar", ["-xzf", nodeArchivePath, "-C", nodeTemp], {
+        cwd: root,
+        stdio: "inherit",
+      });
+      const runtimeDir = join(nodeTemp, `node-${runtimeVersion}-${platform}-${normArch}`);
+      const nodeDest = join(resources, "runtime/node");
+      cpSync(join(runtimeDir, "bin/node"), nodeDest);
+      chmodSync(nodeDest, 0o755);
+      const nodeLicense = join(runtimeDir, "LICENSE");
+      if (existsSync(nodeLicense)) {
+        cpSync(nodeLicense, join(resources, "licenses/Node-LICENSE.txt"));
+      }
+    }
+  } finally {
+    rmSync(nodeTemp, { recursive: true, force: true });
+  }
+
+  cpSync(join(root, "desktop/launch.cjs"), join(resources, "launch.cjs"));
+  writeFileSync(
+    join(resources, "package.json"),
+    JSON.stringify(
+      { name: "sumi-desktop", version: appVersion, type: "commonjs", private: true },
+      null,
+      2,
+    ) + "\n",
+  );
+
+  cpSync(join(root, "LICENSE"), join(resources, "licenses/Trade-Journal-MIT.txt"));
+  cpSync(join(root, "desktop/Kami-LICENSE.txt"), join(resources, "licenses/Kami-MIT.txt"));
+  cpSync(
+    join(root, "desktop/THIRD-PARTY-NOTICES.md"),
+    join(resources, "licenses/THIRD-PARTY-NOTICES.md"),
+  );
+
+  // Clean private files from standalone server bundle
+  cleanPrivateFiles(join(resources, "server"));
+
+  // Bundle ONLY the lightweight MIT-licensed Silero VAD asset (1.2 MB)
+  const sileroSrc = join(root, "models/silero-vad-v6.2-F32.gguf");
+  if (!existsSync(sileroSrc)) {
+    throw new Error(`Silero VAD model missing at ${sileroSrc}`);
+  }
+  const sileroHash = sha256File(sileroSrc);
+  if (sileroHash !== SILERO_EXPECTED_SHA256) {
+    throw new Error(
+      `Silero VAD checksum mismatch: expected ${SILERO_EXPECTED_SHA256}, got ${sileroHash}`,
+    );
+  }
+  const serverWebModels = join(web, "models");
+  mkdirSync(serverWebModels, { recursive: true });
+  cpSync(sileroSrc, join(serverWebModels, "silero-vad-v6.2-F32.gguf"));
+  const sileroLicenseSrc = join(root, "models/LICENSE.silero_vad");
+  if (existsSync(sileroLicenseSrc)) {
+    cpSync(sileroLicenseSrc, join(serverWebModels, "LICENSE.silero_vad"));
+    cpSync(sileroLicenseSrc, join(resources, "licenses/Silero-VAD-MIT.txt"));
+  }
+
+  // Package transcribe-cpp native binary
+  const nativeTuple = getNativeTuple(platform, normArch);
+  const libName = getNativeLibName(platform);
+  if (nativeTuple) {
+    try {
+      const packageDir = realpathSync(join(root, "apps/web/node_modules/transcribe-cpp"));
+      validateNativeSource?.(packageDir);
+      const pkgJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
+      const entryRelative = pkgJson.exports?.["."]?.import || "./dist/index.js";
+      const entryPath = join(packageDir, entryRelative);
+      const { artifactDir } = await import(pathToFileURL(entryPath).href);
+      const nativeSrc = artifactDir();
+      validateNativeSource?.(nativeSrc);
+      if (!existsSync(join(nativeSrc, libName))) {
+        throw new Error(`transcribe-cpp native library missing: ${join(nativeSrc, libName)}`);
+      }
+      for (const nm of [
+        join(resources, "server/node_modules"),
+        join(resources, "server/apps/web/node_modules"),
+      ]) {
+        const pkgDest = join(nm, `@transcribe-cpp/${nativeTuple}`);
+        if (!existsSync(join(pkgDest, libName))) {
+          mkdirSync(pkgDest, { recursive: true });
+          cpSync(nativeSrc, pkgDest, { recursive: true, dereference: true });
+        }
+      }
+    } catch (cause) {
+      throw new Error(`Cannot package transcribe-cpp native platform binaries: ${cause.message}`, {
+        cause,
+      });
+    }
+
+    // Package Koffi native module from actual installed metadata
+    const koffiPkgDir = resolveKoffiPackageDir(root, platform, normArch);
+    if (koffiPkgDir && existsSync(koffiPkgDir)) {
+      validateNativeSource?.(koffiPkgDir);
+      const pkgSubpath = `@koromix/koffi-${platform}-${normArch}`;
+      const koffiTargets = [
+        join(resources, "server/node_modules", pkgSubpath),
+        join(resources, "server/apps/web/node_modules", pkgSubpath),
+      ];
+
+      // Also ensure all matching package paths in .pnpm have the full native payload
+      const pnpmServer = join(resources, "server/node_modules/.pnpm");
+      if (existsSync(pnpmServer)) {
+        for (const entry of readdirSync(pnpmServer)) {
+          if (entry.includes(`koffi-${platform}-${normArch}`) || entry.startsWith("koffi@")) {
+            koffiTargets.push(join(pnpmServer, entry, "node_modules", pkgSubpath));
+          }
+        }
+      }
+
+      // pnpm may stage some targets as relative links to another target's directory. Fill the
+      // real directories first; a link that then resolves is left as is, and a dangling one is
+      // replaced by a copy (copying onto it fails with ENOTDIR).
+      const isLink = (path) => {
+        try {
+          return lstatSync(path).isSymbolicLink();
+        } catch {
+          return false;
+        }
+      };
+      const ordered = [
+        ...koffiTargets.filter((target) => !isLink(target)),
+        ...koffiTargets.filter(isLink),
+      ];
+      for (const targetPkgDir of ordered) {
+        if (isLink(targetPkgDir)) {
+          if (existsSync(join(targetPkgDir, "package.json"))) continue;
+          rmSync(targetPkgDir);
+        }
+        mkdirSync(targetPkgDir, { recursive: true });
+        cpSync(koffiPkgDir, targetPkgDir, { recursive: true, dereference: true });
+      }
+
+      // Assert that the native binary exists in the staged server bundle
+      assertKoffiPayload(join(resources, "server"), platform, normArch);
+    }
+  }
+
+  // Verify self-contained symlinks
+  const serverBase = realpathSync(join(resources, "server"));
+  assertSelfContained(join(resources, "server"), serverBase);
+  return nativeTuple;
+}
+
 /**
  * Cross-platform desktop build pipeline for Sumi.
  * Builds macOS (.app), Linux, and Windows desktop distributions on their native host.
@@ -1471,196 +1708,14 @@ export async function build(options = {}) {
   }
 
   // 6. Assemble Next standalone server and official Node runtime
-  mkdirSync(join(resources, "runtime"), { recursive: true });
-
-  const standaloneSrc = join(root, "apps/web/.next/standalone");
-  const serverDest = join(resources, "server");
-
-  if (platform === "win32") {
-    // Windows portable copy: avoids EPERM from cpSync({ dereference: true }) on Next directory junctions
-    copyStandaloneForWindows(standaloneSrc, serverDest, root);
-    augmentStandaloneDependencies(serverDest);
-  } else {
-    // macOS and Linux: preserve proven working paths with verbatim symlinks
-    cpSync(standaloneSrc, serverDest, {
-      recursive: true,
-      dereference: false,
-      verbatimSymlinks: true,
-    });
-    if (platform === "linux") {
-      augmentStandaloneDependencies(serverDest);
-    }
-  }
-
-  const web = join(resources, "server/apps/web");
-  const entrypoint = join(web, "server.js");
-  const generated = readFileSync(entrypoint, "utf8");
-  const portFallback = "parseInt(process.env.PORT, 10) || 3000";
-  if (!generated.includes(portFallback)) {
-    throw new Error("Next's standalone entrypoint changed; review ephemeral port handling.");
-  }
-  writeFileSync(
-    entrypoint,
-    generated.replace(portFallback, `(process.env.PORT === "0" ? 0 : (${portFallback}))`),
-  );
-  cpSync(join(root, "apps/web/.next/static"), join(web, ".next/static"), { recursive: true });
-  cpSync(join(root, "apps/web/public"), join(web, "public"), { recursive: true });
-
-  console.log(
-    `Downloading and verifying official Node runtime (${process.version}) for ${platform}-${normArch}...`,
-  );
-  const { archivePath: nodeArchivePath } = await ensureNodeArchive(
+  const nativeTuple = await stageBackend({
+    root,
+    resources,
     cacheDir,
-    process.version,
-    normArch,
     platform,
-  );
-
-  const nodeTemp = mkdtempSync(join(tmpdir(), "sumi-node-"));
-  try {
-    if (platform === "win32") {
-      execFileSync("unzip", ["-q", nodeArchivePath, "-d", nodeTemp]);
-      const runtimeDir = join(nodeTemp, `node-${process.version}-win-${normArch}`);
-      cpSync(join(runtimeDir, "node.exe"), join(resources, "runtime/node.exe"));
-      const nodeLicense = join(runtimeDir, "LICENSE");
-      if (existsSync(nodeLicense)) {
-        cpSync(nodeLicense, join(resources, "licenses/Node-LICENSE.txt"));
-      }
-    } else {
-      run("tar", ["-xzf", nodeArchivePath, "-C", nodeTemp]);
-      const runtimeDir = join(nodeTemp, `node-${process.version}-${platform}-${normArch}`);
-      const nodeDest = join(resources, "runtime/node");
-      cpSync(join(runtimeDir, "bin/node"), nodeDest);
-      chmodSync(nodeDest, 0o755);
-      const nodeLicense = join(runtimeDir, "LICENSE");
-      if (existsSync(nodeLicense)) {
-        cpSync(nodeLicense, join(resources, "licenses/Node-LICENSE.txt"));
-      }
-    }
-  } finally {
-    rmSync(nodeTemp, { recursive: true, force: true });
-  }
-
-  cpSync(join(root, "desktop/launch.cjs"), join(resources, "launch.cjs"));
-  writeFileSync(
-    join(resources, "package.json"),
-    JSON.stringify(
-      { name: "sumi-desktop", version: appVersion, type: "commonjs", private: true },
-      null,
-      2,
-    ) + "\n",
-  );
-
-  cpSync(join(root, "LICENSE"), join(resources, "licenses/Trade-Journal-MIT.txt"));
-  cpSync(join(root, "desktop/Kami-LICENSE.txt"), join(resources, "licenses/Kami-MIT.txt"));
-  cpSync(
-    join(root, "desktop/THIRD-PARTY-NOTICES.md"),
-    join(resources, "licenses/THIRD-PARTY-NOTICES.md"),
-  );
-
-  // Clean private files from standalone server bundle
-  cleanPrivateFiles(join(resources, "server"));
-
-  // Bundle ONLY the lightweight MIT-licensed Silero VAD asset (1.2 MB)
-  const sileroSrc = join(root, "models/silero-vad-v6.2-F32.gguf");
-  if (!existsSync(sileroSrc)) {
-    throw new Error(`Silero VAD model missing at ${sileroSrc}`);
-  }
-  const sileroHash = sha256File(sileroSrc);
-  if (sileroHash !== SILERO_EXPECTED_SHA256) {
-    throw new Error(
-      `Silero VAD checksum mismatch: expected ${SILERO_EXPECTED_SHA256}, got ${sileroHash}`,
-    );
-  }
-  const serverWebModels = join(web, "models");
-  mkdirSync(serverWebModels, { recursive: true });
-  cpSync(sileroSrc, join(serverWebModels, "silero-vad-v6.2-F32.gguf"));
-  const sileroLicenseSrc = join(root, "models/LICENSE.silero_vad");
-  if (existsSync(sileroLicenseSrc)) {
-    cpSync(sileroLicenseSrc, join(serverWebModels, "LICENSE.silero_vad"));
-    cpSync(sileroLicenseSrc, join(resources, "licenses/Silero-VAD-MIT.txt"));
-  }
-
-  // Package transcribe-cpp native binary
-  const nativeTuple = getNativeTuple(platform, normArch);
-  const libName = getNativeLibName(platform);
-  if (nativeTuple) {
-    try {
-      const packageDir = realpathSync(join(root, "apps/web/node_modules/transcribe-cpp"));
-      const pkgJson = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
-      const entryRelative = pkgJson.exports?.["."]?.import || "./dist/index.js";
-      const entryPath = join(packageDir, entryRelative);
-      const { artifactDir } = await import(pathToFileURL(entryPath).href);
-      const nativeSrc = artifactDir();
-      if (!existsSync(join(nativeSrc, libName))) {
-        throw new Error(`transcribe-cpp native library missing: ${join(nativeSrc, libName)}`);
-      }
-      for (const nm of [
-        join(resources, "server/node_modules"),
-        join(resources, "server/apps/web/node_modules"),
-      ]) {
-        const pkgDest = join(nm, `@transcribe-cpp/${nativeTuple}`);
-        if (!existsSync(join(pkgDest, libName))) {
-          mkdirSync(pkgDest, { recursive: true });
-          cpSync(nativeSrc, pkgDest, { recursive: true, dereference: true });
-        }
-      }
-    } catch (cause) {
-      throw new Error(`Cannot package transcribe-cpp native platform binaries: ${cause.message}`, {
-        cause,
-      });
-    }
-
-    // Package Koffi native module from actual installed metadata
-    const koffiPkgDir = resolveKoffiPackageDir(root, platform, normArch);
-    if (koffiPkgDir && existsSync(koffiPkgDir)) {
-      const pkgSubpath = `@koromix/koffi-${platform}-${normArch}`;
-      const koffiTargets = [
-        join(resources, "server/node_modules", pkgSubpath),
-        join(resources, "server/apps/web/node_modules", pkgSubpath),
-      ];
-
-      // Also ensure all matching package paths in .pnpm have the full native payload
-      const pnpmServer = join(resources, "server/node_modules/.pnpm");
-      if (existsSync(pnpmServer)) {
-        for (const entry of readdirSync(pnpmServer)) {
-          if (entry.includes(`koffi-${platform}-${normArch}`) || entry.startsWith("koffi@")) {
-            koffiTargets.push(join(pnpmServer, entry, "node_modules", pkgSubpath));
-          }
-        }
-      }
-
-      // pnpm may stage some targets as relative links to another target's directory. Fill the
-      // real directories first; a link that then resolves is left as is, and a dangling one is
-      // replaced by a copy (copying onto it fails with ENOTDIR).
-      const isLink = (path) => {
-        try {
-          return lstatSync(path).isSymbolicLink();
-        } catch {
-          return false;
-        }
-      };
-      const ordered = [
-        ...koffiTargets.filter((target) => !isLink(target)),
-        ...koffiTargets.filter(isLink),
-      ];
-      for (const targetPkgDir of ordered) {
-        if (isLink(targetPkgDir)) {
-          if (existsSync(join(targetPkgDir, "package.json"))) continue;
-          rmSync(targetPkgDir);
-        }
-        mkdirSync(targetPkgDir, { recursive: true });
-        cpSync(koffiPkgDir, targetPkgDir, { recursive: true, dereference: true });
-      }
-
-      // Assert that the native binary exists in the staged server bundle
-      assertKoffiPayload(join(resources, "server"), platform, normArch);
-    }
-  }
-
-  // Verify self-contained symlinks
-  const serverBase = realpathSync(join(resources, "server"));
-  assertSelfContained(join(resources, "server"), serverBase);
+    normArch,
+    appVersion,
+  });
 
   const pnpmRoot = join(root, "node_modules/.pnpm");
   // Client and server bundles inline the web app's runtime dependencies; Tailwind and

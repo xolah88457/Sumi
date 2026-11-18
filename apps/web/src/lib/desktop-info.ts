@@ -32,10 +32,13 @@ export interface DesktopUpdateState {
 /**
  * App runtime info contract — matches desktop/main.cjs sumi:get-info response.
  * Source of truth: desktop/main.cjs registerIpcHandlers -> sumi:get-info
+ * The Tauri bridge supplies runtime and tauriVersion instead of electronVersion.
  */
 export interface AppInfo {
   version: string;
-  electronVersion: string;
+  electronVersion?: string;
+  runtime?: "tauri";
+  tauriVersion?: string;
   platform: string;
   arch: string;
   update?: DesktopUpdateState;
@@ -99,7 +102,12 @@ export async function getDesktopInfo(): Promise<AppInfo | null> {
     }
     return {
       version: String(raw.version),
-      electronVersion: typeof raw.electronVersion === "string" ? raw.electronVersion : "",
+      ...(raw.runtime === "tauri"
+        ? {
+            runtime: "tauri",
+            ...(typeof raw.tauriVersion === "string" ? { tauriVersion: raw.tauriVersion } : {}),
+          }
+        : { electronVersion: typeof raw.electronVersion === "string" ? raw.electronVersion : "" }),
       platform: typeof raw.platform === "string" ? raw.platform : "",
       arch: typeof raw.arch === "string" ? raw.arch : "",
       update:
