@@ -38,6 +38,7 @@ import {
   getPnpmCommand,
   getTarCommand,
   isPathContained,
+  pruneKoffiPayloads,
   parseFileVersionString,
   readDllFileVersion,
   resolveKoffiNativeDir,
@@ -1141,4 +1142,81 @@ test("getTarCommand uses the absolute System32 bsdtar on Windows, never PATH", (
   // The staging code must route extraction through the helper rather than a bare name.
   const src = readFileSync(join(root, "desktop/lib/runtime.mjs"), "utf8");
   assert.doesNotMatch(src, /execFileSync\(\s*"tar(\.exe)?"/);
+});
+
+test("pruneKoffiPayloads keeps only the target koffi payload and leaves licence handling intact", () => {
+  for (const [platform, arch, payload, others] of [
+    ["linux", "x64", "linux_x64", ["musl_x64", "linux_arm64"]],
+    ["darwin", "arm64", "darwin_arm64", ["darwin_x64"]],
+    ["win32", "x64", "win32_x64", ["win32_arm64"]],
+  ]) {
+    const server = mkdtempSync(join(tmpdir(), "prune-koffi-"));
+    const licenses = mkdtempSync(join(tmpdir(), "prune-koffi-lic-"));
+    try {
+      const pkgName = `koffi-${platform}-${arch}`;
+      const makePackage = (modules, name, payloads) => {
+        const dir = join(modules, "@koromix", name);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(
+          join(dir, "package.json"),
+          JSON.stringify({ name: `@koromix/${name}`, version: "3.3.7" }),
+        );
+        writeFileSync(join(dir, "LICENSE.txt"), "MIT licence text");
+        writeFileSync(join(dir, "index.js"), "module.exports = {};");
+        for (const sub of payloads) {
+          mkdirSync(join(dir, sub), { recursive: true });
+          writeFileSync(join(dir, sub, "koffi.node"), "binary");
+        }
+        return dir;
+      };
+      const modulesDirs = [
+        join(server, "node_modules"),
+        join(server, "apps/web/node_modules"),
+        join(server, "node_modules/.pnpm/koffi@3.3.7/node_modules"),
+      ];
+      for (const modules of modulesDirs) {
+        makePackage(modules, pkgName, [payload, ...others]);
+        makePackage(modules, "koffi-freebsd-x64", ["freebsd_x64"]);
+      }
+      // A dangling link to another target's package must not break pruning.
+      symlinkSync(
+        join(server, "does-not-exist"),
+        join(server, "node_modules/@koromix/koffi-android-arm64"),
+      );
+      // Unrelated packages and payload-like folders are never touched.
+      const other = join(server, "node_modules/better-sqlite3/build/Release");
+      mkdirSync(other, { recursive: true });
+      writeFileSync(join(other, "better_sqlite3.node"), "binary");
+      mkdirSync(join(server, "node_modules/@koromix", pkgName, "docs_x64"), { recursive: true });
+
+      const removed = pruneKoffiPayloads(server, platform, arch);
+      assert.ok(removed.length >= modulesDirs.length * (others.length + 1));
+      for (const modules of modulesDirs) {
+        const pkg = join(modules, "@koromix", pkgName);
+        assert.ok(existsSync(join(pkg, payload, "koffi.node")), `${payload} kept`);
+        for (const sub of others) assert.ok(!existsSync(join(pkg, sub)), `${sub} pruned`);
+        assert.ok(!existsSync(join(modules, "@koromix", "koffi-freebsd-x64")));
+        for (const name of ["package.json", "index.js", "LICENSE.txt"]) {
+          assert.ok(existsSync(join(pkg, name)), `${name} kept`);
+        }
+      }
+      assert.ok(existsSync(join(other, "better_sqlite3.node")));
+      assert.ok(existsSync(join(server, "node_modules/@koromix", pkgName, "docs_x64")));
+      assertKoffiPayload(server, platform, arch);
+      // Idempotent
+      assert.deepEqual(pruneKoffiPayloads(server, platform, arch), []);
+
+      // Licence collection still lists the kept package and copies its licence text.
+      const ids = collectShippedLicenses(licenses, [server]);
+      assert.ok(ids.includes(`@koromix__${pkgName}@3.3.7`));
+      assert.ok(!ids.some((id) => id.includes("freebsd")));
+      assert.equal(
+        readFileSync(join(licenses, `@koromix__${pkgName}@3.3.7`, "LICENSE.txt"), "utf8"),
+        "MIT licence text",
+      );
+    } finally {
+      rmSync(server, { recursive: true, force: true });
+      rmSync(licenses, { recursive: true, force: true });
+    }
+  }
 });
