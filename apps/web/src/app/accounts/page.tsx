@@ -5,6 +5,8 @@ import { Archive, ArchiveRestore, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { AccountCreateForm } from "@/components/account-create-form";
 import { FilterBar } from "@/components/filter-bar";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiStrip } from "@/components/ui/kpi-strip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -81,6 +83,7 @@ function Accounts() {
     <div>
       <FilterBar
         title="Accounts"
+        lede="Where your trades come from. Connect a broker, import files, or log trades by hand."
         actions={
           <Button size="sm" onClick={() => setCreating(true)}>
             <Plus />
@@ -105,170 +108,212 @@ function Accounts() {
           />
         </DialogContent>
       </Dialog>
-      <div className="grid gap-3 p-4 md:grid-cols-2">
-        {data?.accounts.length === 0 && (
-          <p className="col-span-full py-16 text-center text-sm text-muted-foreground">
-            No accounts yet — use New account to create your first one.
-          </p>
+      <div className="space-y-5 px-4 pb-8">
+        {data && data.accounts.length > 0 && (
+          <KpiStrip
+            aria-label="Account summary"
+            items={[
+              {
+                id: "active",
+                label: "Active accounts",
+                value: data.accounts.filter((account) => !account.archivedAt).length,
+              },
+              {
+                id: "sync",
+                label: "Broker sync",
+                value: data.accounts.filter((account) => account.kind === "sync").length,
+              },
+              {
+                id: "import",
+                label: "File import",
+                value: data.accounts.filter((account) => account.kind === "import").length,
+              },
+              {
+                id: "manual",
+                label: "Manual",
+                value: data.accounts.filter((account) => account.kind === "manual").length,
+              },
+            ]}
+          />
         )}
-        {data?.accounts.map((account) => (
-          <Card key={account.id} className={account.archivedAt ? "opacity-60" : undefined}>
-            <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
-              <CardTitle className="min-w-0 flex-1 text-base font-semibold normal-case tracking-normal text-foreground">
-                <span className="block break-words">{account.name}</span>
-                <Badge variant="secondary" className="mt-1.5 mr-2">
-                  {account.kind}
-                </Badge>
-                {account.broker && (
-                  <span className="text-xs font-normal text-muted-foreground">
-                    {account.broker}
-                  </span>
-                )}
-              </CardTitle>
-              <div className="ml-auto flex shrink-0 items-center gap-1">
-                {account.kind === "sync" && (
+        <div className="grid gap-5 md:grid-cols-2">
+          {data?.accounts.length === 0 && (
+            <EmptyState
+              className="col-span-full"
+              title="No accounts yet"
+              action={
+                <Button onClick={() => setCreating(true)}>
+                  <Plus />
+                  New account
+                </Button>
+              }
+            >
+              Create your first account to start importing or logging trades.
+            </EmptyState>
+          )}
+          {data?.accounts.map((account) => (
+            <Card key={account.id} className={account.archivedAt ? "opacity-60" : undefined}>
+              <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+                <CardTitle className="min-w-0 flex-1 text-[21px] leading-tight tracking-[-0.02em] text-foreground">
+                  <span className="block break-words">{account.name}</span>
+                  <Badge variant="secondary" className="mt-1.5 mr-2">
+                    {account.kind}
+                  </Badge>
+                  {account.broker && (
+                    <span className="text-[13px] font-normal text-muted-foreground">
+                      {account.broker}
+                    </span>
+                  )}
+                </CardTitle>
+                <div className="ml-auto flex shrink-0 items-center gap-1">
+                  {account.kind === "sync" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={syncing === account.id}
+                      onClick={() => void sync(account.id)}
+                      title="Sync now"
+                    >
+                      <RefreshCw className={syncing === account.id ? "animate-spin" : undefined} />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    disabled={syncing === account.id}
-                    onClick={() => void sync(account.id)}
-                    title="Sync now"
-                  >
-                    <RefreshCw className={syncing === account.id ? "animate-spin" : undefined} />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title={account.archivedAt ? "Unarchive" : "Archive"}
-                  onClick={() =>
-                    void action(account.id, {
-                      action: account.archivedAt ? "unarchive" : "archive",
-                    })
-                  }
-                >
-                  {account.archivedAt ? <ArchiveRestore /> : <Archive />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  title="Delete account"
-                  onClick={async () => {
-                    if (
-                      confirm(`Delete "${account.name}" and ALL its trades? This cannot be undone.`)
-                    ) {
-                      await postJson(`/api/accounts/${account.id}`, undefined, "DELETE");
-                      refresh();
+                    title={account.archivedAt ? "Unarchive" : "Archive"}
+                    onClick={() =>
+                      void action(account.id, {
+                        action: account.archivedAt ? "unarchive" : "archive",
+                      })
                     }
-                  }}
-                >
-                  <Trash2 />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {account.snapshot && (
-                <div className="text-sm">
-                  Broker equity:{" "}
-                  <span className="tnum font-medium">
-                    <MonetaryValue>{fmtMoney(account.snapshot.equity)}</MonetaryValue>
-                  </span>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {account.snapshot.positions.length} open positions · synced{" "}
-                    {account.lastSyncAt?.slice(0, 16).replace("T", " ")}
-                  </span>
-                </div>
-              )}
-              <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
-                <div className="min-w-0">
-                  <label className="mb-1 block text-xs text-muted-foreground">
-                    Initial balance (anchors drawdown %)
-                  </label>
-                  <MonetaryField>
-                    <Input
-                      defaultValue={account.initialBalance || ""}
-                      placeholder="0"
-                      inputMode="decimal"
-                      onBlur={async (event) => {
-                        const value = Number(event.target.value || 0);
-                        if (value !== account.initialBalance) {
-                          await postJson(
-                            `/api/accounts/${account.id}`,
-                            { initialBalance: value },
-                            "PATCH",
-                          );
-                          refresh();
-                        }
-                      }}
-                    />
-                  </MonetaryField>
-                </div>
-                <div className="min-w-0">
-                  <label className="mb-1 block text-xs text-muted-foreground">
-                    Profit calculation
-                  </label>
-                  <Select
-                    value={account.profitCalcMethod}
-                    onValueChange={async (value) => {
-                      await postJson(
-                        `/api/accounts/${account.id}`,
-                        { profitCalcMethod: value },
-                        "PATCH",
-                      );
-                      refresh();
+                  >
+                    {account.archivedAt ? <ArchiveRestore /> : <Archive />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    title="Delete account"
+                    onClick={async () => {
+                      if (
+                        confirm(
+                          `Delete "${account.name}" and ALL its trades? This cannot be undone.`,
+                        )
+                      ) {
+                        await postJson(`/api/accounts/${account.id}`, undefined, "DELETE");
+                        refresh();
+                      }
                     }}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fifo">FIFO</SelectItem>
-                      <SelectItem value="lifo">LIFO</SelectItem>
-                      <SelectItem value="wavg">Weighted average</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Trash2 />
+                  </Button>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    if (confirm(`Clear ALL trades from "${account.name}"? The account stays.`)) {
-                      await action(account.id, { action: "clear" });
-                    }
-                  }}
-                >
-                  Clear trades
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    const others = data.accounts.filter((candidate) => candidate.id !== account.id);
-                    if (others.length === 0) return alert("No other account to transfer into.");
-                    const target = prompt(
-                      `Transfer all data into which account?\n${others.map((candidate, index) => `${index + 1}. ${candidate.name}`).join("\n")}\n\nEnter a number:`,
-                    );
-                    const chosen = others[Number(target) - 1];
-                    if (chosen) {
-                      try {
-                        await action(account.id, { action: "transfer", toAccountId: chosen.id });
-                      } catch (error) {
-                        alert(error instanceof Error ? error.message : "Transfer failed");
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {account.snapshot && (
+                  <div className="text-[15px]">
+                    Broker equity:{" "}
+                    <span className="tnum">
+                      <MonetaryValue>{fmtMoney(account.snapshot.equity)}</MonetaryValue>
+                    </span>
+                    <span className="ml-2 text-[13px] text-muted-foreground">
+                      {account.snapshot.positions.length} open positions · synced{" "}
+                      {account.lastSyncAt?.slice(0, 16).replace("T", " ")}
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <label className="mb-1 block text-[13px] text-muted-foreground">
+                      Initial balance (anchors drawdown %)
+                    </label>
+                    <MonetaryField>
+                      <Input
+                        defaultValue={account.initialBalance || ""}
+                        placeholder="0"
+                        inputMode="decimal"
+                        onBlur={async (event) => {
+                          const value = Number(event.target.value || 0);
+                          if (value !== account.initialBalance) {
+                            await postJson(
+                              `/api/accounts/${account.id}`,
+                              { initialBalance: value },
+                              "PATCH",
+                            );
+                            refresh();
+                          }
+                        }}
+                      />
+                    </MonetaryField>
+                  </div>
+                  <div className="min-w-0">
+                    <label className="mb-1 block text-[13px] text-muted-foreground">
+                      Profit calculation
+                    </label>
+                    <Select
+                      value={account.profitCalcMethod}
+                      onValueChange={async (value) => {
+                        await postJson(
+                          `/api/accounts/${account.id}`,
+                          { profitCalcMethod: value },
+                          "PATCH",
+                        );
+                        refresh();
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fifo">FIFO</SelectItem>
+                        <SelectItem value="lifo">LIFO</SelectItem>
+                        <SelectItem value="wavg">Weighted average</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (confirm(`Clear ALL trades from "${account.name}"? The account stays.`)) {
+                        await action(account.id, { action: "clear" });
                       }
-                    }
-                  }}
-                >
-                  Transfer data
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                    }}
+                  >
+                    Clear trades
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const others = data.accounts.filter(
+                        (candidate) => candidate.id !== account.id,
+                      );
+                      if (others.length === 0) return alert("No other account to transfer into.");
+                      const target = prompt(
+                        `Transfer all data into which account?\n${others.map((candidate, index) => `${index + 1}. ${candidate.name}`).join("\n")}\n\nEnter a number:`,
+                      );
+                      const chosen = others[Number(target) - 1];
+                      if (chosen) {
+                        try {
+                          await action(account.id, { action: "transfer", toAccountId: chosen.id });
+                        } catch (error) {
+                          alert(error instanceof Error ? error.message : "Transfer failed");
+                        }
+                      }
+                    }}
+                  >
+                    Transfer data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

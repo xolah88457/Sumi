@@ -1,17 +1,11 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Clock3,
-  Landmark,
-  Plus,
-  Download,
-  Upload,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Clock3, EyeOff, Plus, Download, Upload } from "lucide-react";
 import { FilterBar } from "./filter-bar";
 import { Field } from "./filter-fields";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { EmptyState } from "./ui/empty-state";
+import { Notice } from "./ui/notice";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { OptionSelect } from "./ui/option-select";
@@ -72,7 +66,7 @@ function downloadCsv(rows: CashMovement[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="py-8 text-center text-sm text-muted-foreground">{children}</p>;
+  return <EmptyState className="py-6">{children}</EmptyState>;
 }
 export function PropFirmTracker() {
   const { data: savedData, error, loading, refresh } = useApi<PropData>("/api/prop-firms");
@@ -312,6 +306,7 @@ export function PropFirmTracker() {
     <div>
       <FilterBar
         title="Prop firms"
+        lede="See what you paid, what came back, and your net result."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button
@@ -343,23 +338,17 @@ export function PropFirmTracker() {
           </div>
         }
       />
-      <div className="space-y-5 p-4 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Spending & payouts</h2>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              See what you paid, what came back, and your net result.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <div className="space-y-5 px-4 pb-8">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" onClick={switchDemo}>
               {demo ? "Exit demo" : "Load demo data"}
             </Button>
             <details className="relative">
-              <summary className="cursor-pointer rounded-md border px-3 py-2 text-xs font-medium">
+              <summary className="inline-flex h-8 cursor-pointer list-none items-center rounded-full border border-input px-4 text-[13px] transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
                 Data tools
               </summary>
-              <div className="absolute right-0 z-20 mt-2 flex w-48 flex-col gap-1 rounded-lg border bg-card p-2 shadow-lg">
+              <div className="journal-menu-surface absolute right-0 z-20 mt-2 flex w-52 flex-col gap-1 rounded-xl border bg-popover p-2">
                 <Button
                   size="sm"
                   variant="outline"
@@ -383,59 +372,63 @@ export function PropFirmTracker() {
           </div>
         </div>
         {demo && (
-          <div
-            role="status"
-            className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm"
-          >
-            <span className="font-medium">Demo preview</span>
-            <span className="ml-2 text-muted-foreground">
-              Simulated records · Read-only · Nothing is saved
-            </span>
-          </div>
+          <Notice role="status" title="Demo preview">
+            Simulated records · Read-only · Nothing is saved
+          </Notice>
         )}
         {privacy && (
-          <p className="rounded-lg border p-3 text-sm text-muted-foreground">
+          <Notice icon={<EyeOff />} role="status">
             Privacy mode hides amounts, charts and financial details. Turn it off to edit records or
             export cash data.
-          </p>
+          </Notice>
         )}
         {error && !demo && (
-          <p
+          <Notice
             role="alert"
-            className="rounded-lg border border-destructive p-3 text-sm text-destructive"
-          >
-            {error}{" "}
-            <Button variant="ghost" onClick={refresh}>
-              Retry
-            </Button>
-          </p>
+            tone="error"
+            title={error}
+            action={
+              <Button size="sm" variant="outline" onClick={refresh}>
+                Retry
+              </Button>
+            }
+          />
         )}
         {loading && !data && (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className="text-[15px] text-muted-foreground">
             Loading your prop cash records…
           </p>
         )}
         {data && (
           <>
             {!data.accounts.length && !data.entries.length && (
-              <Card>
-                <CardContent className="flex flex-wrap items-center gap-5 py-7">
-                  <Landmark className="h-10 w-10 text-muted-foreground" />
-                  <div className="max-w-2xl">
-                    <h3 className="font-semibold">Start with an account or an expense</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Add the firm and attempt you want to track, then record fees and actual
-                      payouts. You can also log shared firm costs before linking an account. No
-                      firm, fee schedule or payout rules are preloaded.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <EmptyState
+                title="Start with an account or an expense"
+                action={
+                  <>
+                    <Button disabled={readOnly} onClick={() => setModal({ kind: "account" })}>
+                      <Plus />
+                      Track account
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={readOnly}
+                      onClick={() => setModal({ kind: "entry", type: "expense" })}
+                    >
+                      Add expense
+                    </Button>
+                  </>
+                }
+              >
+                Add the firm and attempt you want to track, then record fees and actual payouts. You
+                can also log shared firm costs before linking an account. No firm, fee schedule or
+                payout rules are preloaded.
+              </EmptyState>
             )}
             <details className="rounded-xl border bg-card">
-              <summary className="cursor-pointer px-4 py-3 text-sm">
+              <summary className="cursor-pointer px-4 py-3 text-[15px]">
                 <span className="font-medium">Filters</span>
-                <span className="ml-3 text-xs text-muted-foreground">
+                <span className="ml-3 text-[13px] text-muted-foreground">
                   {firm || "All firms"} · {accountId ? name(accountId) : "All accounts"} ·{" "}
                   {from || to ? `${from || "Start"} to ${to || "Today"}` : "All dates"}
                   {selectedCurrency ? ` · ${selectedCurrency}` : " · Choose currency"}
@@ -501,7 +494,7 @@ export function PropFirmTracker() {
                   />
                 </Field>
                 <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2 xl:col-span-5">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     Dates apply to cash received or paid. Account history and pending requests cover
                     all dates.
                   </p>
@@ -523,20 +516,20 @@ export function PropFirmTracker() {
               </div>
             </details>
             {from && to && from > to && (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-[15px] text-destructive">
                 The start date must be on or before the end date.
               </p>
             )}
             {currencies.length > 1 && !selectedCurrency && (
               <Card>
                 <CardContent className="py-4">
-                  <p className="mb-3 text-sm">
+                  <p className="mb-3 text-[15px]">
                     Currencies are never added together. Choose one above for charts and detailed
                     totals.
                   </p>
                   <div className="flex flex-wrap gap-4">
                     {currencies.map((c) => (
-                      <p key={c} className="text-sm">
+                      <p key={c} className="text-[15px]">
                         <strong>{c}</strong> · Net cash{" "}
                         {money(cashSummary(cash.filter((r) => r.currency === c)).net, c)}
                       </p>
@@ -547,10 +540,10 @@ export function PropFirmTracker() {
             )}
             <PropCashSummary summary={summary} currency={selectedCurrency} privacy={privacy} />
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px]">
                 <span className="text-muted-foreground">Awaiting payout</span>
-                <strong className="tabular-nums">{money(outstanding)}</strong>
-                <span className="text-xs text-muted-foreground">
+                <strong className="tnum text-[17px] font-normal">{money(outstanding)}</strong>
+                <span className="text-[13px] text-muted-foreground">
                   {overdue.length ? `${overdue.length} overdue · ` : ""}All dates · Excluded from
                   received cash
                 </span>
@@ -585,8 +578,8 @@ export function PropFirmTracker() {
                   onToggle={(event) => setShowBreakdowns(event.currentTarget.open)}
                 >
                   <summary className="cursor-pointer p-4">
-                    <span className="text-sm font-medium">Detailed breakdowns</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
+                    <span className="text-[15px] font-medium">Detailed breakdowns</span>
+                    <span className="mt-1 block text-[13px] text-muted-foreground">
                       Net cash trend, firm returns, expense categories, account progress, renewals
                       and monthly records
                     </span>
@@ -620,7 +613,7 @@ export function PropFirmTracker() {
                                 Record spending or a payout receipt to build your cash history.
                               </Empty>
                             )}
-                            <p className="mt-3 text-xs text-muted-foreground">
+                            <p className="mt-3 text-[13px] text-muted-foreground">
                               Starts at zero for the selected period. Payouts + refunds − expenses −
                               reversals.
                             </p>
@@ -631,7 +624,7 @@ export function PropFirmTracker() {
                             <CardTitle>Account progress · all dates</CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-4">
-                            <div className="flex justify-between text-sm">
+                            <div className="flex justify-between text-[15px]">
                               <span>Active evaluations / verifications</span>
                               <strong>
                                 {
@@ -641,7 +634,7 @@ export function PropFirmTracker() {
                                 }
                               </strong>
                             </div>
-                            <div className="flex justify-between text-sm">
+                            <div className="flex justify-between text-[15px]">
                               <span>Active funded / live</span>
                               <strong>
                                 {
@@ -651,7 +644,7 @@ export function PropFirmTracker() {
                                 }
                               </strong>
                             </div>
-                            <div className="flex justify-between text-sm">
+                            <div className="flex justify-between text-[15px]">
                               <span>Resolved-phase pass rate</span>
                               <strong>
                                 {resolved.length
@@ -659,12 +652,12 @@ export function PropFirmTracker() {
                                   : "—"}
                               </strong>
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground">
                               {passed} passed / {resolved.length} passed or breached evaluation
                               phases. Active and voluntarily closed phases are excluded; this is not
                               a whole-challenge success rate.
                             </p>
-                            <p className="border-t pt-4 text-xs text-muted-foreground">
+                            <p className="border-t pt-4 text-[13px] text-muted-foreground">
                               Link accounts to journal trades from account details. Funding sizes
                               are descriptive and never counted as your cash investment.
                             </p>
@@ -681,9 +674,9 @@ export function PropFirmTracker() {
                           <CardContent>
                             {byFirm.length ? (
                               <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm">
+                                <table className="w-full text-left text-[15px]">
                                   <thead>
-                                    <tr className="border-b text-xs text-muted-foreground">
+                                    <tr className="border-b text-[13px] text-muted-foreground">
                                       <th className="py-2">Firm</th>
                                       <th>Net spend</th>
                                       <th>Payout cash</th>
@@ -715,7 +708,7 @@ export function PropFirmTracker() {
                             {byCategory.length ? (
                               byCategory.map((row) => (
                                 <div key={row.category}>
-                                  <div className="flex justify-between gap-3 text-sm">
+                                  <div className="flex justify-between gap-3 text-[15px]">
                                     <span>{label(row.category)}</span>
                                     <span>{money(row.amount)}</span>
                                   </div>
@@ -734,7 +727,7 @@ export function PropFirmTracker() {
                             ) : (
                               <Empty>No recorded expenses in this selection.</Empty>
                             )}
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground">
                               Gross spending by category. Refunds appear separately in the summary.
                             </p>
                           </CardContent>
@@ -753,10 +746,10 @@ export function PropFirmTracker() {
                                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
                                 >
                                   <div>
-                                    <p className="text-sm font-medium">
+                                    <p className="text-[15px] font-medium">
                                       {a.firm} · {a.name}
                                     </p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-[13px] text-muted-foreground">
                                       {a.renewalOn} ·{" "}
                                       {a.renewalMinor === null
                                         ? "Amount not set"
@@ -785,7 +778,7 @@ export function PropFirmTracker() {
                           ) : (
                             <Empty>No renewals scheduled.</Empty>
                           )}
-                          <p className="mt-3 text-xs text-muted-foreground">
+                          <p className="mt-3 text-[13px] text-muted-foreground">
                             Reminders do not create expenses or charge your card. Update the next
                             date after reviewing a renewal.
                           </p>
@@ -798,9 +791,9 @@ export function PropFirmTracker() {
                         <CardContent>
                           {months.length ? (
                             <div className="overflow-x-auto">
-                              <table className="w-full text-left text-sm">
+                              <table className="w-full text-left text-[15px]">
                                 <thead>
-                                  <tr className="border-b text-xs text-muted-foreground">
+                                  <tr className="border-b text-[13px] text-muted-foreground">
                                     <th className="py-2">Month</th>
                                     <th>Spent</th>
                                     <th>Refunded</th>
@@ -841,7 +834,7 @@ export function PropFirmTracker() {
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   {tab === "accounts" && (
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-center gap-2 text-[15px]">
                       <input
                         type="checkbox"
                         checked={showArchived}
@@ -851,7 +844,7 @@ export function PropFirmTracker() {
                     </label>
                   )}
                   {tab === "ledger" && (
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-center gap-2 text-[15px]">
                       <input
                         type="checkbox"
                         checked={showVoided}
@@ -860,7 +853,7 @@ export function PropFirmTracker() {
                       Show voided records
                     </label>
                   )}
-                  <p className="ml-auto text-xs text-muted-foreground">{rowCount} records</p>
+                  <p className="ml-auto text-[13px] text-muted-foreground">{rowCount} records</p>
                 </div>
                 {tab === "accounts" && (
                   <div className="grid gap-3 lg:grid-cols-2">
@@ -875,34 +868,34 @@ export function PropFirmTracker() {
                           <CardContent className="space-y-4 py-5">
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <h3 className="font-semibold">{a.name}</h3>
-                                <p className="text-xs text-muted-foreground">
+                                <h3 className="text-[17px] font-normal leading-snug">{a.name}</h3>
+                                <p className="text-[13px] text-muted-foreground">
                                   {a.firm} · {label(a.program)}
                                   {a.sizeMinor !== null
                                     ? ` · ${money(a.sizeMinor, a.currency)} nominal`
                                     : ""}
                                 </p>
                               </div>
-                              <span className="rounded-md border px-2 py-1 text-xs">
+                              <span className="rounded-sm border px-2 py-1 text-[13px]">
                                 {a.archived ? "Archived · " : ""}
                                 {label(a.status)}
                               </span>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="grid grid-cols-3 gap-2 text-[15px]">
                               <div>
-                                <p className="text-xs text-muted-foreground">Net spend</p>
+                                <p className="text-[13px] text-muted-foreground">Net spend</p>
                                 {money(accountSummary.netSpend, a.currency)}
                               </div>
                               <div>
-                                <p className="text-xs text-muted-foreground">Payout cash</p>
+                                <p className="text-[13px] text-muted-foreground">Payout cash</p>
                                 {money(accountSummary.received, a.currency)}
                               </div>
                               <div>
-                                <p className="text-xs text-muted-foreground">Net return</p>
+                                <p className="text-[13px] text-muted-foreground">Net return</p>
                                 {money(accountSummary.net, a.currency)}
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground">
                               Opened {a.openedOn}
                               {a.closedOn ? ` · Resolved ${a.closedOn}` : ""}
                               {a.parentId ? ` · Follows ${name(a.parentId)}` : ""}. Cash follows the
@@ -961,7 +954,7 @@ export function PropFirmTracker() {
                 )}
                 {tab === "payouts" && (
                   <>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       Open requests always remain visible. Completed, rejected and cancelled
                       requests use the request-date filter. Expected amounts are after your share
                       and withheld fees; actual amounts come only from receipts.
@@ -971,16 +964,16 @@ export function PropFirmTracker() {
                         <CardContent className="space-y-4 py-5">
                           <div className="flex flex-wrap justify-between gap-3">
                             <div>
-                              <h3 className="font-medium">
+                              <h3 className="text-[17px] font-normal leading-snug">
                                 {row.entry.firm} · {name(row.entry.accountId)}
                               </h3>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-[13px] text-muted-foreground">
                                 Requested {row.entry.occurredOn}
                                 {row.entry.dueOn ? ` · Expected ${row.entry.dueOn}` : ""}
                               </p>
                             </div>
                             <span
-                              className={`rounded-md border px-2 py-1 text-xs ${row.overdue ? "border-destructive text-destructive" : ""}`}
+                              className={`rounded-sm border px-2 py-1 text-[13px] ${row.overdue ? "border-destructive text-destructive" : ""}`}
                             >
                               {row.overdue
                                 ? "Overdue · "
@@ -992,19 +985,19 @@ export function PropFirmTracker() {
                           </div>
                           <div className="grid gap-3 sm:grid-cols-4">
                             <div>
-                              <p className="text-xs text-muted-foreground">Expected net</p>
+                              <p className="text-[13px] text-muted-foreground">Expected net</p>
                               {money(row.expected, row.entry.currency)}
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground">Actual received</p>
+                              <p className="text-[13px] text-muted-foreground">Actual received</p>
                               {money(row.actual, row.entry.currency)}
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground">Outstanding</p>
+                              <p className="text-[13px] text-muted-foreground">Outstanding</p>
                               {money(row.remaining, row.entry.currency)}
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground">Actual − expected</p>
+                              <p className="text-[13px] text-muted-foreground">Actual − expected</p>
                               {money(row.variance, row.entry.currency)}
                             </div>
                           </div>
@@ -1021,14 +1014,14 @@ export function PropFirmTracker() {
                             {entryActions(row.entry)}
                           </div>
                           <details>
-                            <summary className="cursor-pointer text-xs">
+                            <summary className="cursor-pointer text-[13px]">
                               Cash movements · {(receiptsById.get(row.entry.id) ?? []).length}
                             </summary>
                             <div className="mt-2 space-y-2">
                               {(receiptsById.get(row.entry.id) ?? []).map((r) => (
                                 <div
                                   key={r.id}
-                                  className="flex flex-wrap items-center justify-between gap-2 rounded border p-2 text-xs"
+                                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-[13px]"
                                 >
                                   <span>
                                     {r.occurredOn} · {label(r.kind)} ·{" "}
@@ -1067,14 +1060,14 @@ export function PropFirmTracker() {
                 {tab === "ledger" && (
                   <Card>
                     <CardContent className="overflow-x-auto pt-4">
-                      <p className="mb-3 text-xs text-muted-foreground">
+                      <p className="mb-3 text-[13px] text-muted-foreground">
                         Expenses and refunds use cash dates; payout rows use request dates. Export
                         cash CSV for individual settlement dates. Payout requests do not count as
                         income.
                       </p>
-                      <table className="w-full min-w-[740px] text-left text-sm">
+                      <table className="w-full min-w-[740px] text-left text-[15px]">
                         <thead>
-                          <tr className="border-b text-xs text-muted-foreground">
+                          <tr className="border-b text-[13px] text-muted-foreground">
                             <th className="py-2">Date</th>
                             <th>Firm / account</th>
                             <th>Entry</th>
@@ -1092,13 +1085,13 @@ export function PropFirmTracker() {
                               <td className="py-3 pr-3">{entry.occurredOn}</td>
                               <td className="pr-3">
                                 {entry.firm}
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-[13px] text-muted-foreground">
                                   {name(entry.accountId)}
                                 </p>
                               </td>
                               <td className="pr-3">
                                 {label(entry.kind)}
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-[13px] text-muted-foreground">
                                   {entry.kind === "expense"
                                     ? label(entry.category)
                                     : entry.reference}
@@ -1112,7 +1105,7 @@ export function PropFirmTracker() {
                                   entry.currency,
                                 )}
                                 {entry.kind === "payout" && (
-                                  <p className="text-xs text-muted-foreground">Expected net</p>
+                                  <p className="text-[13px] text-muted-foreground">Expected net</p>
                                 )}
                               </td>
                               <td>{entry.voided ? "Voided" : label(entry.status)}</td>
@@ -1134,7 +1127,7 @@ export function PropFirmTracker() {
                     >
                       Previous
                     </Button>
-                    <span className="text-xs">
+                    <span className="text-[13px]">
                       Page {safePage + 1} of {Math.ceil(rowCount / PAGE_SIZE)}
                     </span>
                     <Button
@@ -1148,7 +1141,7 @@ export function PropFirmTracker() {
                 )}
               </div>
             )}
-            <details className="rounded-xl border p-4 text-xs text-muted-foreground">
+            <details className="rounded-xl border p-4 text-[13px] text-muted-foreground">
               <summary className="cursor-pointer font-medium">How these numbers work</summary>
               <div className="mt-3 space-y-2">
                 <p>
