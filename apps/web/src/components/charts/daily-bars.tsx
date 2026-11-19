@@ -49,13 +49,13 @@ export function DailyBars({
           <CartesianGrid stroke={t.gridline} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fill: t.inkMuted, fontSize: 11 }}
+            tick={{ fill: t.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: t.baseline }}
             minTickGap={48}
           />
           <YAxis
-            tick={{ fill: t.inkMuted, fontSize: 11 }}
+            tick={{ fill: t.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={70}
@@ -77,6 +77,7 @@ export function DailyBars({
               <Cell
                 key={entry.date}
                 fill={entry.netPnl >= 0 ? t.profitFill : t.loss}
+                fillOpacity={0.72}
                 radius={(entry.netPnl >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]) as unknown as number}
               />
             ))}

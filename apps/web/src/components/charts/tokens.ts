@@ -78,5 +78,5 @@ export const tooltipStyle = (t: VizTokens): React.CSSProperties => ({
   fontSize: 13,
   lineHeight: 1.6,
   color: t.foreground,
-  boxShadow: "0 12px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1)",
+  boxShadow: "var(--shadow-pop)",
 });

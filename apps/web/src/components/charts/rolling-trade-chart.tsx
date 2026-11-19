@@ -50,7 +50,7 @@ export function RollingTradeChart({
             domain={["dataMin", "dataMax"]}
             allowDecimals={false}
             tickFormatter={(value: number) => `#${value}`}
-            tick={{ fill: tokens.inkMuted, fontSize: 11 }}
+            tick={{ fill: tokens.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: tokens.baseline }}
             minTickGap={24}
@@ -61,7 +61,7 @@ export function RollingTradeChart({
               rate ? [0, 1] : [(min: number) => Math.min(0, min), (max: number) => Math.max(0, max)]
             }
             tickFormatter={format}
-            tick={{ fill: tokens.inkMuted, fontSize: 11 }}
+            tick={{ fill: tokens.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
           />
@@ -84,7 +84,7 @@ export function RollingTradeChart({
             dataKey={metric}
             type="linear"
             stroke={tokens.brand}
-            strokeWidth={2}
+            strokeWidth={1.75}
             dot={false}
             activeDot={{ r: 4 }}
             isAnimationActive={false}

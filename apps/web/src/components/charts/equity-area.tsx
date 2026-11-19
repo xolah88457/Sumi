@@ -71,14 +71,14 @@ export function EquityArea({
           <CartesianGrid stroke={t.gridline} strokeWidth={1} vertical={false} />
           <XAxis
             dataKey="t"
-            tick={{ fill: t.inkMuted, fontSize: 11 }}
+            tick={{ fill: t.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: t.baseline }}
             minTickGap={48}
             tickFormatter={(value: string) => value.slice(0, 10)}
           />
           <YAxis
-            tick={{ fill: t.inkMuted, fontSize: 11 }}
+            tick={{ fill: t.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={70}
@@ -98,7 +98,7 @@ export function EquityArea({
             type={curve}
             dataKey="cumNetPnl"
             stroke={bottom < 0 ? (top > 0 ? `url(#${id}-line)` : t.loss) : line}
-            strokeWidth={2}
+            strokeWidth={1.75}
             fill={`url(#${id}-fill)`}
             baseValue={0}
             dot={data.length === 1 ? { r: 3 } : false}

@@ -51,8 +51,8 @@ export function TimeHeatmap({
     trades: h.trades,
   }));
   const pnlHeight = Math.round(height * 0.66);
-  const tickStyle = { fill: t.inkMuted, fontSize: 11 };
-  const labelStyle = { fill: t.inkMuted, fontSize: 11, textAnchor: "middle" as const };
+  const tickStyle = { fill: t.inkMuted, fontSize: 12 };
+  const labelStyle = { fill: t.inkMuted, fontSize: 12, textAnchor: "middle" as const };
   const margin = { top: 8, right: 16, bottom: 0, left: 0 };
 
   return (
@@ -95,6 +95,7 @@ export function TimeHeatmap({
                 <Cell
                   key={entry.hour}
                   fill={entry.netPnl >= 0 ? t.profitFill : t.loss}
+                  fillOpacity={0.72}
                   radius={(entry.netPnl >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]) as unknown as number}
                 />
               ))}

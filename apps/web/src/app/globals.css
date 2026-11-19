@@ -326,6 +326,13 @@ body.dashboard-is-dragging .journal-hover-card {
 .journal-chart-frame .recharts-surface {
   overflow: hidden;
 }
+.journal-chart-frame .recharts-text,
+.journal-chart-frame .recharts-tooltip-wrapper {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.journal-chart-frame .recharts-cartesian-grid line {
+  stroke-width: 1;
+}
 .journal-chart-frame .recharts-surface:focus:not(:focus-visible) {
   outline: none;
 }
