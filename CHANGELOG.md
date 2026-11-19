@@ -43,6 +43,14 @@ All notable changes to this project are documented here. The format follows [Kee
 - IBKR Flex Query XML statements can be uploaded on Import → File upload, and their times are read in the statement timezone, as broker sync does. Previously an XML upload was not recognized and could not be imported, so the Default import timezone never applied ([#16](https://github.com/LuxAlgo/trade-journal/issues/16)).
 - Password protection now verifies the session signature on every API route. Previously, when `JOURNAL_PASSWORD` was set, any request carrying a cookie of the right name was accepted, so a forged cookie could read the journal.
 
+## [0.3.8] - 2026-11-19
+
+This is the final Electron release. Sumi 0.4 is a new, Tauri-based desktop app, and Electron builds receive no further updates.
+
+### Added
+
+- A "Sumi has a new desktop app" notice inside the Electron app: a dismissible banner at the top of the window ("Not now" hides it until the next launch) and a permanent entry under Settings → About. Both link to the [Sumi 0.4 release](https://github.com/xolah88457/Sumi/releases/tag/v0.4.0). Quit this app before opening the new one; your journal data folder is shared, so the new app picks your journal up automatically.
+
 ## [0.1.0] - 2026-09-03
 
 Initial public release.

@@ -485,6 +485,8 @@ jobs:
           cat << 'EOF' > release-notes.md
           ## Sumi v${{ steps.release_info.outputs.version }}
 
+          > **This is the final Electron release of Sumi.** Sumi has a new desktop app, version 0.4, which is faster and lighter. Quit this app, then download and install the new one from the [Sumi v0.4.0 release](https://github.com/xolah88457/Sumi/releases/tag/v0.4.0). Your journal carries over automatically because the new app reads the same data folder. This Electron release exists only to tell existing users where to get it, and Electron builds will not receive further updates.
+
           Cross-platform desktop release of Sumi for macOS (Apple Silicon arm64 & Intel x64), Windows (x64), and Linux (x64).
 
           ### Downloads & Checksums
