@@ -17,14 +17,23 @@ export interface KpiItem {
  */
 function KpiStrip({
   items,
+  rowRules = false,
   className,
   ...props
-}: Omit<React.ComponentProps<"dl">, "children"> & { items: KpiItem[] }) {
+}: Omit<React.ComponentProps<"dl">, "children"> & {
+  items: KpiItem[];
+  /**
+   * For long strips that wrap onto several rows: draw a hairline above every cell instead of
+   * vertical dividers, so each wrapped row is ruled off. Off by default.
+   */
+  rowRules?: boolean;
+}) {
   return (
     <dl
       data-slot="kpi-strip"
       className={cn(
-        "grid min-w-0 grid-cols-[repeat(auto-fit,minmax(150px,1fr))] border-y border-border",
+        "grid min-w-0 grid-cols-[repeat(auto-fit,minmax(150px,1fr))] border-border",
+        rowRules ? "border-b" : "border-y",
         className,
       )}
       {...props}
@@ -32,7 +41,10 @@ function KpiStrip({
       {items.map((item) => (
         <div
           key={item.id}
-          className="flex min-w-0 flex-col gap-1 border-border px-5 py-5 not-first:border-l max-[640px]:px-4"
+          className={cn(
+            "flex min-w-0 flex-col gap-1 border-border px-5 py-5 max-[640px]:px-4",
+            rowRules ? "border-t" : "not-first:border-l",
+          )}
         >
           <dd className="tnum order-1 min-w-0 truncate text-[clamp(20px,1.1vw+15px,32px)] leading-tight">
             {item.value}

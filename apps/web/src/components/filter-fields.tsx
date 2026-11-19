@@ -24,10 +24,11 @@ const FIELD_HINTS: Record<string, string> = {
   "Planned R": "The planned reward relative to the trade's initial risk.",
   "Minutes held": "Time between opening and closing a trade, measured in minutes.",
 };
-export const fieldClass = "h-9 w-full min-w-0 rounded-md border bg-background px-2 text-sm";
+export const fieldClass =
+  "h-10 w-full min-w-0 rounded-md border border-input bg-card px-3.5 text-[15px] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-55";
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="journal-filter-field grid min-w-0 gap-1 text-xs text-muted-foreground">
+    <label className="journal-filter-field grid min-w-0 gap-1.5 text-[13px] text-muted-foreground">
       <span className="flex items-center gap-1.5">
         {label}
         {FIELD_HINTS[label.split(" · ")[0]!] && (
