@@ -41,6 +41,7 @@ function CalendarView() {
     <div>
       <FilterBar
         title="Calendar"
+        lede="Each trading day and its result. A deeper tint means a bigger day."
         actions={
           <div className="flex items-center gap-1">
             <Button
@@ -52,7 +53,7 @@ function CalendarView() {
             >
               <ChevronLeft />
             </Button>
-            <span className="w-36 text-center text-sm font-medium">
+            <span className="w-36 text-center text-[15px] font-medium">
               {new Date(Date.UTC(month.year, month.month - 1)).toLocaleString("en-US", {
                 month: "long",
                 year: "numeric",
@@ -72,11 +73,11 @@ function CalendarView() {
         }
       />
       {data?.currencyScope && <CurrencyNotice scope={data.currencyScope} />}
-      <div className="space-y-4 p-4">
+      <div className="space-y-6 px-4 pb-8">
         <Card>
-          <CardContent className="pt-4">
+          <CardContent className="pt-5">
             {error ? (
-              <div role="alert" className="space-y-3 py-6 text-sm">
+              <div role="alert" className="space-y-3 py-6 text-[15px]">
                 <p className="text-destructive">{error}</p>
                 <Button variant="outline" onClick={refresh}>
                   Try again
@@ -86,7 +87,7 @@ function CalendarView() {
               <div className="space-y-6">
                 {data.currencyGroups?.map((group) => (
                   <div key={group.currency}>
-                    <p className="mb-3 text-sm font-medium">{group.currency} accounts</p>
+                    <p className="mb-3 text-[15px] font-medium">{group.currency} accounts</p>
                     <CalendarPnl calendar={group.calendar} currency={group.currency} />
                   </div>
                 ))}
@@ -116,7 +117,7 @@ function CalendarView() {
           <div
             role="status"
             aria-label="Loading performance insights"
-            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
           >
             {[0, 1, 2, 3].map((index) => (
               <Skeleton key={index} className="h-28" />

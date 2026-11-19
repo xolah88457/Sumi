@@ -27,9 +27,9 @@ const compactMoney = (value: number, currency: string) => {
 };
 
 /**
- * The P&L calendar — an HTML grid, not a chart. Each traded day prints its
- * signed P&L and trade count; the background tint scales with magnitude
- * (lightness carries magnitude, which survives CVD; the number carries sign).
+ * The P&L calendar — an HTML grid, not a chart. Each traded day prints a ▲/▼ glyph,
+ * its signed P&L and trade count; a soft background tint scales with magnitude
+ * (lightness carries magnitude, which survives CVD; the glyph and number carry sign).
  */
 export function CalendarPnl({
   calendar,
@@ -48,7 +48,7 @@ export function CalendarPnl({
   );
   return (
     <div className="journal-calendar min-w-0 w-full">
-      <div className="journal-calendar-grid grid gap-1 text-xs">
+      <div className="journal-calendar-grid grid gap-1.5 text-[13px]">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
           <div key={weekday} className="px-1 pb-1 text-muted-foreground">
             {weekday}
@@ -68,9 +68,9 @@ export function CalendarPnl({
           />
         ))}
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs sm:text-sm">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[15px]">
         <span className="text-muted-foreground">
-          {calendar.tradingDays} trading days {monetary && <>· {calendar.winningDays} green</>}
+          {calendar.tradingDays} trading days {monetary && <>· {calendar.winningDays} profitable</>}
         </span>
         <span>
           Month:{" "}
@@ -82,6 +82,24 @@ export function CalendarPnl({
         </span>
       </div>
     </div>
+  );
+}
+
+/** ▲ for a profit and ▼ for a loss, so the sign never depends on tint alone. */
+function DayGlyph({ value }: { value: number }) {
+  if (value === 0) return null;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "journal-calendar-glyph mr-0.5 text-[0.7em]",
+        value > 0
+          ? "text-[color-mix(in_srgb,var(--profit)_60%,var(--foreground))]"
+          : "text-[color-mix(in_srgb,var(--loss)_60%,var(--foreground))]",
+      )}
+    >
+      {value > 0 ? "▲" : "▼"}
+    </span>
   );
 }
 
@@ -103,9 +121,10 @@ function CalendarWeekRow({
   return (
     <>
       {week.days.map((day, dayIndex) => {
-        if (!day) return <div key={dayIndex} className="journal-calendar-day rounded-md" />;
+        if (!day) return <div key={dayIndex} className="journal-calendar-day rounded-lg" />;
         const traded = day.trades > 0;
-        const intensity = traded ? 0.1 + 0.38 * (Math.abs(day.netPnl) / maxAbs) : 0;
+        // Soft tint: 6% to 20% of the signal colour over the card surface.
+        const intensity = traded ? 0.06 + 0.14 * (Math.abs(day.netPnl) / maxAbs) : 0;
         const performance = !monetary
           ? "neutral"
           : day.netPnl > 0
@@ -136,8 +155,8 @@ function CalendarWeekRow({
               href={`/journal/${day.date}?${search}`}
               aria-label={`${day.date}, ${!monetary ? "Multiple currencies" : privacy ? "P&L hidden" : fmtMoney(day.netPnl, currency)}, ${day.trades} trades`}
               className={cn(
-                "journal-calendar-day journal-calendar-day-link min-w-0 rounded-md border",
-                !traded && "border-transparent bg-muted/30",
+                "journal-calendar-day journal-calendar-day-link min-w-0 rounded-lg border",
+                !traded && "border-transparent bg-muted/60",
               )}
               data-performance={performance}
               style={
@@ -154,24 +173,37 @@ function CalendarWeekRow({
                   : undefined
               }
             >
-              <div className="text-muted-foreground">{Number(day.date.slice(8))}</div>
+              <div
+                className={cn(
+                  "journal-calendar-date-number",
+                  traded ? "text-foreground/75" : "text-muted-foreground",
+                )}
+              >
+                {Number(day.date.slice(8))}
+              </div>
               {traded && (
                 <>
                   <div className="journal-calendar-full tnum font-medium">
                     {monetary ? (
-                      <MonetaryValue>{fmtMoney(day.netPnl, currency)}</MonetaryValue>
+                      <>
+                        <DayGlyph value={day.netPnl} />
+                        <MonetaryValue>{fmtMoney(day.netPnl, currency)}</MonetaryValue>
+                      </>
                     ) : (
                       "—"
                     )}
                   </div>
                   <div className="journal-calendar-compact tnum font-medium">
                     {monetary ? (
-                      <MonetaryValue>{compactMoney(day.netPnl, currency)}</MonetaryValue>
+                      <>
+                        <DayGlyph value={day.netPnl} />
+                        <MonetaryValue>{compactMoney(day.netPnl, currency)}</MonetaryValue>
+                      </>
                     ) : (
                       "—"
                     )}
                   </div>
-                  <div className="journal-calendar-trades text-muted-foreground">
+                  <div className="journal-calendar-trades text-foreground/75">
                     {day.trades} trade{day.trades === 1 ? "" : "s"}
                   </div>
                 </>
@@ -180,7 +212,7 @@ function CalendarWeekRow({
           </HoverHint>
         );
       })}
-      <div className="journal-calendar-week flex rounded-md bg-muted/40 p-1.5">
+      <div className="journal-calendar-week flex rounded-lg p-1.5">
         <span className="journal-calendar-week-label text-muted-foreground">Week total</span>
         {week.weekTrades > 0 ? (
           <>

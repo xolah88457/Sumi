@@ -848,7 +848,7 @@ body.dashboard-is-dragging .journal-hover-card {
 .journal-calendar-day {
   min-height: 64px;
   padding: 4px 2px;
-  font-size: clamp(8px, 2.8cqi, 11px);
+  font-size: clamp(10px, 2.8cqi, 13px);
 }
 .journal-calendar-day-link {
   outline: 2px solid transparent;
@@ -858,14 +858,9 @@ body.dashboard-is-dragging .journal-hover-card {
     color 160ms ease,
     outline-color 160ms ease;
 }
-.journal-calendar-day-link[data-performance="profit"] {
-  --calendar-outline: var(--profit);
-}
-.journal-calendar-day-link[data-performance="loss"] {
-  --calendar-outline: var(--loss);
-}
-.journal-calendar-day-link[data-performance="neutral"] {
-  --calendar-outline: var(--muted-foreground);
+/* Hover and focus use the accent for every day; the tint stays a quiet magnitude cue. */
+.journal-calendar-day-link[data-performance] {
+  --calendar-outline: var(--brand);
 }
 .journal-calendar-day-link:hover,
 .journal-calendar-day-link:focus-visible {
@@ -873,9 +868,10 @@ body.dashboard-is-dragging .journal-hover-card {
 }
 .journal-calendar-day > :first-child {
   margin-bottom: 4px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .journal-calendar-compact,
+.journal-calendar-full,
 .journal-calendar-trades {
   white-space: nowrap;
 }
@@ -889,7 +885,7 @@ body.dashboard-is-dragging .journal-hover-card {
   justify-content: flex-end;
   gap: 8px;
   margin-bottom: 4px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .journal-calendar-week-label {
   margin-right: auto;
@@ -899,8 +895,9 @@ body.dashboard-is-dragging .journal-hover-card {
     grid-template-columns: repeat(7, minmax(0, 1fr)) 88px;
   }
   .journal-calendar-day {
-    padding: 6px;
-    font-size: 11px;
+    min-height: 72px;
+    padding: 8px 6px;
+    font-size: 13px;
   }
   .journal-calendar-full,
   .journal-calendar-week-heading {
