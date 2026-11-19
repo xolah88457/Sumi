@@ -5,9 +5,12 @@ import { TimeHeatmap } from "./charts/time-heatmap";
 import { ReviewExport } from "./review-export";
 import { MonetaryValue } from "./privacy";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { DensityToggle } from "./density-toggle";
+import { EmptyState } from "./ui/empty-state";
 import { Skeleton } from "./ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { useApi } from "@/lib/use-api";
+import { useTableDensity } from "@/lib/table-density";
 import { fmtMoney, fmtPercent, pnlClass } from "@/lib/utils";
 import { describeFilters } from "@/lib/filter-description";
 
@@ -35,16 +38,17 @@ const SECTIONS = [
 
 export function ReportOverview({ query, filters }: { query: string; filters: AnalysisFilters }) {
   const { data, error, loading } = useApi<OverviewData>(`/api/stats?${query}`);
+  const [density, setDensity] = useTableDensity();
   if (error)
     return (
-      <p role="alert" className="text-sm text-destructive">
+      <p role="alert" className="text-[15px] text-destructive">
         {error}
       </p>
     );
   if (loading || !data) return <Skeleton className="h-72" />;
   if (data.currencies.length > 1)
     return (
-      <p className="rounded-lg border p-4 text-sm">
+      <p className="rounded-lg bg-secondary p-4 text-[15px]">
         These accounts use different currencies ({data.currencies.join(", ")}). Select accounts with
         the same currency in Filters to compare monetary results.
       </p>
@@ -53,36 +57,40 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
   const label = (dimension: string, key: string) =>
     dimension === "playbook" ? (data.playbooks.find((book) => book.id === key)?.name ?? key) : key;
   return (
-    <div className="space-y-4">
+    <div className="space-y-6" data-density={density}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Trading overview · {data.timeZone} · {currency}
         </p>
-        <ReviewExport
-          containsFinancialData
-          document={{
-            title: "Trading overview",
-            subtitle: `${data.timeZone} · ${currency}`,
-            lines: [
-              `Filters: ${describeFilters(filters, data.accounts, data.playbooks)}`,
-              "",
-              "Trade time performance (opening hour)",
-              ...data.buckets.hour.map(
-                (b) => `${b.key}:00: ${b.trades} trades | Net P&L ${fmtMoney(b.netPnl, currency)}`,
-              ),
-              ...SECTIONS.flatMap((section) => [
+        <div className="flex flex-wrap items-center gap-2">
+          <DensityToggle value={density} onChange={setDensity} />
+          <ReviewExport
+            containsFinancialData
+            document={{
+              title: "Trading overview",
+              subtitle: `${data.timeZone} · ${currency}`,
+              lines: [
+                `Filters: ${describeFilters(filters, data.accounts, data.playbooks)}`,
                 "",
-                section.title,
-                ...data.buckets[section.key].map(
+                "Trade time performance (opening hour)",
+                ...data.buckets.hour.map(
                   (b) =>
-                    `${label(section.key, b.key)}: ${b.trades} trades | Win ${fmtPercent(b.winRate, 0)} | Net P&L ${fmtMoney(b.netPnl, currency)}`,
+                    `${b.key}:00: ${b.trades} trades | Net P&L ${fmtMoney(b.netPnl, currency)}`,
                 ),
-              ]),
-            ],
-          }}
-        />
+                ...SECTIONS.flatMap((section) => [
+                  "",
+                  section.title,
+                  ...data.buckets[section.key].map(
+                    (b) =>
+                      `${label(section.key, b.key)}: ${b.trades} trades | Win ${fmtPercent(b.winRate, 0)} | Net P&L ${fmtMoney(b.netPnl, currency)}`,
+                  ),
+                ]),
+              ],
+            }}
+          />
+        </div>
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Trade time performance</CardTitle>
@@ -98,11 +106,11 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
             </CardHeader>
             <CardContent>
               {data.buckets[section.key].length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
+                <EmptyState className="py-6">
                   {section.key === "tag" || section.key === "mistake" || section.key === "playbook"
                     ? "Annotate trades to unlock this breakdown."
                     : "No data yet."}
-                </p>
+                </EmptyState>
               ) : (
                 <Table>
                   <TableHeader>
@@ -137,7 +145,7 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
           </Card>
         ))}
       </div>
-      <p className="text-xs leading-relaxed text-muted-foreground">
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
         Weekday and hour use trade opening times. Overview trade counts include open positions; win
         rates use closed trades. Holding time requires a closed trade. Tags and mistakes can
         overlap. By symbol shows the top 20 by net P&L; Breakdowns includes every symbol and

@@ -100,7 +100,7 @@ export function TradeExplorer({ query }: { query: string }) {
   const table = (
     <div className="space-y-3 px-4 pb-4">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-[13px]">
           <caption className="pb-3 text-left text-muted-foreground">
             All {points.length} comparable trades, newest close first. Each link opens the original
             trade.
@@ -151,7 +151,7 @@ export function TradeExplorer({ query }: { query: string }) {
           >
             Previous
           </Button>
-          <p aria-live="polite" className="text-xs text-muted-foreground">
+          <p aria-live="polite" className="text-[13px] text-muted-foreground">
             Page {shownPage + 1} of {pages}
           </p>
           <Button
@@ -167,12 +167,12 @@ export function TradeExplorer({ query }: { query: string }) {
     </div>
   );
   return (
-    <section className="space-y-4" aria-labelledby="trade-explorer-title" data-trade-explorer>
+    <section className="space-y-6" aria-labelledby="trade-explorer-title" data-trade-explorer>
       <div>
-        <h2 id="trade-explorer-title" className="text-lg font-semibold">
+        <h2 id="trade-explorer-title" className="text-[21px] font-normal tracking-[-0.02em]">
           Trade explorer
         </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-[13px] text-muted-foreground">
           Compare individual trades, not group averages · Active account and filters ·{" "}
           {data.timeZone}
         </p>
@@ -215,7 +215,7 @@ export function TradeExplorer({ query }: { query: string }) {
                   ? `${xTitle} vs ${yTitle}`
                   : `Trade outcomes by ${x === "durationMinutes" ? "holding time" : "entry time"}`}
               </CardTitle>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-[13px] text-muted-foreground">
                 {blocked
                   ? `${data.points.length} closed trades`
                   : `${points.length} of ${data.points.length} closed trades comparable`}{" "}
@@ -227,7 +227,7 @@ export function TradeExplorer({ query }: { query: string }) {
               <div className="min-w-0 flex-1 sm:w-44">
                 <label
                   htmlFor="trade-x-axis"
-                  className="mb-1.5 block text-xs text-muted-foreground"
+                  className="mb-1.5 block text-[13px] text-muted-foreground"
                 >
                   X axis
                 </label>
@@ -249,7 +249,7 @@ export function TradeExplorer({ query }: { query: string }) {
               <div className="min-w-0 flex-1 sm:w-44">
                 <label
                   htmlFor="trade-y-axis"
-                  className="mb-1.5 block text-xs text-muted-foreground"
+                  className="mb-1.5 block text-[13px] text-muted-foreground"
                 >
                   Y axis
                 </label>
@@ -275,13 +275,13 @@ export function TradeExplorer({ query }: { query: string }) {
           {data.points.length === 0 ? (
             <div className="py-10 text-center">
               <h3 className="font-medium">No closed trades in this selection</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-[15px] text-muted-foreground">
                 Change the date range or filters to explore your history. Open positions are
                 excluded.
               </p>
             </div>
           ) : blocked ? (
-            <p role="note" className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+            <p role="note" className="rounded-lg bg-muted/30 p-4 text-[15px] text-muted-foreground">
               These trades use different currencies ({data.currencies.join(", ")}). Select accounts
               with one currency for monetary axes, or use Duration and Realized R to compare
               risk-normalized outcomes. No currency conversion is applied.
@@ -289,7 +289,7 @@ export function TradeExplorer({ query }: { query: string }) {
           ) : (
             <>
               {points.length < data.points.length && (
-                <p role="note" className="text-xs leading-relaxed text-muted-foreground">
+                <p role="note" className="text-[13px] leading-relaxed text-muted-foreground">
                   {data.points.length - points.length} trades excluded:{" "}
                   {y === "realizedR"
                     ? "realized R requires a valid planned stop-loss and any required contract multiplier; "
@@ -299,14 +299,14 @@ export function TradeExplorer({ query }: { query: string }) {
                 </p>
               )}
               {y === "realizedR" && (
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
                   R = net P&L ÷ planned risk from your stop-loss. Uses weighted entry and total
                   entry quantity; it does not measure maximum intratrade risk.
                 </p>
               )}
               {points.length >= (excursion ? 1 : 8) ? (
                 <>
-                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-muted-foreground">
                     <span>{yTitle}</span>
                     <span className="flex flex-wrap gap-x-4 gap-y-1">
                       <span>
@@ -334,8 +334,8 @@ export function TradeExplorer({ query }: { query: string }) {
                     timeZone={data.timeZone}
                     onSelect={setSelected}
                   />
-                  <p className="text-center text-xs text-muted-foreground">{xTitle}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-center text-[13px] text-muted-foreground">{xTitle}</p>
+                  <p className="text-[13px] text-muted-foreground">
                     Select a point to inspect its trade. Overlapping points remain individually
                     accessible in the table.
                   </p>
@@ -343,17 +343,17 @@ export function TradeExplorer({ query }: { query: string }) {
                     {selected && (
                       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-4">
                         <div>
-                          <p className="text-sm font-medium break-all">
+                          <p className="text-[15px] font-medium break-all">
                             {selected.symbol} · {selected.direction} · {value(selected)}
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
+                          <p className="mt-1 text-[13px] text-muted-foreground">
                             {xValue(selected)} · Closed {date.format(new Date(selected.closedAt))}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
                           <Link
                             href={detailHref(selected.key)}
-                            className="rounded text-sm underline underline-offset-4"
+                            className="rounded text-[15px] underline underline-offset-4"
                           >
                             Open trade ↗
                           </Link>
@@ -366,14 +366,14 @@ export function TradeExplorer({ query }: { query: string }) {
                   </div>
                 </>
               ) : (
-                <p className="rounded-lg bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+                <p className="rounded-lg bg-muted/30 px-4 py-6 text-[15px] text-muted-foreground">
                   {points.length === 0
                     ? "No trades have the data required for these axes. Try another axis or adjust your filters."
                     : "Fewer than 8 comparable trades. Review the exact values below, or widen your filters to reveal a useful scatter plot."}
                 </p>
               )}
               {points.length > 0 && points.length < 20 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   Small sample: treat apparent patterns cautiously until more trades are available.
                 </p>
               )}
@@ -395,13 +395,13 @@ export function TradeExplorer({ query }: { query: string }) {
             className="rounded-xl border bg-card"
             onToggle={(event) => setTableOpen(event.currentTarget.open)}
           >
-            <summary className="cursor-pointer rounded-xl px-4 py-3 text-sm font-medium">
+            <summary className="cursor-pointer rounded-xl px-4 py-3 text-[15px] font-medium">
               Explore all {points.length} trades
             </summary>
             {tableOpen && table}
           </details>
         ))}
-      <p className="text-xs leading-relaxed text-muted-foreground">
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
         Duration is elapsed time from first entry to final exit, including overnight hours. Entry
         time uses the journal timezone; midnight neighbors appear at opposite ends of that axis.
         Patterns describe this selection, not causation or a recommended holding time.
