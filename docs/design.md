@@ -64,7 +64,7 @@ Light is the base `:root`; dark is the `.dark` class on `<html>`. The preference
 follows `prefers-color-scheme`, live, until the user picks one in the Appearance menu
 (Light, Dark or System; System clears the stored value). A pre-paint script in
 `lib/theme.ts` sets the class before first paint; if storage or `matchMedia` is
-unavailable it falls back to light. The Electron and Tauri windows paint
+unavailable it falls back to light. The desktop window paints
 `#fbfaf6` (or `#171512` when the OS is dark) behind the web view to avoid a flash.
 
 ## Components
