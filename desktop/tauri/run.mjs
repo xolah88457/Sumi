@@ -45,6 +45,28 @@ export function nativePackages(
   throw new Error(`Unsupported native Tauri target: ${platform}-${arch}`);
 }
 
+// Updater artifacts (.sig files, updater archives) are produced only when the release
+// signing key is present. Without it the build is identical to a local one and the app
+// reports "updates unavailable". The key is never read or logged here.
+export function updaterBuildArgs(env = process.env) {
+  return env.TAURI_SIGNING_PRIVATE_KEY || env.TAURI_SIGNING_PRIVATE_KEY_PATH
+    ? ["--config", JSON.stringify({ bundle: { createUpdaterArtifacts: true } })]
+    : [];
+}
+
+// Secrets that only the Tauri CLI needs; keep them out of the web build and the stager.
+export function withoutSigningSecrets(env) {
+  const clean = { ...env };
+  for (const name of [
+    "TAURI_SIGNING_PRIVATE_KEY",
+    "TAURI_SIGNING_PRIVATE_KEY_PATH",
+    "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+  ]) {
+    delete clean[name];
+  }
+  return clean;
+}
+
 function systemTempRoot() {
   // Match the roots Rust accepts, independent of TMPDIR/TMP/TEMP overrides.
   if (process.platform === "darwin") {
@@ -250,7 +272,7 @@ async function run(command, packagePath) {
       delete env.CARGO_BUILD_TARGET;
       execFileSync(process.execPath, [join(tauriDir, "stage-runtime.mjs")], {
         cwd: tauriDir,
-        env,
+        env: withoutSigningSecrets(env),
         stdio: "inherit",
       });
       if (platform === "win32") {
@@ -266,6 +288,7 @@ async function run(command, packagePath) {
           bundles,
           "--ci",
           "--no-sign",
+          ...updaterBuildArgs(env),
           "--",
           "--locked",
         ],

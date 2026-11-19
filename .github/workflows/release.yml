@@ -1,0 +1,279 @@
+name: Release Sumi
+
+# Releases are created ONLY by pushing a version tag (v<semver>, e.g. v0.4.0) whose
+# commit is on the default branch (`electron`) and whose version matches package.json,
+# desktop/tauri/src-tauri/tauri.conf.json and Cargo.toml. Merging to the default branch
+# never releases; tauri-ci.yml covers pushes and pull requests. The release is created
+# as a DRAFT: review the assets, then publish it by hand.
+"on":
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Updater feed: a GitHub Releases asset. Override with the repository variable
+  # TAURI_UPDATER_ENDPOINT (must be an https URL ending in .json).
+  UPDATER_ENDPOINT: ${{ vars.TAURI_UPDATER_ENDPOINT || format('https://github.com/{0}/releases/latest/download/latest.json', github.repository) }}
+
+jobs:
+  build:
+    name: Build and verify (${{ matrix.target.id }})
+    runs-on: ${{ matrix.target.os }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+      is_release: ${{ steps.validate.outputs.is_release }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - id: macos-arm64
+            os: macos-15
+            platform: darwin
+            arch: arm64
+            rust-host: aarch64-apple-darwin
+          - id: macos-x64
+            os: macos-15-intel
+            platform: darwin
+            arch: x64
+            rust-host: x86_64-apple-darwin
+          - id: windows-x64
+            os: windows-2025
+            platform: win32
+            arch: x64
+            rust-host: x86_64-pc-windows-msvc
+          - id: linux-x64
+            os: ubuntu-22.04
+            platform: linux
+            arch: x64
+            rust-host: x86_64-unknown-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate tag, versions and branch ancestry
+        id: validate
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          ROOT_VERSION=$(node -p 'require("./package.json").version')
+          TAURI_VERSION=$(node -p 'require("./desktop/tauri/src-tauri/tauri.conf.json").version')
+          CARGO_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/tauri/src-tauri/Cargo.toml | head -n 1)
+          if [ "$ROOT_VERSION" != "$TAURI_VERSION" ] || [ "$ROOT_VERSION" != "$CARGO_VERSION" ]; then
+            echo "::error::Version mismatch: package.json $ROOT_VERSION, tauri.conf.json $TAURI_VERSION, Cargo.toml $CARGO_VERSION"
+            exit 1
+          fi
+          if [ "$REF_TYPE" = "tag" ]; then
+            if ! echo "$REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+              echo "::error::Tag '$REF_NAME' must look like v<semver>, e.g. v0.4.0"
+              exit 1
+            fi
+            if [ "${REF_NAME#v}" != "$ROOT_VERSION" ]; then
+              echo "::error::Tag $REF_NAME does not match the app version $ROOT_VERSION"
+              exit 1
+            fi
+            git fetch origin electron
+            if ! git merge-base --is-ancestor "$COMMIT_SHA" origin/electron; then
+              echo "::error::Tagged commit is not on the default branch (electron)"
+              exit 1
+            fi
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$ROOT_VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          # Match the bundled Node ABI used by better-sqlite3 and the native voice probe.
+          node-version: 26.13.1
+          architecture: ${{ matrix.target.arch }}
+          cache: pnpm
+
+      - name: Require matching native runner, Node, and Rust
+        env:
+          EXPECTED_PLATFORM: ${{ matrix.target.platform }}
+          EXPECTED_ARCH: ${{ matrix.target.arch }}
+          EXPECTED_RUST_HOST: ${{ matrix.target.rust-host }}
+          HOST_ARCH: ${{ runner.arch }}
+        run: |
+          test "$(printf '%s' "$HOST_ARCH" | tr '[:upper:]' '[:lower:]')" = "$EXPECTED_ARCH"
+          node -e 'const assert = require("node:assert/strict"); assert.equal(process.platform, process.env.EXPECTED_PLATFORM); assert.equal(process.arch, process.env.EXPECTED_ARCH);'
+          rustup update stable --no-self-update
+          rustup override set stable
+          test "$(rustc -vV | awk '/^host: / {print $2}' | tr -d '\r')" = "$EXPECTED_RUST_HOST"
+
+      - name: Install Linux WebKitGTK and Xvfb dependencies
+        if: matrix.target.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libssl-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 dbus-x11 xvfb xauth
+          pkg-config --exists gtk+-3.0 webkit2gtk-4.1
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Desktop runner, bridge and manifest tests
+        run: node --test desktop/tauri/run.test.mjs desktop/tauri/bridge.test.mjs desktop/tauri/release-manifest.test.mjs
+
+      - name: Decide whether to produce signed updater artifacts
+        id: updater
+        env:
+          HAS_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+        run: |
+          if [ "$HAS_KEY" = "true" ]; then
+            if [ -z "$PUBKEY" ]; then
+              echo "::error::TAURI_SIGNING_PRIVATE_KEY is set but the TAURI_UPDATER_PUBKEY repository variable is not."
+              exit 1
+            fi
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No TAURI_SIGNING_PRIVATE_KEY secret: building without updater artifacts; the app will report updates as unavailable."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # TODO(macOS signing): builds are ad-hoc signed and not notarized (as the Electron
+      # builds were). To sign and notarize, add the standard Tauri secrets
+      # APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY, APPLE_ID,
+      # APPLE_PASSWORD, APPLE_TEAM_ID, import the certificate into a temporary keychain
+      # here, and drop `--no-sign` from desktop/tauri/run.mjs for macOS release builds.
+      - name: Stage native backend and build packages
+        env:
+          # Only the Tauri CLI sees the signing key (run.mjs strips it from staging).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ steps.updater.outputs.enabled == 'true' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ steps.updater.outputs.enabled == 'true' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+          SUMI_TAURI_UPDATER_PUBKEY: ${{ steps.updater.outputs.enabled == 'true' && vars.TAURI_UPDATER_PUBKEY || '' }}
+          SUMI_TAURI_UPDATER_ENDPOINT: ${{ steps.updater.outputs.enabled == 'true' && env.UPDATER_ENDPOINT || '' }}
+        run: pnpm tauri:build
+
+      - name: Smoke packaged app
+        if: matrix.target.platform != 'linux'
+        run: pnpm tauri:check
+
+      - name: Smoke installed Debian package and AppImage
+        if: matrix.target.platform == 'linux'
+        env:
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+        run: |
+          packages=(desktop/tauri/src-tauri/target/release/bundle/deb/*.deb)
+          test "${#packages[@]}" -eq 1
+          sudo apt-get install -y "./${packages[0]}"
+          test -x /usr/bin/sumi
+          dbus-run-session -- xvfb-run -a -s '-screen 0 1440x960x24' node desktop/tauri/run.mjs check /usr/bin/sumi
+          dbus-run-session -- xvfb-run -a -s '-screen 0 1440x960x24' node desktop/tauri/run.mjs check
+
+      - name: Collect release assets
+        env:
+          VERSION: ${{ steps.validate.outputs.version }}
+          TARGET: ${{ matrix.target.id }}
+          PLATFORM: ${{ matrix.target.platform }}
+          UPDATER: ${{ steps.updater.outputs.enabled }}
+        run: |
+          bundle=desktop/tauri/src-tauri/target/release/bundle
+          out=release-assets
+          mkdir "$out"
+          put() { # <source> <destination name>; also carries a detached .sig when present
+            test -s "$1"
+            cp "$1" "$out/$2"
+            if [ -f "$1.sig" ]; then cp "$1.sig" "$out/$2.sig"; fi
+          }
+          case "$PLATFORM" in
+            darwin)
+              ditto -c -k --keepParent "$bundle/macos/Sumi.app" "$out/Sumi-$VERSION-$TARGET.zip"
+              if [ "$UPDATER" = "true" ]; then put "$bundle/macos/Sumi.app.tar.gz" "Sumi-$VERSION-$TARGET.app.tar.gz"; fi
+              ;;
+            win32)
+              put "$bundle/nsis/Sumi_${VERSION}_x64-setup.exe" "Sumi-$VERSION-$TARGET.exe"
+              ;;
+            linux)
+              put "$bundle/appimage/Sumi_${VERSION}_amd64.AppImage" "Sumi-$VERSION-$TARGET.AppImage"
+              put "$bundle/deb/Sumi_${VERSION}_amd64.deb" "Sumi-$VERSION-$TARGET.deb"
+              ;;
+          esac
+          if [ "$UPDATER" = "true" ]; then
+            test -n "$(find "$out" -name '*.sig' -print -quit)" || { echo "::error::Updater enabled but no .sig was produced"; exit 1; }
+          fi
+          ls -l "$out"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assets-${{ matrix.target.id }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  draft-release:
+    name: Draft GitHub release
+    needs: build
+    if: needs.build.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: assets-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate checksums and updater manifest
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          cd release-assets
+          # latest.json only when every platform's signed artifact exists, so a
+          # partial matrix can never advertise an incomplete update.
+          if ls ./*.sig > /dev/null 2>&1; then
+            test "$(ls ./*.sig | wc -l)" -eq 4
+            node ../desktop/tauri/release-manifest.mjs . "$VERSION" "$TAG" "$REPO"
+          fi
+          sha256sum -- $(ls | grep -v '^SHA256SUMS.txt$' | grep -v '\.sig$') > SHA256SUMS.txt
+          ls -l
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > release-notes.md <<EOF
+          ## Sumi v${VERSION}
+
+          Sumi for macOS (Apple Silicon and Intel), Windows (x64) and Linux (x64, AppImage and .deb). Checksums are in \`SHA256SUMS.txt\`.
+
+          **Upgrading from the Electron app (0.3.x):** install this build once; it will not update itself from the old app. Your journal is found automatically (same data folder). Quit the old app first.
+
+          **macOS:** this build is ad-hoc signed and not notarized. On first open, use System Settings > Privacy & Security > Open Anyway, or run \`xattr -dr com.apple.quarantine /Applications/Sumi.app\`.
+
+          **Windows:** unsigned; SmartScreen may show "Unknown publisher". Choose More info, then Run anyway.
+          EOF
+          gh release create "$TAG" release-assets/* \
+            --draft \
+            --verify-tag \
+            --title "Sumi v${VERSION}" \
+            --notes-file release-notes.md
