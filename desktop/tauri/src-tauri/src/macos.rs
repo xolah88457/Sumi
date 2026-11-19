@@ -63,6 +63,10 @@ impl Downloads {
     pub fn clear(&self) {
         self.0.lock().unwrap().clear();
     }
+
+    pub fn trace_summary(&self) -> String {
+        "macOS downloads use the WKDownload delegate".into()
+    }
 }
 
 fn is_attachment(response: &NSURLResponse) -> bool {

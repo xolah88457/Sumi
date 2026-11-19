@@ -1,14 +1,10 @@
-use super::{same_origin, State, LABEL};
+use super::{same_origin, LABEL};
 use gtk::{gio, prelude::*};
-use std::{
-    cell::RefCell,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, Url, WebviewWindow};
 use webkit2gtk::{
     DownloadExt, PermissionRequestExt, PolicyDecisionExt, PolicyDecisionType,
-    ResponsePolicyDecision, ResponsePolicyDecisionExt, SettingsExt, URIRequestExt, URIResponseExt,
+    ResponsePolicyDecision, ResponsePolicyDecisionExt, SettingsExt, URIResponseExt,
     UserMediaPermissionRequest, UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
 };
 
@@ -86,62 +82,22 @@ pub fn install(window: &WebviewWindow, origin: Url) -> tauri::Result<()> {
         view.connect_web_process_terminated(move |_, _| {
             crate::failure(&handle, "The WebKitGTK content process stopped.");
         });
-        let view = view.downgrade();
+        // Wry owns decide-destination and the destination itself (see
+        // portable::configure). Here only guard the engine's final response: a
+        // redirect must not leave loopback even when the request looked safe.
+        let target = origin.clone();
         context.connect_download_started(move |_, download| {
-            if !view.upgrade().is_some_and(|view| {
-                download.web_view().as_ref() == Some(&view)
-                    && view
-                        .uri()
-                        .and_then(|uri| Url::parse(&uri).ok())
-                        .is_some_and(|url| same_origin(&url, &origin))
-            }) {
-                download.cancel();
-                return;
-            }
-            let handle = app.clone();
-            let target = origin.clone();
-            let stage = Rc::new(RefCell::new(None::<PathBuf>));
-            let destination = stage.clone();
-            download.connect_decide_destination(move |download, name| {
-                let url = download
-                    .request()
-                    .and_then(|req| req.uri())
-                    .and_then(|uri| Url::parse(&uri).ok());
-                // Reject redirected responses from outside loopback, even when
-                // WebKit reports the original request on the download object.
-                let safe_response =
-                    download
-                        .response()
-                        .and_then(|res| res.uri())
-                        .is_none_or(|uri| {
-                            Url::parse(&uri)
-                                .is_ok_and(|url| crate::security::download_url(&url, &target))
-                        });
-                let state = handle.state::<State>();
-                if let Some(path) = url
-                    .filter(|_| safe_response)
-                    .and_then(|url| state.downloads.start(&state, &url, &target, name))
-                {
-                    let uri = gio::File::for_path(&path).uri();
-                    destination.replace(Some(path));
-                    download.set_destination(&uri);
-                } else {
+            let target = target.clone();
+            download.connect_notify_local(Some("response"), move |download, _| {
+                let safe = download
+                    .response()
+                    .and_then(|res| res.uri())
+                    .is_none_or(|uri| {
+                        Url::parse(&uri)
+                            .is_ok_and(|url| crate::security::download_url(&url, &target))
+                    });
+                if !safe {
                     download.cancel();
-                }
-                true
-            });
-            let failed = Rc::new(std::cell::Cell::new(false));
-            download.connect_failed({
-                let failed = failed.clone();
-                move |_, _| failed.set(true)
-            });
-            let handle = app.clone();
-            download.connect_finished(move |_| {
-                if let Some(path) = stage.take() {
-                    handle
-                        .state::<State>()
-                        .downloads
-                        .finish(&handle, &path, !failed.get());
                 }
             });
         });

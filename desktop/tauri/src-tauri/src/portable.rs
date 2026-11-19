@@ -9,7 +9,8 @@ use std::{
     path::{Path, PathBuf},
 };
 use tauri::{
-    webview::NewWindowResponse, AppHandle, Builder, Manager, Url, WebviewWindowBuilder, Wry,
+    webview::{DownloadEvent, NewWindowResponse},
+    AppHandle, Builder, Manager, Url, WebviewWindowBuilder, Wry,
 };
 
 #[cfg(target_os = "linux")]
@@ -61,11 +62,75 @@ pub fn configure<'a>(
     origin: &Url,
 ) -> WebviewWindowBuilder<'a, Wry, AppHandle> {
     let target = origin.clone();
+    let downloads = state.downloads.clone();
+    let origin = origin.clone();
     builder
         .devtools(false)
         .data_directory(state.profile.dir.join("tauri-webview"))
-        .on_navigation(move |url| allow_navigation(url, &target))
+        .on_navigation(move |url| {
+            let allow = allow_navigation(url, &target);
+            if url.scheme() == "blob" || !allow {
+                downloads.note(format!(
+                    "navigation {} {}",
+                    if allow { "allowed" } else { "denied" },
+                    describe(url)
+                ));
+            }
+            allow
+        })
         .on_new_window(|_, _| NewWindowResponse::Deny)
+        // Wry installs its own WebKitGTK decide-destination and WebView2
+        // DownloadStarting handlers and they win over any later ones, so this is
+        // the only place a native download can be redirected into private staging.
+        .on_download(move |webview, event| {
+            let app = webview.app_handle();
+            let state = app.state::<State>();
+            match event {
+                DownloadEvent::Requested { url, destination } => {
+                    state
+                        .downloads
+                        .note(format!("requested {}", describe(&url)));
+                    let name = destination.file_name().and_then(|name| name.to_str());
+                    match state
+                        .downloads
+                        .start(&state, &url, &origin, name.unwrap_or("download"))
+                    {
+                        Some(path) => {
+                            *destination = path;
+                            true
+                        }
+                        None => false,
+                    }
+                }
+                DownloadEvent::Finished { url, path, success } => {
+                    let app = app.clone();
+                    // Completion runs inside the engine's event callback. Show the
+                    // save dialog only after returning to the message pump.
+                    std::thread::spawn(move || {
+                        let handle = app.clone();
+                        let _ = app.run_on_main_thread(move || {
+                            let path = path.and_then(|path| staged_path(&path));
+                            handle.state::<State>().downloads.finish(
+                                &handle,
+                                &url,
+                                path.as_deref(),
+                                success,
+                            )
+                        });
+                    });
+                    true
+                }
+                _ => true,
+            }
+        })
+}
+
+/// WebKitGTK reports a finished download's destination as a `file://` URI.
+fn staged_path(path: &Path) -> Option<PathBuf> {
+    match path.to_str() {
+        Some(text) if text.starts_with("file://") => Url::parse(text).ok()?.to_file_path().ok(),
+        _ => Some(path.to_path_buf()),
+    }
 }
 
 // Wry reports every navigation action to this hook on WebKitGTK and WebView2,
@@ -92,21 +157,51 @@ pub fn open_external(app: AppHandle, target: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
+/// Scheme and host only: enough to diagnose a stuck download without logging
+/// blob ids, paths or query strings.
+pub fn describe(url: &Url) -> String {
+    format!("{}:{}", url.scheme(), url.host_str().unwrap_or(""))
+}
+
+const TRACE_LIMIT: usize = 24;
+
 #[derive(Default)]
-pub struct Downloads(std::sync::Mutex<std::collections::HashMap<PathBuf, PendingDownload>>);
+pub struct Downloads {
+    pending: std::sync::Mutex<std::collections::HashMap<PathBuf, PendingDownload>>,
+    trace: std::sync::Mutex<Vec<String>>,
+}
 
 struct PendingDownload {
     _staging: tempfile::TempDir,
     filename: String,
+    url: Url,
 }
 
 impl Downloads {
     pub fn clear(&self) {
-        self.0.lock().unwrap().clear();
+        self.pending.lock().unwrap().clear();
+    }
+
+    /// Record a download lifecycle stage so a stalled download reports where it stopped.
+    pub fn note(&self, stage: impl Into<String>) {
+        let mut trace = self.trace.lock().unwrap();
+        if trace.len() < TRACE_LIMIT {
+            trace.push(stage.into());
+        }
+    }
+
+    pub fn trace_summary(&self) -> String {
+        let trace = self.trace.lock().unwrap();
+        if trace.is_empty() {
+            "no download or blob navigation event reached the native hooks".into()
+        } else {
+            trace.join(" > ")
+        }
     }
 
     pub fn start(&self, state: &State, url: &Url, origin: &Url, filename: &str) -> Option<PathBuf> {
         if state.backend.stopping() || !download_url(url, origin) {
+            self.note(format!("start rejected {}", describe(url)));
             return None;
         }
         let name = Path::new(filename)
@@ -115,27 +210,50 @@ impl Downloads {
             .filter(|name| !name.is_empty())
             .unwrap_or("download");
         if state.profile.smoke && name != SMOKE_DOWNLOAD {
+            self.note(format!("start rejected filename {name:?}"));
             return None;
         }
         let stage = tempfile::Builder::new()
             .prefix(".sumi-download-")
             .tempdir_in(&state.profile.dir)
+            .map_err(|err| self.note(format!("staging failed: {err}")))
             .ok()?;
         let path = stage.path().join("download");
-        self.0.lock().unwrap().insert(
+        self.note("staging ready");
+        self.pending.lock().unwrap().insert(
             path.clone(),
             PendingDownload {
                 _staging: stage,
                 filename: name.into(),
+                url: url.clone(),
             },
         );
         Some(path)
     }
 
-    pub fn finish(&self, app: &AppHandle, path: &Path, success: bool) {
-        let Some(pending) = self.0.lock().unwrap().remove(path) else {
+    /// Complete a download reported by the engine. The staged path is looked up
+    /// by `path` when the engine reports it, otherwise by the request URL.
+    pub fn finish(&self, app: &AppHandle, url: &Url, path: Option<&Path>, success: bool) {
+        let Some((path, pending)) = ({
+            let mut pending = self.pending.lock().unwrap();
+            let key = path
+                .filter(|path| pending.contains_key(*path))
+                .map(Path::to_path_buf)
+                .or_else(|| {
+                    pending
+                        .iter()
+                        .find(|(_, entry)| &entry.url == url)
+                        .map(|(key, _)| key.clone())
+                });
+            key.and_then(|key| pending.remove(&key).map(|entry| (key, entry)))
+        }) else {
+            self.note(format!(
+                "finished without staged download success={success}"
+            ));
             return;
         };
+        let path = path.as_path();
+        self.note(format!("finished success={success}"));
         let state = app.state::<State>();
         if !success || state.backend.stopping() {
             return;
@@ -146,11 +264,17 @@ impl Downloads {
             native::save_path(app, &pending.filename)
         };
         if let Some(dest) = dest {
-            if !state.backend.stopping() && save_download(path, &dest).is_err() {
-                notice(
-                    "Could not save download",
-                    "The destination is not writable.",
-                );
+            if !state.backend.stopping() {
+                match save_download(path, &dest) {
+                    Ok(()) => self.note("saved"),
+                    Err(err) => {
+                        self.note(format!("save failed: {err}"));
+                        notice(
+                            "Could not save download",
+                            "The destination is not writable.",
+                        );
+                    }
+                }
             }
         }
     }
@@ -171,6 +295,17 @@ fn save_download(from: &Path, dest: &Path) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn staged_path_accepts_file_uris_and_plain_paths() {
+        let plain = Path::new("/tmp/stage/download");
+        assert_eq!(staged_path(plain).as_deref(), Some(plain));
+        #[cfg(unix)]
+        assert_eq!(
+            staged_path(Path::new("file:///tmp/stage/download")).as_deref(),
+            Some(plain)
+        );
+    }
 
     #[test]
     fn navigation_allows_only_own_origin_blobs() {
