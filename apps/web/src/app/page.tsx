@@ -37,6 +37,8 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { MonetaryValue } from "@/components/privacy";
 import { Pnl } from "@/components/pnl";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState as EmptyPanel } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -98,7 +100,11 @@ function Dashboard() {
 
   return (
     <>
-      <FilterBar title="Dashboard" actions={<AddTradeDialog onSaved={refresh} />} />
+      <FilterBar
+        title="Dashboard"
+        lede="Your results at a glance. Drag cards to rearrange them."
+        actions={<AddTradeDialog onSaved={refresh} />}
+      />
       <DashboardContent
         data={data}
         loading={loading}
@@ -126,19 +132,13 @@ function DashboardContent({
   if (loading && !data) return <DashboardSkeleton />;
   if (!data)
     return (
-      <div>
-        <div className="space-y-3 p-4">
-          <p role="alert" className="text-sm text-destructive">
-            {error ?? "Could not load the dashboard."}
-          </p>
-          <button
-            type="button"
-            className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
-            onClick={refresh}
-          >
-            Try again
-          </button>
-        </div>
+      <div className="space-y-4 px-4 pb-8">
+        <p role="alert" className="text-[15px] text-destructive">
+          {error ?? "Could not load the dashboard."}
+        </p>
+        <Button type="button" variant="outline" onClick={refresh}>
+          Try again
+        </Button>
       </div>
     );
   if (!data.currencyScope.monetary) {
@@ -147,12 +147,12 @@ function DashboardContent({
     return (
       <>
         <CurrencyNotice scope={data.currencyScope} />
-        <div className="grid gap-3 p-4 sm:grid-cols-2">
+        <div className="grid gap-5 px-4 pb-8 sm:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>All accounts</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm">
+            <CardContent className="text-[15px]">
               {closed} closed trades · {closed ? fmtPercent(wins / closed) : "–"} trade win rate
             </CardContent>
           </Card>
@@ -165,9 +165,9 @@ function DashboardContent({
                 <Pnl
                   value={group.metrics.netPnl}
                   currency={group.currency}
-                  className="text-2xl font-semibold"
+                  className="text-[32px] font-normal leading-tight tracking-[-0.02em]"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[13px] text-muted-foreground">
                   {group.metrics.closedTrades} closed trades · {fmtPercent(group.metrics.winRate)}{" "}
                   trade win rate
                 </p>
@@ -184,10 +184,10 @@ function DashboardContent({
 
   if (m.totalTrades === 0)
     return query ? (
-      <div>
-        <p className="p-12 text-center text-sm text-muted-foreground">
-          No trades match these filters. Clear or adjust Filters to see more results.
-        </p>
+      <div className="px-4 pb-8">
+        <EmptyPanel title="No trades match these filters">
+          Clear or adjust Filters to see more results.
+        </EmptyPanel>
       </div>
     ) : (
       <EmptyState />
@@ -231,7 +231,7 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
+              <Card variant="flat" className="h-full border-b">
                 <StatHeader
                   title="Net P&L"
                   icon={CircleDollarSign}
@@ -241,12 +241,12 @@ function DashboardContent({
                   <Pnl
                     value={m.netPnl}
                     currency={currency}
-                    className="text-3xl font-semibold tracking-tight"
+                    className="text-3xl font-normal tracking-[-0.02em]"
                   />
                   {weekDelta !== null && (
                     <div
                       className={cn(
-                        "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                        "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[13px] font-medium",
                         weekDelta >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss",
                       )}
                     >
@@ -257,7 +257,7 @@ function DashboardContent({
                       vs prior 7d
                     </div>
                   )}
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     {m.closedTrades} closed trades ·{" "}
                     <MonetaryValue>{fmtMoney(m.fees, currency)}</MonetaryValue> fees
                   </div>
@@ -271,7 +271,7 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
+              <Card variant="flat" className="h-full border-b">
                 <StatHeader
                   title="Trade win %"
                   icon={Target}
@@ -279,7 +279,7 @@ function DashboardContent({
                 />
                 <CardContent className="flex items-center justify-between gap-2">
                   <Gauge value={m.winRate} label="Trade win rate" />
-                  <div className="space-y-0.5 text-xs text-muted-foreground">
+                  <div className="space-y-0.5 text-[13px] text-muted-foreground">
                     <div>{m.wins} W</div>
                     <div>{m.breakevens} BE</div>
                     <div>{m.losses} L</div>
@@ -294,21 +294,21 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
+              <Card variant="flat" className="h-full border-b">
                 <StatHeader
                   title="Profit factor"
                   icon={Scale}
                   hint="Gross profit ÷ gross loss. Above 1 means the wins outweigh the losses."
                 />
                 <CardContent>
-                  <div className="text-3xl font-semibold tracking-tight tnum">
+                  <div className="text-3xl font-normal tracking-[-0.02em] tnum">
                     {m.profitFactorIsInfinite
                       ? "∞"
                       : m.profitFactor === null
                         ? "–"
                         : fmtNumber(m.profitFactor)}
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     gross profit ÷ gross loss
                   </div>
                 </CardContent>
@@ -321,7 +321,7 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
+              <Card variant="flat" className="h-full border-b">
                 <StatHeader
                   title="Day win %"
                   icon={CalendarCheck2}
@@ -329,7 +329,7 @@ function DashboardContent({
                 />
                 <CardContent className="flex items-center justify-between gap-2">
                   <Gauge value={m.dayWinRate} label="Day win rate" />
-                  <div className="text-xs text-muted-foreground">{m.tradingDays} days</div>
+                  <div className="text-[13px] text-muted-foreground">{m.tradingDays} days</div>
                 </CardContent>
               </Card>
             ),
@@ -340,14 +340,14 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
+              <Card variant="flat" className="h-full border-b">
                 <StatHeader
                   title="Avg win / loss"
                   icon={ArrowUpDown}
                   hint="Average winning trade ÷ average losing trade. The bar shows the two to scale."
                 />
                 <CardContent>
-                  <div className="text-3xl font-semibold tracking-tight tnum">
+                  <div className="text-3xl font-normal tracking-[-0.02em] tnum">
                     {m.avgWinLossRatio === null ? "–" : fmtNumber(m.avgWinLossRatio)}
                   </div>
                   {m.avgWin !== null && m.avgLoss !== null && m.avgWin + m.avgLoss > 0 && (
@@ -365,7 +365,7 @@ function DashboardContent({
                       <span className="flex-1 rounded-full bg-loss" />
                     </div>
                   )}
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     <span className="text-profit">
                       {m.avgWin === null ? (
                         "–"
@@ -402,18 +402,18 @@ function DashboardContent({
                       recovery, and consistency. Requires at least five closed trades.
                     </HelpHint>
                   </div>
-                  <span className="text-2xl font-semibold tracking-tight tnum">
+                  <span className="text-[26px] font-normal tracking-[-0.02em] tnum">
                     {edgeScore.score === null ? (
                       "–"
                     ) : (
                       <span className="text-brand">{edgeScore.score}</span>
                     )}
-                    <span className="text-xs text-muted-foreground"> /100</span>
+                    <span className="text-[13px] text-muted-foreground"> /100</span>
                   </span>
                 </CardHeader>
                 <CardContent className="dashboard-visual-card-content">
                   {edgeScore.score === null ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
+                    <p className="py-8 text-center text-[15px] text-muted-foreground">
                       Needs 5+ closed trades. The formula is open —{" "}
                       <a
                         className="underline"
@@ -498,7 +498,7 @@ function DashboardContent({
                   </CardTitle>
                   <Link
                     href={`/calendar?${query}`}
-                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    className="text-[13px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
                   >
                     Full calendar
                   </Link>
@@ -527,10 +527,10 @@ function DashboardContent({
                 <CardContent>
                   <Tabs defaultValue="recent">
                     <TabsList className="h-8">
-                      <TabsTrigger value="recent" className="text-xs">
+                      <TabsTrigger value="recent" className="text-[13px]">
                         Recent trades
                       </TabsTrigger>
-                      <TabsTrigger value="open" className="text-xs">
+                      <TabsTrigger value="open" className="text-[13px]">
                         Open positions
                       </TabsTrigger>
                     </TabsList>
@@ -540,7 +540,7 @@ function DashboardContent({
                         <Link
                           key={trade.key}
                           href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
-                          className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent/60"
+                          className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-2 text-[15px] hover:bg-muted"
                         >
                           <span className="flex items-center gap-2">
                             <Badge
@@ -557,7 +557,7 @@ function DashboardContent({
                             {trade.symbol}
                           </span>
                           <span className="dashboard-activity-detail flex items-center">
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[13px] text-muted-foreground">
                               {trade.closedAt && dayKeyOf(trade.closedAt, data.timeZone)}
                             </span>
                             <Pnl value={trade.netPnl} currency={trade.currency} />
@@ -572,13 +572,13 @@ function DashboardContent({
                       {data.openPositions.map((position) => (
                         <div
                           key={position.key}
-                          className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-1.5 text-sm"
+                          className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-2 text-[15px]"
                         >
                           <span className="flex items-center gap-2">
                             <Badge variant="secondary">{position.direction.toUpperCase()}</Badge>
                             {position.symbol}
                           </span>
-                          <span className="tnum text-xs text-muted-foreground">
+                          <span className="tnum text-[13px] text-muted-foreground">
                             {fmtNumber(position.quantity, 4)} @{" "}
                             <MonetaryValue>
                               {fmtNumber(position.avgEntry)} {position.currency}
@@ -605,10 +605,10 @@ function DashboardContent({
                   hint="Largest peak-to-trough drop of the cumulative P&L curve."
                 />
                 <CardContent>
-                  <div className="text-xl font-semibold tnum text-loss">
+                  <div className="text-[21px] font-normal tracking-[-0.02em] tnum text-loss">
                     <MonetaryValue>{fmtMoney(-m.maxDrawdown, currency)}</MonetaryValue>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     {m.maxDrawdownPct === null
                       ? "set an initial balance for %"
                       : fmtPercent(m.maxDrawdownPct)}
@@ -631,14 +631,14 @@ function DashboardContent({
                   hint="Current run of consecutive wins (W) or losses (L), with the best and worst runs."
                 />
                 <CardContent>
-                  <div className="text-xl font-semibold tnum">
+                  <div className="text-[21px] font-normal tracking-[-0.02em] tnum">
                     {m.currentStreak > 0
                       ? `${m.currentStreak}W`
                       : m.currentStreak < 0
                         ? `${-m.currentStreak}L`
                         : "–"}
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     best {m.maxWinStreak}W · worst {m.maxLossStreak}L
                   </div>
                 </CardContent>
@@ -664,10 +664,10 @@ function DashboardContent({
                     <Pnl
                       value={m.expectancy}
                       currency={currency}
-                      className="text-xl font-semibold"
+                      className="text-[21px] font-normal tracking-[-0.02em]"
                     />
                   )}
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     {m.avgRealizedR !== null && m.tradesWithRisk > 0
                       ? `avg ${fmtNumber(m.avgRealizedR)}R over ${m.tradesWithRisk} risk-tagged trades`
                       : "tag stop-losses to unlock R multiples"}
@@ -689,8 +689,10 @@ function DashboardContent({
                   hint="Average time from first entry fill to final exit."
                 />
                 <CardContent>
-                  <div className="text-xl font-semibold tnum">{fmtDuration(m.avgDurationMs)}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="text-[21px] font-normal tracking-[-0.02em] tnum">
+                    {fmtDuration(m.avgDurationMs)}
+                  </div>
+                  <div className="mt-1 text-[13px] text-muted-foreground">
                     winners vs losers in Reports
                   </div>
                 </CardContent>
@@ -715,9 +717,11 @@ function DashboardContent({
                       <Pnl
                         value={bestDay.netPnl}
                         currency={currency}
-                        className="text-base font-semibold"
+                        className="text-[18px] font-normal"
                       />
-                      <span className="text-xs text-muted-foreground">{bestDay.date.slice(5)}</span>
+                      <span className="text-[13px] text-muted-foreground">
+                        {bestDay.date.slice(5)}
+                      </span>
                     </div>
                   )}
                   {worstDay && (
@@ -725,9 +729,9 @@ function DashboardContent({
                       <Pnl
                         value={worstDay.netPnl}
                         currency={currency}
-                        className="text-base font-semibold"
+                        className="text-[18px] font-normal"
                       />
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[13px] text-muted-foreground">
                         {worstDay.date.slice(5)}
                       </span>
                     </div>
@@ -787,7 +791,7 @@ function StatHeader({
           <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />
         </TooltipTrigger>
         <TooltipContent>
-          <div className="mb-1 font-semibold">{title}</div>
+          <div className="mb-1 font-medium">{title}</div>
           <div className="text-muted-foreground">{hint}</div>
         </TooltipContent>
       </Tooltip>
@@ -796,7 +800,7 @@ function StatHeader({
 }
 
 function Empty({ label }: { label: string }) {
-  return <p className="px-2 py-6 text-center text-sm text-muted-foreground">{label}</p>;
+  return <EmptyPanel className="px-4 py-6">{label}</EmptyPanel>;
 }
 
 function EmptyState() {
@@ -811,32 +815,29 @@ function EmptyState() {
     }
   };
   return (
-    <div>
-      <div className="flex flex-col items-center justify-center gap-3 px-4 py-24 text-center">
-        <h2 className="text-xl font-semibold">Your journal is empty</h2>
-        <p className="max-w-md text-sm text-muted-foreground">
+    <div className="px-4 pb-8">
+      <EmptyPanel
+        className="py-16"
+        title="Your journal is empty"
+        action={
+          <>
+            <Button asChild>
+              <Link href="/import">Import your first trades</Link>
+            </Button>
+            <Button variant="outline" onClick={loadDemo} disabled={loadingDemo}>
+              {loadingDemo ? "Loading…" : "Load demo data"}
+            </Button>
+          </>
+        }
+      >
+        <p>
           Connect a broker for automatic sync, upload a statement from 10+ platforms (including your
           TradeZella export), or add trades manually.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Link
-            href="/import"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Import your first trades
-          </Link>
-          <button
-            onClick={loadDemo}
-            disabled={loadingDemo}
-            className="rounded-md border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-          >
-            {loadingDemo ? "Loading…" : "Load demo data"}
-          </button>
-        </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-3 text-[13px]">
           Demo data lands in its own account; delete it anytime under Accounts.
         </p>
-      </div>
+      </EmptyPanel>
     </div>
   );
 }
@@ -844,13 +845,13 @@ function EmptyState() {
 function DashboardSkeleton() {
   return (
     <div>
-      <div className="dashboard-grid-stage space-y-3 p-4">
-        <div className="dashboard-grid grid gap-3">
+      <div className="dashboard-grid-stage space-y-5 px-4 pb-8">
+        <div className="dashboard-grid grid gap-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} data-card-size="small" className="dashboard-grid-card h-28" />
           ))}
         </div>
-        <div className="dashboard-grid grid gap-3">
+        <div className="dashboard-grid grid gap-5">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} data-card-size="medium" className="dashboard-grid-card h-72" />
           ))}

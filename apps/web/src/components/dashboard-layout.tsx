@@ -283,10 +283,12 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
   }
 
   if (!ready)
-    return <div className="p-4 text-sm text-muted-foreground">Loading dashboard layout…</div>;
+    return (
+      <div className="px-4 pb-8 text-[15px] text-muted-foreground">Loading dashboard layout…</div>
+    );
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-5 px-4 pb-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <DashboardSavedLayouts
@@ -315,7 +317,7 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
               )
             }
           />
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[13px] text-muted-foreground">
             {visible.length} of {widgets.length} cards
           </span>
           <span role="status" className="sr-only">
@@ -351,7 +353,7 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
         />
       </div>
       {hiddenCount > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-secondary bg-secondary px-3 py-2 text-[15px]">
           <span>
             {hiddenCount} {hiddenCount === 1 ? "card is" : "cards are"} hidden in this layout.
           </span>
@@ -361,12 +363,12 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
         </div>
       )}
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {error}
         </p>
       )}
       {visible.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
+        <p className="py-8 text-center text-[15px] text-muted-foreground">
           All cards are hidden. Choose Show all cards to restore them.
         </p>
       )}
@@ -407,7 +409,7 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
       >
         <SortableContext items={visible} strategy={liveGridStrategy}>
           <div ref={stageRef} className="dashboard-grid-stage" data-dashboard-stage>
-            <div ref={gridRef} className="dashboard-grid relative grid gap-3" data-dashboard-grid>
+            <div ref={gridRef} className="dashboard-grid relative grid gap-5" data-dashboard-grid>
               {rendered.map((id) => (
                 <SortableCard
                   key={id}
