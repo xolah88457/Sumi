@@ -144,7 +144,10 @@ async fn smoke_report(app: AppHandle, report: SmokeReport) -> Result<(), &'stati
             result["error"] = json!(report
                 .error
                 .unwrap_or_else(|| if claimed {
-                    "Native blob download did not complete".into()
+                    format!(
+                        "Native blob download did not complete ({})",
+                        state.downloads.trace_summary()
+                    )
                 } else {
                     "WebView smoke check failed".into()
                 })

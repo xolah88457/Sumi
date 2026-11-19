@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { win32 as winPath, basename, dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -474,6 +474,59 @@ export function assertKoffiPayload(serverDir, platform = process.platform, arch 
 }
 
 /**
+ * Removes koffi native payloads that the target cannot load from the staged server tree.
+ *
+ * Koffi's per-platform package ships one directory per libc/arch (`linux_x64` for glibc and
+ * `musl_x64` for musl), and other `@koromix/koffi-*` packages are for other targets. Only
+ * `<platform>_<arch>` (glibc on Linux) is supported. linuxdeploy resolves the shared-library
+ * dependencies of every ELF file in the AppDir, so the musl addon would fail AppImage
+ * bundling on glibc hosts with "Could not find dependency: libc.musl-x86_64.so.1".
+ *
+ * Package manifests and licence files stay in place, so licence collection is unaffected.
+ * Returns the removed paths, relative to `serverDir`.
+ */
+export function pruneKoffiPayloads(serverDir, platform = process.platform, arch = process.arch) {
+  const normArch = normalizeArch(arch);
+  const keepPackage = `koffi-${platform}-${normArch}`;
+  const keepPayload = `${platform}_${normArch}`;
+  const removed = [];
+
+  const modulesDirs = new Set();
+  for (const modules of findNodeModulesDirs(serverDir)) {
+    modulesDirs.add(modules);
+    const virtualStore = join(modules, ".pnpm");
+    if (existsSync(virtualStore)) {
+      for (const entry of readdirSync(virtualStore)) {
+        modulesDirs.add(join(virtualStore, entry, "node_modules"));
+      }
+    }
+  }
+
+  for (const modules of modulesDirs) {
+    const scope = join(modules, "@koromix");
+    if (!existsSync(scope)) continue;
+    for (const entry of readdirSync(scope)) {
+      if (!entry.startsWith("koffi-")) continue;
+      const packagePath = join(scope, entry);
+      if (entry !== keepPackage) {
+        rmSync(packagePath, { recursive: true, force: true });
+        removed.push(relative(serverDir, packagePath));
+        continue;
+      }
+      if (lstatSync(packagePath).isSymbolicLink()) continue; // its real directory is pruned itself
+      for (const child of readdirSync(packagePath, { withFileTypes: true })) {
+        if (!child.isDirectory() || child.name === keepPayload) continue;
+        const payload = join(packagePath, child.name);
+        if (!existsSync(join(payload, "koffi.node"))) continue;
+        rmSync(payload, { recursive: true, force: true });
+        removed.push(relative(serverDir, payload));
+      }
+    }
+  }
+  return removed.sort();
+}
+
+/**
  * Locates the owning package.json for an entrypoint file by walking up directories.
  * Fallback for packages whose "exports" map hides ./package.json.
  */
@@ -715,6 +768,18 @@ export function augmentStandaloneDependencies(serverDir) {
       }
     }
   }
+}
+
+/**
+ * Returns the tar executable used to unpack the Node archive. On Windows this is the
+ * bsdtar shipped in %SystemRoot%\\System32, addressed by absolute path: a bare `tar` on PATH
+ * can resolve to Git-for-Windows' GNU tar, which reads `D:\\...` as a remote host and cannot
+ * read .zip files.
+ */
+export function getTarCommand(platform = process.platform, env = process.env) {
+  if (platform !== "win32") return "tar";
+  const systemRoot = env.SystemRoot || env.SYSTEMROOT || env.windir || "C:\\Windows";
+  return winPath.join(systemRoot, "System32", "tar.exe");
 }
 
 /**
@@ -1016,7 +1081,7 @@ export async function stageBackend({
   try {
     if (platform === "win32") {
       // Windows includes bsdtar with ZIP support; no Git Bash unzip required.
-      execFileSync("tar.exe", ["-xf", nodeArchivePath, "-C", nodeTemp]);
+      execFileSync(getTarCommand("win32"), ["-xf", nodeArchivePath, "-C", nodeTemp]);
       const runtimeDir = join(nodeTemp, `node-${runtimeVersion}-win-${normArch}`);
       cpSync(join(runtimeDir, "node.exe"), join(resources, "runtime/node.exe"));
       const nodeLicense = join(runtimeDir, "LICENSE");
@@ -1024,7 +1089,7 @@ export async function stageBackend({
         cpSync(nodeLicense, join(resources, "licenses/Node-LICENSE.txt"));
       }
     } else {
-      execFileSync("tar", ["-xzf", nodeArchivePath, "-C", nodeTemp], {
+      execFileSync(getTarCommand(platform), ["-xzf", nodeArchivePath, "-C", nodeTemp], {
         cwd: root,
         stdio: "inherit",
       });
@@ -1160,7 +1225,8 @@ export async function stageBackend({
         cpSync(koffiPkgDir, targetPkgDir, { recursive: true, dereference: true });
       }
 
-      // Assert that the native binary exists in the staged server bundle
+      // Ship only the target's payload and assert it survives: not musl, nor other OS/arch builds (see pruneKoffiPayloads).
+      pruneKoffiPayloads(join(resources, "server"), platform, normArch);
       assertKoffiPayload(join(resources, "server"), platform, normArch);
     }
   }

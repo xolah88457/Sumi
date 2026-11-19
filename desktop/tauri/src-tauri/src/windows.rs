@@ -1,4 +1,4 @@
-use super::{same_origin, State, LABEL};
+use super::{same_origin, LABEL};
 use std::{
     ffi::{OsStr, OsString},
     os::windows::ffi::{OsStrExt, OsStringExt},
@@ -7,12 +7,11 @@ use std::{
 };
 use tauri::{AppHandle, Manager, Url, WebviewWindow};
 use webview2_com::{
-    take_pwstr, CallDevToolsProtocolMethodCompletedHandler, DownloadStartingEventHandler,
-    FrameCreatedEventHandler, FramePermissionRequestedEventHandler,
-    Microsoft::Web::WebView2::Win32::*, NavigationStartingEventHandler,
-    PermissionRequestedEventHandler, ProcessFailedEventHandler, StateChangedEventHandler,
+    take_pwstr, CallDevToolsProtocolMethodCompletedHandler, FrameCreatedEventHandler,
+    FramePermissionRequestedEventHandler, Microsoft::Web::WebView2::Win32::*,
+    NavigationStartingEventHandler, PermissionRequestedEventHandler, ProcessFailedEventHandler,
 };
-use windows::core::{w, Interface, HSTRING, PWSTR};
+use windows::core::{w, Interface, PWSTR};
 use windows_sys::Win32::UI::{
     Controls::Dialogs::{
         GetSaveFileNameW, OFN_NOCHANGEDIR, OFN_OVERWRITEPROMPT, OFN_PATHMUSTEXIST, OPENFILENAMEW,
@@ -111,69 +110,6 @@ unsafe fn hooks(view: &ICoreWebView2, app: AppHandle, origin: Url) -> windows::c
                 ) {
                     crate::failure(&handle, "The WebView2 content process stopped.");
                 }
-            }
-            Ok(())
-        })),
-        &mut token,
-    )?;
-    frames.add_DownloadStarting(
-        &DownloadStartingEventHandler::create(Box::new(move |view, args| {
-            let Some((view, args)) = view.zip(args) else {
-                return Ok(());
-            };
-            // Native download writes only to private staging. Suppress the default UI.
-            args.SetHandled(true)?;
-            args.SetCancel(true)?;
-            let mut source = PWSTR::null();
-            view.Source(&mut source)?;
-            if !Url::parse(&take_pwstr(source)).is_ok_and(|url| same_origin(&url, &origin)) {
-                return Ok(());
-            }
-            let operation = args.DownloadOperation()?;
-            let mut uri = PWSTR::null();
-            operation.Uri(&mut uri)?;
-            let Ok(url) = Url::parse(&take_pwstr(uri)) else {
-                return Ok(());
-            };
-            let mut path = PWSTR::null();
-            args.ResultFilePath(&mut path)?;
-            let name = take_pwstr(path);
-            let state = app.state::<State>();
-            if let Some(path) = state.downloads.start(&state, &url, &origin, &name) {
-                let dest = HSTRING::from(path.as_path());
-                let handle = app.clone();
-                let finished_path = path.clone();
-                let configured = operation
-                    .add_StateChanged(
-                        &StateChangedEventHandler::create(Box::new(move |operation, _| {
-                            let Some(operation) = operation else {
-                                return Ok(());
-                            };
-                            let mut state = COREWEBVIEW2_DOWNLOAD_STATE::default();
-                            operation.State(&mut state)?;
-                            if state != COREWEBVIEW2_DOWNLOAD_STATE_IN_PROGRESS {
-                                // Completion runs in a WebView2 event callback. Show modal UI
-                                // only after returning to the message pump.
-                                let handle = handle.clone();
-                                let path = finished_path.clone();
-                                let success = state == COREWEBVIEW2_DOWNLOAD_STATE_COMPLETED;
-                                std::thread::spawn(move || {
-                                    let app = handle.clone();
-                                    let _ = handle.run_on_main_thread(move || {
-                                        app.state::<State>().downloads.finish(&app, &path, success)
-                                    });
-                                });
-                            }
-                            Ok(())
-                        })),
-                        &mut 0,
-                    )
-                    .and_then(|()| args.SetResultFilePath(&dest))
-                    .and_then(|()| args.SetCancel(false));
-                if configured.is_err() {
-                    state.downloads.finish(&app, &path, false);
-                }
-                configured?;
             }
             Ok(())
         })),
