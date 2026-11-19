@@ -68,8 +68,14 @@ pub fn configure<'a>(
         .on_new_window(|_, _| NewWindowResponse::Deny)
 }
 
+// Wry reports every navigation action to this hook on WebKitGTK and WebView2,
+// including the blob: navigation behind `<a download>`. Rejecting it there means
+// the native download never starts. Only blobs minted by our own origin pass.
 fn allow_navigation(url: &Url, origin: &Url) -> bool {
-    url.as_str() == "about:blank" || same_origin(url, origin)
+    url.as_str() == "about:blank"
+        || same_origin(url, origin)
+        || (url.scheme() == "blob"
+            && Url::parse(url.path()).is_ok_and(|inner| same_origin(&inner, origin)))
 }
 
 #[tauri::command]
@@ -160,4 +166,28 @@ fn save_download(from: &Path, dest: &Path) -> io::Result<()> {
     file.as_file().sync_all()?;
     file.persist(dest)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn navigation_allows_only_own_origin_blobs() {
+        let origin = Url::parse("http://127.0.0.1:49000").unwrap();
+        let ok = |s: &str| allow_navigation(&Url::parse(s).unwrap(), &origin);
+        assert!(ok("about:blank"));
+        assert!(ok("http://127.0.0.1:49000/journal"));
+        assert!(ok(
+            "blob:http://127.0.0.1:49000/0b1f6a52-1d2c-4c8e-9f0a-6a2f1f0c9d11"
+        ));
+        assert!(!ok(
+            "blob:http://127.0.0.1:49001/0b1f6a52-1d2c-4c8e-9f0a-6a2f1f0c9d11"
+        ));
+        assert!(!ok(
+            "blob:https://example.com/0b1f6a52-1d2c-4c8e-9f0a-6a2f1f0c9d11"
+        ));
+        assert!(!ok("data:text/csv,a"));
+        assert!(!ok("https://example.com/"));
+    }
 }
