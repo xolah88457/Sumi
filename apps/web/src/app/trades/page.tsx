@@ -27,6 +27,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { KpiStrip } from "@/components/ui/kpi-strip";
 import { useTableDensity } from "@/lib/table-density";
 import { Input } from "@/components/ui/input";
+import { SignedText } from "@/components/ui/signed-text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadError } from "@/components/load-error";
 import Loading from "@/app/loading";
@@ -206,7 +207,9 @@ function Trades() {
         sortFn: "basic",
         header: "Net ROI",
         cell: ({ getValue }) => (
-          <span className="tnum">{fmtPercent(getValue<number | undefined>() ?? null, 2)}</span>
+          <span className="tnum">
+            <SignedText>{fmtPercent(getValue<number | undefined>() ?? null, 2)}</SignedText>
+          </span>
         ),
       },
       {

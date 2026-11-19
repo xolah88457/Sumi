@@ -25,6 +25,7 @@ import { useTableDensity } from "@/lib/table-density";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
+import { SignedText } from "@/components/ui/signed-text";
 import { cn, fmtDuration, minusSign } from "@/lib/utils";
 const TradeExplorer = dynamic(
   () => import("@/components/trade-explorer").then((module) => module.TradeExplorer),
@@ -80,7 +81,7 @@ function Summary({ data, strip = false }: { data: Analysis; strip?: boolean }) {
     ["Avg realized R", shownNumber(s.avgRealizedR)],
   ];
   const value = (label: string, text: string) =>
-    label === "Net P&L" ? <MonetaryValue>{text}</MonetaryValue> : text;
+    label === "Net P&L" ? <MonetaryValue>{text}</MonetaryValue> : <SignedText>{text}</SignedText>;
   return (
     <div className="report-summary">
       {strip ? (
@@ -276,7 +277,9 @@ function Breakdown({
                   </td>
                 )}
                 <td className={cell}>{g.trades}</td>
-                <td className={cell}>{shownPercent(g.winRate)}</td>
+                <td className={cell}>
+                  <SignedText>{shownPercent(g.winRate)}</SignedText>
+                </td>
                 <td
                   className={cn(
                     cell,
@@ -286,9 +289,15 @@ function Breakdown({
                 >
                   <MonetaryValue>{shownMoney(g.netPnl, data.currencies[0] ?? "USD")}</MonetaryValue>
                 </td>
-                <td className={cell}>{shownNumber(g.volume)}</td>
-                <td className={cell}>{shownNumber(g.avgPlannedR)}</td>
-                <td className={cell}>{shownNumber(g.avgRealizedR)}</td>
+                <td className={cell}>
+                  <SignedText>{shownNumber(g.volume)}</SignedText>
+                </td>
+                <td className={cell}>
+                  <SignedText>{shownNumber(g.avgPlannedR)}</SignedText>
+                </td>
+                <td className={cell}>
+                  <SignedText>{shownNumber(g.avgRealizedR)}</SignedText>
+                </td>
                 <td className={cn(cell, "whitespace-nowrap")}>{fmtDuration(g.avgDurationMs)}</td>
               </tr>
             ))}

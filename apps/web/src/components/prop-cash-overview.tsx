@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Card, CardContent } from "./ui/card";
 import { EmptyState } from "./ui/empty-state";
+import { SignedText } from "./ui/signed-text";
 import { KpiStrip } from "./ui/kpi-strip";
 import { useVizTokens, tooltipStyle } from "./charts/tokens";
 import { cashSummary, currencyDigits, propMoney } from "@/lib/prop-firms";
@@ -85,11 +86,13 @@ export function PropCashSummary({
               <span className="block">
                 Return on net cost{" "}
                 <span className="text-foreground">
-                  {privacy
-                    ? "••••"
-                    : !currency || summary.roi === null
-                      ? "—"
-                      : fmtPercent(summary.roi)}
+                  {privacy ? (
+                    "••••"
+                  ) : !currency || summary.roi === null ? (
+                    "—"
+                  ) : (
+                    <SignedText>{fmtPercent(summary.roi)}</SignedText>
+                  )}
                 </span>
               </span>
             </span>

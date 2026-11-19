@@ -19,6 +19,7 @@ import { Pnl } from "./pnl";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { OptionSelect } from "./ui/option-select";
+import { SignedText } from "./ui/signed-text";
 import { Skeleton } from "./ui/skeleton";
 import { LoadError } from "./load-error";
 import { mediumShortDateTime } from "@/lib/date-format";
@@ -82,7 +83,9 @@ export function TradeExplorer({ query }: { query: string }) {
     ) : y === "netPnl" ? (
       <Pnl value={point.y} currency={currency} />
     ) : (
-      <span className="tabular-nums">{fmtR(point.y, 2, { sign: true })}</span>
+      <span className="tabular-nums">
+        <SignedText>{fmtR(point.y, 2, { sign: true })}</SignedText>
+      </span>
     );
   const xValue = (point: PlottedTrade) =>
     x === "mae" || x === "mfe" ? (
