@@ -208,6 +208,11 @@ export function AboutSettings() {
             </Button>
             <span className="text-xs text-muted-foreground font-mono">{SOURCE_REPO_URL}</span>
           </div>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Open source and local first: your journal is stored on this device. Sumi is a journaling
+            tool, not investment advice.
+          </p>
         </CardContent>
       </Card>
 
