@@ -92,9 +92,9 @@ On at least one machine per platform, install 0.3.7, then use Settings, About, C
 
 ### 5. Transition period
 
-- Keep `electron-v0.3.8` as Latest for a period you choose and state publicly. Suggested: 60 to 90 days, since the Electron updater is user-initiated (no background checks) and many people open the app rarely.
-- While the window is open, what Tauri 0.4.0 users see: their updater requests `releases/latest/download/latest.json`, which resolves to the Electron release, has no `latest.json`, and returns 404. The Tauri updater is being changed to treat a missing manifest as "up to date", so these users see "up to date" instead of an error. They will not receive Tauri updates during the window.
-- Consequence: a Tauri fix released during the window does not reach Tauri users automatically. Either ship it as a manual download (publish it without Latest and say so on the release page), or end the window early.
+- Keep `electron-v0.3.8` as Latest for a period you choose and state publicly, and keep it short. Suggested: 30 to 60 days. The Electron updater is user-initiated (no background checks), so people who open the app rarely need time, but a long window prolongs the Tauri error described below.
+- While the window is open, what Tauri 0.4.0 users see: their updater requests `releases/latest/download/latest.json`, which resolves to the Electron release, has no `latest.json`, and returns 404. The Tauri updater was **not** changed to handle this: `tauri-plugin-updater` returns the same `ReleaseNotFound` error for a 404 manifest as for any other failure, so the two cannot be told apart. Users who click "Check for updates" will see "Could not check or install the signed Sumi update." This is harmless, and it clears as soon as a later Tauri release is marked Latest. Since 0.4.0 is the first Tauri version, there is nothing for those users to update to during the window anyway.
+- Consequence: a Tauri fix released during the window does not reach Tauri users automatically. Either ship it as a manual download (publish it without Latest and say so on the release page), or end the window early. This is another reason to keep the window short.
 - If you want to check that behavior before shipping: `curl -sIL https://github.com/xolah88457/Sumi/releases/latest/download/latest.json` should return 404 during the window.
 
 ### 6. End the window: later Tauri releases take over Latest
