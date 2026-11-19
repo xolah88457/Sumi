@@ -35,7 +35,7 @@ export function TradeNavigation({ tradeKey }: { tradeKey: string }) {
   return (
     <nav
       aria-label="Trade navigation"
-      className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4"
+      className="flex flex-wrap items-center justify-between gap-3 px-4 pt-2"
     >
       <Button asChild variant="ghost" size="sm">
         <Link href={`/trades?${query}`}>
@@ -52,7 +52,7 @@ export function TradeNavigation({ tradeKey }: { tradeKey: string }) {
             router.replace(`${tradePath(tradeKey)}?${next}`, { scroll: false });
           }}
         >
-          <SelectTrigger aria-label="Trade navigation scope" className="h-8 w-36 text-xs">
+          <SelectTrigger aria-label="Trade navigation scope" className="h-8 w-36 text-[13px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -60,7 +60,7 @@ export function TradeNavigation({ tradeKey }: { tradeKey: string }) {
             <SelectItem value="account">Same account</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground" aria-live="polite">
+        <span className="text-[13px] text-muted-foreground" aria-live="polite">
           {error ? (
             <button onClick={refresh} className="underline">
               Retry navigation

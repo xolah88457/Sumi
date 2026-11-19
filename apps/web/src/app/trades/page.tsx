@@ -20,8 +20,12 @@ import { Pnl } from "@/components/pnl";
 import { MonetaryValue } from "@/components/privacy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DensityToggle } from "@/components/density-toggle";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiStrip } from "@/components/ui/kpi-strip";
+import { useTableDensity } from "@/lib/table-density";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadError } from "@/components/load-error";
@@ -62,6 +66,16 @@ const features = tableFeatures({
 });
 
 const EMPTY_TRADES: TradeRow[] = [];
+/** Figures read better flush right, with their header. */
+const NUMERIC_COLUMNS = new Set([
+  "quantity",
+  "avgEntry",
+  "avgExit",
+  "netPnl",
+  "roi",
+  "fees",
+  "executionCount",
+]);
 
 export default function TradesPage() {
   return (
@@ -82,6 +96,7 @@ function Trades() {
   const timeZone = data?.timeZone ?? "UTC";
   const [tagInput, setTagInput] = useState("");
   const [showColumns, setShowColumns] = useState(false);
+  const [density, setDensity] = useTableDensity();
   const [page, setPage] = useState(0);
   const pageSize = 50;
   useEffect(() => setPage(0), [query]);
@@ -130,7 +145,9 @@ function Trades() {
         cell: ({ row, getValue }) => (
           <span className="flex items-center gap-2 font-medium">
             {getValue<string>()}
-            <span className="text-xs text-muted-foreground">{row.original.direction}</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+              {row.original.direction}
+            </span>
           </span>
         ),
       },
@@ -226,7 +243,7 @@ function Trades() {
         cell: ({ getValue }) => (
           <span className="flex max-w-40 flex-wrap gap-1">
             {getValue<string[]>().map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px]">
+              <Badge key={tag} variant="secondary" className="text-[13px]">
                 {tag}
               </Badge>
             ))}
@@ -288,8 +305,10 @@ function Trades() {
     <div>
       <FilterBar
         title="Trades"
+        lede="Every trade in one list. Open a row for the full story."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <DensityToggle value={density} onChange={setDensity} />
             <a href={`/api/export?format=csv&${query}`} download>
               <Button variant="outline" size="sm">
                 <Download />
@@ -303,61 +322,44 @@ function Trades() {
           </div>
         }
       />
-      <div className="space-y-3 p-4">
+      <div className="space-y-5 px-4 pb-8">
         {m && (
-          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Net cumulative P&L</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Pnl value={m.netPnl} className="text-xl font-semibold" />
-                <span className="ml-2 text-xs text-muted-foreground">{m.closedTrades} trades</span>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Profit factor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <span className="text-xl font-semibold tnum">
-                  {m.profitFactorIsInfinite
-                    ? "∞"
-                    : m.profitFactor === null
-                      ? "–"
-                      : fmtNumber(m.profitFactor)}
-                </span>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Trade win %</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <span className="text-xl font-semibold tnum">{fmtPercent(m.winRate)}</span>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Avg win / loss</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <span className="text-xl font-semibold tnum">
-                  {m.avgWinLossRatio === null ? "–" : fmtNumber(m.avgWinLossRatio)}
-                </span>
-              </CardContent>
-            </Card>
-          </div>
+          <KpiStrip
+            aria-label="Trade summary"
+            items={[
+              {
+                id: "net",
+                label: "Net cumulative P&L",
+                value: <Pnl value={m.netPnl} />,
+                detail: `${m.closedTrades} trades`,
+              },
+              {
+                id: "pf",
+                label: "Profit factor",
+                value: m.profitFactorIsInfinite
+                  ? "∞"
+                  : m.profitFactor === null
+                    ? "–"
+                    : fmtNumber(m.profitFactor),
+              },
+              { id: "win", label: "Trade win %", value: fmtPercent(m.winRate) },
+              {
+                id: "awl",
+                label: "Avg win / loss",
+                value: m.avgWinLossRatio === null ? "–" : fmtNumber(m.avgWinLossRatio),
+              },
+            ]}
+          />
         )}
 
         {showColumns && (
           <Card>
-            <CardContent className="flex flex-wrap gap-3 py-3">
+            <CardContent className="flex flex-wrap gap-x-5 gap-y-3 py-4">
               {table
                 .getAllLeafColumns()
                 .filter((column) => column.id !== "select")
                 .map((column) => (
-                  <label key={column.id} className="flex items-center gap-1.5 text-sm">
+                  <label key={column.id} className="flex items-center gap-2 text-[15px]">
                     <Checkbox
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) => column.toggleVisibility(value === true)}
@@ -374,7 +376,9 @@ function Trades() {
         {selectedKeys.length > 0 && (
           <Card>
             <CardContent className="flex flex-wrap items-center gap-2 py-2">
-              <span className="text-sm text-muted-foreground">{selectedKeys.length} selected</span>
+              <span className="text-[15px] text-muted-foreground">
+                {selectedKeys.length} selected
+              </span>
               <Button variant="outline" size="sm" onClick={() => bulk("review")}>
                 <Check />
                 Mark reviewed
@@ -387,7 +391,7 @@ function Trades() {
                   value={tagInput}
                   onChange={(event) => setTagInput(event.target.value)}
                   placeholder="tag"
-                  className="h-8 w-28 text-xs"
+                  className="h-8 w-28 text-[13px]"
                 />
                 <Button
                   variant="outline"
@@ -426,20 +430,23 @@ function Trades() {
         ) : !data ? (
           <Skeleton className="h-96" />
         ) : (
-          <Card>
+          <Card variant="flat" data-density={density} className="journal-table-wrap">
             <div className="relative min-w-0 max-w-full overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-[15px] leading-[1.35]">
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id} className="border-b">
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="h-9 whitespace-nowrap px-2 text-left text-xs font-medium text-muted-foreground"
+                          className={cn(
+                            "journal-table-head h-10 whitespace-nowrap px-3 text-[13px] font-normal text-muted-foreground",
+                            NUMERIC_COLUMNS.has(header.column.id) ? "text-right" : "text-left",
+                          )}
                         >
                           {header.isPlaceholder ? null : header.column.getCanSort() ? (
                             <button
-                              className="inline-flex items-center gap-1 hover:text-foreground"
+                              className="inline-flex items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
                               onClick={(event) => {
                                 setPage(0);
                                 header.column.getToggleSortingHandler()?.(event);
@@ -465,37 +472,42 @@ function Trades() {
                   {visibleRows.map((row) => (
                     <tr
                       key={row.id}
-                      className="cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/50"
+                      className="cursor-pointer border-b transition-colors last:border-0 hover:bg-muted"
                       onClick={() =>
                         router.push(`/trades/${encodeURIComponent(row.original.key)}?${query}`)
                       }
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="whitespace-nowrap px-2 py-2 align-middle">
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            "journal-table-cell whitespace-nowrap px-3 py-3 align-middle",
+                            NUMERIC_COLUMNS.has(cell.column.id) && "text-right",
+                          )}
+                        >
                           <table.FlexRender cell={cell} />
                         </td>
                       ))}
                     </tr>
                   ))}
-                  {table.getRowModel().rows.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={columns.length}
-                        className="py-16 text-center text-muted-foreground"
-                      >
-                        No trades match these filters.{" "}
-                        <Link href="/import" className="underline">
-                          Import some
-                        </Link>
-                        .
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
+            {sortedRows.length === 0 && (
+              <EmptyState
+                className="m-4"
+                title="No trades match these filters"
+                action={
+                  <Button asChild variant="outline">
+                    <Link href="/import">Import trades</Link>
+                  </Button>
+                }
+              >
+                Adjust the filters above, or bring in more history.
+              </EmptyState>
+            )}
             {sortedRows.length > pageSize && (
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-[13px] text-muted-foreground">
                 <span>
                   {currentPage * pageSize + 1}–
                   {Math.min((currentPage + 1) * pageSize, sortedRows.length)} of{" "}
