@@ -66,7 +66,7 @@ fn runtime_info(app: AppHandle, state: tauri::State<'_, State>) -> Value {
         "x86_64" => "x64",
         arch => arch,
     };
-    json!({"runtime":"tauri", "tauriVersion":tauri::VERSION, "electronVersion":"",
+    json!({"runtime":"tauri", "tauriVersion":tauri::VERSION,
         "version":app.package_info().version.to_string(), "platform":PLATFORM, "arch":arch,
         "update":updater::initial(&app, state.profile.test) })
 }

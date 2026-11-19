@@ -6,50 +6,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stopChildProcess } from "./main.cjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-test("graceful child shutdown sends SIGTERM and bounds with SIGKILL", async () => {
-  const isWin = process.platform === "win32";
-  // Spawn a child process that signals readiness then traps SIGTERM / ignores IPC
-  const child = spawn(
-    process.execPath,
-    [
-      "-e",
-      'process.on("SIGTERM", () => {}); process.stdout.write("ready\\n"); setInterval(() => {}, 1000);',
-    ],
-    { stdio: ["ignore", "pipe", "ignore", isWin ? "ipc" : "ignore"] },
-  );
-
-  // Wait until child has attached its SIGTERM handler
-  await new Promise((resolve) => {
-    child.stdout.once("data", () => resolve());
-  });
-
-  assert.equal(child.exitCode, null);
-  assert.equal(child.signalCode, null);
-
-  const start = Date.now();
-  const result1 = await stopChildProcess(child, {
-    timeoutMs: 300,
-    platform: process.platform,
-    ...(isWin ? { killProcessTree: () => child.kill("SIGKILL") } : {}),
-  });
-  const elapsed = Date.now() - start;
-
-  assert.equal(result1, "killed");
-  // Killed by bounded watchdog within timeout (~300ms)
-  assert.ok(elapsed >= 250 && elapsed < 2000);
-
-  // Calling stop again guarded against double shutdown
-  const result2 = await stopChildProcess(child, {
-    timeoutMs: 300,
-    platform: process.platform,
-    ...(isWin ? { killProcessTree: () => child.kill("SIGKILL") } : {}),
-  });
-  assert.equal(result2, "already_exited");
-});
 
 test("late child exit detection when not shutting down", async () => {
   const child = spawn(process.execPath, ["-e", "process.exit(42);"], {
@@ -70,40 +28,6 @@ test("late child exit detection when not shutting down", async () => {
   await once(child, "exit");
   assert.equal(unexpectedExitCode, 42);
   assert.equal(unexpectedSignal, null);
-});
-
-test("stopChildProcess sends parent-owned IPC shutdown message and child exits cleanly", async () => {
-  const child = spawn(
-    process.execPath,
-    [
-      "-e",
-      'process.on("message", (m) => { if (m?.type === "sumi:shutdown") process.exit(0); }); setInterval(() => {}, 1000);',
-    ],
-    { stdio: ["ignore", "pipe", "ignore", "ipc"] },
-  );
-
-  const result = await stopChildProcess(child, { platform: "win32", timeoutMs: 1500 });
-  assert.equal(result, "stopped");
-  assert.equal(child.exitCode, 0);
-});
-
-test("stopChildProcess in win32 mode avoids SIGTERM and invokes killProcessTree on timeout", async () => {
-  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000);"], {
-    stdio: ["ignore", "pipe", "ignore", "ipc"],
-  });
-
-  let treeKilledPid = null;
-  const result = await stopChildProcess(child, {
-    platform: "win32",
-    timeoutMs: 200,
-    killProcessTree: (pid) => {
-      treeKilledPid = pid;
-      child.kill("SIGKILL");
-    },
-  });
-
-  assert.ok(result === "stopped" || result === "killed");
-  assert.equal(treeKilledPid, child.pid);
 });
 
 test("launch.cjs responds to parent-owned IPC shutdown message and exits 0", async () => {
@@ -178,52 +102,6 @@ test("launch.cjs dispatches async SIGTERM server cleanup on parent IPC shutdown 
     assert.equal(fs.existsSync(markerPath), true, "Async cleanup marker file must exist");
     const marker = JSON.parse(fs.readFileSync(markerPath, "utf8"));
     assert.equal(marker.cleanedUp, true);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test("stopChildProcess parent watchdog remains bounded and forces shutdown if server SIGTERM hangs", async () => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sumi-hang-"));
-  const hangingServerPath = path.join(tmpDir, "hanging-server.cjs");
-
-  try {
-    fs.writeFileSync(
-      hangingServerPath,
-      `
-      process.on("SIGTERM", () => {
-        // Hang indefinitely and never call process.exit
-      });
-      process.stdout.write("hanging_ready\\n");
-      setInterval(() => {}, 1000);
-      `,
-      "utf8",
-    );
-
-    const launchScript = path.join(__dirname, "launch.cjs");
-    const child = spawn(process.execPath, [launchScript], {
-      env: {
-        ...process.env,
-        SUMI_TEST_MODE: "1",
-        SUMI_SERVER_PATH: hangingServerPath,
-        PORT: "0",
-      },
-      stdio: ["ignore", "pipe", "pipe", "ipc"],
-    });
-
-    await new Promise((resolve) => {
-      child.stdout.once("data", () => resolve());
-    });
-
-    const start = Date.now();
-    const result = await stopChildProcess(child, { timeoutMs: 300 });
-    const elapsed = Date.now() - start;
-
-    assert.equal(result, "killed");
-    assert.ok(
-      elapsed >= 250 && elapsed < 2000,
-      `Watchdog must enforce bounded timeout (~300ms), got ${elapsed}ms`,
-    );
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
