@@ -4,78 +4,92 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Kami-inspired paper and ink. P&L green/red follows the trader convention and
- * is NEVER load-bearing: every value is signed text, bars anchor to zero,
- * win/loss ships as text chips, markers differ by shape — color only reinforces.
+ * Sumi Paper: warm paper, ink and one muted-navy accent, matching the owner's
+ * other sites (paper #fbfaf6 / ivory #fefdfb / sand #ebe9e1; warm-brown dark).
+ * Depth comes from 1px hairlines and surface steps, not shadows. P&L green/red
+ * follows the trader convention and is NEVER load-bearing: every value is
+ * signed text, bars anchor to zero, win/loss ships as text chips with a
+ * solid/dashed border cue, markers differ by shape. Colour only reinforces.
  */
 :root {
   color-scheme: light;
-  --background: #f5f4ed;
-  --foreground: #141413;
-  --card: #faf9f5;
-  --card-foreground: #141413;
-  --popover: #faf9f5;
-  --popover-foreground: #141413;
-  --primary: #1b365d;
-  --primary-foreground: #faf9f5;
-  --secondary: #e8e6dc;
-  --secondary-foreground: #3d3d3a;
-  --muted: #eeece3;
+  --background: #fbfaf6;
+  --foreground: #363433;
+  --card: #fefdfb;
+  --card-foreground: #363433;
+  --popover: #fefdfb;
+  --popover-foreground: #363433;
+  --primary: #3a4b7c;
+  --primary-foreground: #ffffff;
+  --secondary: #ebe9e1;
+  --secondary-foreground: #363433;
+  --muted: #f2f0e8;
   --muted-foreground: #6b6a64;
-  --accent: #e8e6dc;
-  --accent-foreground: #1b365d;
+  /* Muted text that sits on sand/secondary fills needs a touch more weight to stay AA. */
+  --muted-foreground-on-sand: #5f5d57;
+  --accent: #ebe9e1;
+  --accent-foreground: #363433;
   --destructive: #d03b3b;
   --destructive-foreground: #fafafa;
-  --border: #dedbcf;
-  --input: #dedbcf;
-  --ring: #2d5a8a;
-  --radius: 0.75rem;
+  --border: #dcd9cd;
+  --input: #dcd9cd;
+  --ring: #3a4b7c;
+  --radius: 14px;
 
-  /* Kami's navy accent, never the sole carrier of information. */
-  --brand: #1b365d;
+  /* The single accent, never the sole carrier of information. */
+  --brand: #3a4b7c;
 
-  --viz-surface: #faf9f5;
+  /* Dialog scrim. */
+  --backdrop: rgb(51 48 42 / 0.35);
+  /* Only popovers, menus and tooltips float; everything else is flat. */
+  --shadow-pop: 0 12px 32px rgb(23 21 18 / 0.16);
+
+  --viz-surface: #fefdfb;
   --ink-muted: #6b6a64;
-  --gridline: #e8e6dc;
-  --baseline: #c6c2b5;
+  --gridline: #ebe9e1;
+  --baseline: #c9c5b6;
   --profit: #006300;
   --profit-fill: #0ca30c;
   --loss: #c33535;
-  --neutral-mid: #e8e6dc;
+  --neutral-mid: #ebe9e1;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #141413;
-  --foreground: #f5f4ed;
-  --card: #20201e;
-  --card-foreground: #f5f4ed;
-  --popover: #272725;
-  --popover-foreground: #f5f4ed;
-  --primary: #b0c9e5;
-  --primary-foreground: #141413;
-  --secondary: #30302e;
-  --secondary-foreground: #f5f4ed;
-  --muted: #272725;
-  --muted-foreground: #b0aea4;
-  --accent: #30302e;
-  --accent-foreground: #d1e1f2;
+  --background: #171512;
+  --foreground: #ebe7dc;
+  --card: #201d19;
+  --card-foreground: #ebe7dc;
+  --popover: #201d19;
+  --popover-foreground: #ebe7dc;
+  --primary: #a3b2dd;
+  --primary-foreground: #171512;
+  --secondary: #2a2722;
+  --secondary-foreground: #ebe7dc;
+  --muted: #24211d;
+  --muted-foreground: #a8a499;
+  --muted-foreground-on-sand: #a8a499;
+  --accent: #2a2722;
+  --accent-foreground: #ebe7dc;
   --destructive: #d03b3b;
   --destructive-foreground: #fafafa;
-  --border: #3d3d3a;
-  --input: #4b4b46;
-  --ring: #91b8df;
+  --border: #36322b;
+  --input: #36322b;
+  --ring: #a3b2dd;
 
-  --brand: #91b8df;
+  --brand: #a3b2dd;
 
-  --viz-surface: #20201e;
-  --ink-muted: #aaa89e;
-  --gridline: #30302e;
-  --baseline: #504e49;
+  --backdrop: rgb(0 0 0 / 0.55);
+  --shadow-pop: 0 12px 32px rgb(0 0 0 / 0.5);
+
+  --viz-surface: #201d19;
+  --ink-muted: #a8a499;
+  --gridline: #2a2722;
+  --baseline: #4a463d;
   --profit: #0ca30c;
   --profit-fill: #0ca30c;
   --loss: #ee7777;
-  --neutral-mid: #383835;
+  --neutral-mid: #36322b;
 }
 
 @theme inline {
@@ -101,12 +115,50 @@
   --color-profit: var(--profit);
   --color-loss: var(--loss);
   --color-brand: var(--brand);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: Charter, "Bitstream Charter", Georgia, Palatino, serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  /* The owner's vocabulary, usable directly in markup: bg-paper, bg-ivory, bg-sand. */
+  --color-paper: var(--background);
+  --color-ivory: var(--card);
+  --color-sand: var(--secondary);
+
+  /* sm: badges, md: inputs and small controls, xl/2xl: cards and dialogs, full: pills. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 14px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+
+  --shadow-popover: var(--shadow-pop);
+
+  /* One serif voice. Charis SIL is bundled; Charter/Georgia cover the pre-load gap. */
+  --font-sans: var(--font-charis), "Charis SIL", Charter, "Bitstream Charter", Georgia, serif;
+  --font-serif: var(--font-sans);
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Plain (non-theme) copies so hand-written CSS can use the same motion vocabulary. */
+:root {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
+  --dur-slow: 320ms;
+  --paper: var(--background);
+  --ivory: var(--card);
+  --sand: var(--secondary);
+  --radius-control: 8px;
+  --radius-pill: 999px;
+
+  /* Type scale (the references' names, with a smaller app display size). Not wired to
+     Tailwind's text-* utilities on purpose, so existing sizes do not shift. */
+  --type-xs: 13px;
+  --type-sm: 15px;
+  --type-md: 18px;
+  --type-lg: 21px;
+  --type-xl: 26px;
+  --type-2xl: 32px;
+  --type-d2: 44px;
 }
 
 @layer base {
@@ -115,27 +167,37 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 15px;
+    line-height: 1.5;
   }
   ::selection {
     @apply bg-primary/20;
   }
+  :focus-visible {
+    outline-color: var(--ring);
+  }
 }
 
-/* Keep financial figures crisp while the journal uses Kami's editorial type. */
+/*
+ * Figures stay serif and tabular. Charis keeps lining, fixed-width digits, so
+ * columns align without a second typeface; the mono stack is reserved for
+ * trade IDs and timestamps (use font-mono there).
+ */
 .tnum {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.035em;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
 }
 
+/* Cards are flat now: depth comes from the hairline border. Kept so existing markup stays valid. */
 .card-sheen {
-  box-shadow: 0 2px 8px rgb(20 20 19 / 0.035);
+  box-shadow: none;
 }
 .dark .card-sheen {
-  box-shadow: inset 0 1px 0 rgb(245 244 237 / 0.035);
+  box-shadow: none;
 }
 .journal-sidebar-brand-label {
-  font-family: Charter, Georgia, serif;
+  font-family: var(--font-sans);
   font-size: 1.2rem;
   font-weight: 500;
   letter-spacing: -0.04em;
@@ -148,13 +210,10 @@ h2,
 h3 {
   text-wrap: balance;
 }
-button,
-input,
-select,
-textarea,
-[role="tab"],
-[role="menuitem"] {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+/* Muted copy on sand fills (active tabs, secondary buttons, hover rows). */
+:is(.bg-secondary, .bg-accent) .text-muted-foreground,
+:is(.bg-secondary, .bg-accent).text-muted-foreground {
+  color: var(--muted-foreground-on-sand);
 }
 
 /* The shell keeps navigation and privacy within reach at every window size. */
@@ -165,9 +224,7 @@ textarea,
   container: journal / inline-size;
 }
 .journal-hover-card {
-  box-shadow:
-    0 12px 32px rgb(0 0 0 / 0.18),
-    0 2px 8px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-pop);
   transform-origin: var(--radix-tooltip-content-transform-origin);
   overflow-wrap: anywhere;
 }
@@ -454,10 +511,8 @@ body.dashboard-is-dragging .journal-hover-card {
   padding: 0;
   overflow: hidden;
   max-height: min(90dvh, 900px);
-  border-radius: 14px;
-  box-shadow:
-    0 24px 80px rgb(0 0 0 / 0.28),
-    0 4px 16px rgb(0 0 0 / 0.12);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-pop);
 }
 .journal-filter-heading {
   flex-shrink: 0;
@@ -486,7 +541,7 @@ body.dashboard-is-dragging .journal-hover-card {
   background: color-mix(in srgb, var(--muted) 35%, var(--card));
 }
 .journal-filter-footer button {
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
 }
 .journal-filter-fields .journal-filter-field {
   gap: 7px;
@@ -495,11 +550,11 @@ body.dashboard-is-dragging .journal-hover-card {
 }
 .journal-filter-fields input:not([type="checkbox"]),
 .journal-filter-fields [role="combobox"] {
-  height: 38px;
-  padding-inline: 11px;
-  border-radius: 7px;
+  height: 40px;
+  padding-inline: 14px;
+  border-radius: var(--radius-control);
   border-color: var(--input);
-  background-color: color-mix(in srgb, var(--background) 65%, var(--card));
+  background-color: var(--card);
   color: var(--foreground);
   font-size: 13px;
   font-weight: 400;
@@ -837,11 +892,8 @@ body.dashboard-is-dragging .journal-hover-card {
 
 /* One quiet surface for date, selection, and action menus. */
 .journal-menu-surface {
-  border-color: color-mix(in srgb, var(--foreground) 7%, var(--border));
-  box-shadow:
-    0 12px 36px rgb(0 0 0 / 0.18),
-    0 3px 8px rgb(0 0 0 / 0.08),
-    inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  border-color: var(--border);
+  box-shadow: var(--shadow-pop);
 }
 .journal-calendar-nav {
   display: inline-flex;
@@ -849,7 +901,7 @@ body.dashboard-is-dragging .journal-hover-card {
   height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: var(--radius-control);
   color: var(--muted-foreground);
 }
 .journal-calendar-nav:hover {
@@ -862,7 +914,7 @@ body.dashboard-is-dragging .journal-hover-card {
   height: 34px;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: var(--radius-control);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   outline: none;
@@ -953,8 +1005,8 @@ body.dashboard-is-dragging .journal-hover-card {
 .dashboard-customize-trigger {
   height: 36px;
   gap: 8px;
-  border-radius: 12px;
-  padding-inline: 12px;
+  border-radius: var(--radius-pill);
+  padding-inline: 14px;
   background: var(--card);
   transition:
     background 180ms ease,
@@ -983,14 +1035,11 @@ body.dashboard-is-dragging .journal-hover-card {
   width: min(344px, calc(100vw - 24px));
   max-height: var(--radix-popover-content-available-height);
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--foreground) 6%, var(--border));
-  border-radius: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
   background: var(--popover);
   color: var(--popover-foreground);
-  box-shadow:
-    0 18px 60px rgb(0 0 0 / 0.24),
-    0 4px 12px rgb(0 0 0 / 0.1),
-    inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  box-shadow: var(--shadow-pop);
   outline: none;
   transform-origin: var(--radix-popover-content-transform-origin);
 }
@@ -1046,7 +1095,7 @@ body.dashboard-is-dragging .journal-hover-card {
   margin: 0 10px 9px;
   padding: 0 9px 0 12px;
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--muted) 70%, var(--background));
   color: var(--muted-foreground);
   transition: border-color 180ms ease;
@@ -1084,8 +1133,8 @@ body.dashboard-is-dragging .journal-hover-card {
   top: 0;
   right: 6px;
   left: 6px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--foreground) 6%, var(--popover));
+  border-radius: var(--radius-control);
+  background: var(--accent);
   pointer-events: none;
   transition:
     transform 230ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -1099,7 +1148,7 @@ body.dashboard-is-dragging .journal-hover-card {
   width: 100%;
   min-height: 46px;
   padding: 7px 12px 7px 9px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1111,7 +1160,7 @@ body.dashboard-is-dragging .journal-hover-card {
   justify-content: center;
   width: 29px;
   height: 29px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--brand) 12%, var(--popover));
   color: var(--brand);
   transition:
@@ -1281,7 +1330,7 @@ body.dashboard-is-dragging .journal-hover-card {
 .dashboard-drag-swing {
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--radius) + 4px);
+  border-radius: var(--radius-xl);
   transform-origin: var(--dashboard-grab-x) var(--dashboard-grab-y);
 }
 .dashboard-drag-lift {
