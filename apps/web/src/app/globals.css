@@ -196,14 +196,13 @@
 .dark .card-sheen {
   box-shadow: none;
 }
-.journal-sidebar-brand-label {
+.journal-sidebar-brand-label,
+.journal-brand {
   font-family: var(--font-sans);
-  font-size: 1.2rem;
-  font-weight: 500;
+  font-size: 1.3125rem;
+  font-weight: 400;
+  line-height: 1;
   letter-spacing: -0.04em;
-}
-.journal-sidebar-nav-link[aria-current="page"] {
-  box-shadow: inset 2px 0 0 var(--brand);
 }
 h1,
 h2,
@@ -392,7 +391,7 @@ body.dashboard-is-dragging .journal-hover-card {
 }
 .journal-desktop-sidebar {
   z-index: 40;
-  width: 13rem;
+  width: 14.5rem;
   transition: width 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .journal-desktop-sidebar[data-ready="false"] {
@@ -419,26 +418,11 @@ body.dashboard-is-dragging .journal-hover-card {
     opacity 160ms ease-out,
     transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.journal-sidebar-trigger {
-  right: 0;
-  top: 50%;
-  z-index: 10;
-  transform: translate(50%, -50%);
-  transition:
-    color 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.journal-sidebar-trigger:hover {
-  transform: translate(50%, -50%) scale(1.06);
-}
 .journal-sidebar-nav-link > svg {
   flex: 0 0 auto;
 }
 .journal-sidebar-nav-link {
-  min-height: 2.25rem;
+  min-height: 2.5rem;
   transition:
     padding 240ms cubic-bezier(0.22, 1, 0.36, 1),
     gap 240ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -446,18 +430,32 @@ body.dashboard-is-dragging .journal-hover-card {
     background-color 160ms ease;
 }
 .journal-sidebar-footer {
-  max-height: 5rem;
+  transition: padding 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.journal-sidebar-note {
+  max-height: 3rem;
   overflow: hidden;
   opacity: 1;
   transition:
     max-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 140ms ease-out,
-    padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 140ms ease-out;
 }
-.journal-sidebar-privacy {
-  display: flex;
-  justify-content: center;
-  transition: padding 240ms cubic-bezier(0.22, 1, 0.36, 1);
+.journal-sidebar-search {
+  overflow: hidden;
+  transition:
+    padding 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+.journal-sidebar-eyebrow {
+  max-height: 2.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    max-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 140ms ease-out;
 }
 .journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-home {
   justify-content: center;
@@ -477,15 +475,35 @@ body.dashboard-is-dragging .journal-hover-card {
   gap: 0;
   padding-inline: 0;
 }
-.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-privacy {
-  padding-inline: 0;
-}
-.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-privacy > div {
-  width: auto;
-}
-.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-footer {
+/* Eyebrows fold away when collapsed; a hairline keeps the three groups apart. */
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-eyebrow {
   max-height: 0;
   padding-block: 0;
+  opacity: 0;
+}
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-group + .journal-sidebar-group {
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--border);
+}
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-footer {
+  padding-inline: 0.625rem;
+  align-items: center;
+}
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-search {
+  width: 2.5rem;
+  padding-inline: 0;
+  justify-content: center;
+  gap: 0;
+}
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-actions {
+  flex-direction: column;
+}
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-trigger {
+  margin-left: 0;
+}
+.journal-desktop-sidebar[data-collapsed="true"] .journal-sidebar-note {
+  max-height: 0;
   opacity: 0;
   visibility: hidden;
 }
@@ -494,10 +512,11 @@ body.dashboard-is-dragging .journal-hover-card {
   .journal-sidebar-home,
   .journal-sidebar-brand-label,
   .journal-sidebar-label,
-  .journal-sidebar-trigger,
+  .journal-sidebar-search,
+  .journal-sidebar-eyebrow,
+  .journal-sidebar-note,
   .journal-sidebar-nav-link,
-  .journal-sidebar-footer,
-  .journal-sidebar-privacy {
+  .journal-sidebar-footer {
     transition: none !important;
   }
 }

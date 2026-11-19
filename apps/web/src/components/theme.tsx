@@ -10,6 +10,7 @@ import {
   type Theme,
   type ThemePreference,
 } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -24,6 +25,8 @@ const ThemeContext = createContext({
   ready: false,
   setPreference: (_: ThemePreference) => {},
 });
+
+export const useThemePreference = () => useContext(ThemeContext);
 
 const systemPrefersDark = () => {
   try {
@@ -110,7 +113,13 @@ const OPTIONS: { value: ThemePreference; label: string; Icon: typeof Sun }[] = [
   { value: "system", label: "System", Icon: Monitor },
 ];
 
-export function ThemeToggle({ iconOnly = false }: { iconOnly?: boolean }) {
+export function ThemeToggle({
+  iconOnly = false,
+  className,
+}: {
+  iconOnly?: boolean;
+  className?: string;
+}) {
   const { theme, preference, ready, setPreference } = useContext(ThemeContext);
   const current = OPTIONS.find((option) => option.value === preference) ?? OPTIONS[0]!;
   const label = `Appearance: ${current.label}${preference === "system" ? ` (${theme})` : ""}`;
@@ -123,8 +132,11 @@ export function ThemeToggle({ iconOnly = false }: { iconOnly?: boolean }) {
           size={iconOnly ? "icon" : "sm"}
           className={
             iconOnly
-              ? "shrink-0"
-              : "w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+              ? cn("shrink-0 text-muted-foreground hover:text-foreground", className)
+              : cn(
+                  "w-full justify-start gap-2 text-muted-foreground hover:text-foreground",
+                  className,
+                )
           }
           disabled={!ready}
           aria-label={label}

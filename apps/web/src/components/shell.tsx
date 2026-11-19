@@ -5,51 +5,16 @@ import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { FILTER_KEYS } from "@luxalgo/journal-core";
 import { usePathname, useSearchParams } from "next/navigation";
-import {
-  BarChart3,
-  BookOpen,
-  BookText,
-  CalendarDays,
-  Import,
-  LayoutDashboard,
-  ListOrdered,
-  NotebookPen,
-  Settings,
-  ListChecks,
-  BookmarkPlus,
-  Wallet,
-  Landmark,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  X,
-} from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SumiMark } from "@/components/sumi-mark";
+import { CommandPalette, ShortcutHint } from "./command-palette";
+import { NAV_GROUPS } from "./nav-items";
 import { PrivacyToggle } from "./privacy";
 import { ThemeToggle } from "./theme";
 import { PageTransition } from "./page-transition";
 import { Button } from "./ui/button";
 import { HoverHint } from "./ui/tooltip";
-
-const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/journal", label: "Daily journal", icon: NotebookPen },
-  { href: "/trades", label: "Trades", icon: ListOrdered },
-  { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/prop-firms", label: "Prop firms", icon: Landmark },
-  { href: "/notebook", label: "Notebook", icon: BookText },
-  { href: "/playbooks", label: "Playbooks", icon: BookOpen },
-  { href: "/progress", label: "Progress", icon: ListChecks },
-  { href: "/missed", label: "Missed trades", icon: BookmarkPlus },
-] as const;
-
-const NAV_SETUP = [
-  { href: "/import", label: "Import", icon: Import },
-  { href: "/accounts", label: "Accounts", icon: Wallet },
-  { href: "/settings", label: "Settings", icon: Settings },
-] as const;
 
 const SIDEBAR_COLLAPSED_KEY = "journal-sidebar-collapsed-v1";
 
@@ -62,7 +27,7 @@ function NavLink({
 }: {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   active: boolean;
   collapsed?: boolean;
 }) {
@@ -72,13 +37,13 @@ function NavLink({
         href={href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "journal-sidebar-nav-link relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
+          "journal-sidebar-nav-link relative flex h-10 items-center gap-2.5 rounded-full px-3.5 text-[15px] transition-colors",
           active
-            ? "bg-accent font-medium text-accent-foreground"
-            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+            ? "bg-accent text-foreground"
+            : "text-muted-foreground hover:bg-accent/55 hover:text-foreground",
         )}
       >
-        <Icon className={cn("h-4 w-4", active && "text-brand")} />
+        <Icon className={cn("size-4", active && "text-brand")} strokeWidth={1.65} />
         <span className="journal-sidebar-label">{label}</span>
       </Link>
     </HoverHint>
@@ -91,6 +56,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarReady, setSidebarReady] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   useEffect(() => setMenuOpen(false), [pathname]);
   useEffect(() => {
     const desktop = window.matchMedia("(min-width: 1024px)");
@@ -149,48 +115,82 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const navigation = (collapsed = false) => (
     <nav
       aria-label="Journal navigation"
-      className="journal-sidebar-navigation min-h-0 flex-1 space-y-0.5 overflow-x-hidden overflow-y-auto overscroll-contain p-2"
+      className="journal-sidebar-navigation min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 pb-2"
       onClick={(event) => {
         if ((event.target as HTMLElement).closest("a")) setMenuOpen(false);
       }}
     >
-      {NAV.map(({ href, label, icon }) => (
-        <NavLink
-          key={href}
-          href={href === "/prop-firms" ? href : filterQuery.size ? `${href}?${filterQuery}` : href}
-          label={label}
-          icon={icon}
-          collapsed={collapsed}
-          active={href === "/" ? pathname === "/" : pathname.startsWith(href)}
-        />
-      ))}
-      <div className="!my-3 border-t" />
-      {NAV_SETUP.map(({ href, label, icon }) => (
-        <NavLink
-          key={href}
-          href={filterQuery.size ? `${href}?${filterQuery}` : href}
-          label={label}
-          icon={icon}
-          collapsed={collapsed}
-          active={pathname.startsWith(href)}
-        />
-      ))}
+      {NAV_GROUPS.map((group) => {
+        const labelId = `journal-nav-${group.label.toLowerCase()}${collapsed ? "" : "-open"}`;
+        return (
+          <div
+            key={group.label}
+            role="group"
+            aria-labelledby={labelId}
+            className="journal-sidebar-group space-y-0.5"
+          >
+            <p
+              id={labelId}
+              className="journal-sidebar-eyebrow px-3.5 pb-1.5 pt-4 font-mono text-[11px] uppercase leading-none tracking-[0.08em] text-muted-foreground"
+            >
+              {group.label}
+            </p>
+            {group.items.map(({ href, label, icon }) => (
+              <NavLink
+                key={href}
+                href={href === "/prop-firms" || !filterQuery.size ? href : `${href}?${filterQuery}`}
+                label={label}
+                icon={icon}
+                collapsed={collapsed}
+                active={href === "/" ? pathname === "/" : pathname.startsWith(href)}
+              />
+            ))}
+          </div>
+        );
+      })}
     </nav>
   );
-  const footer = (
-    <div className="journal-sidebar-footer space-y-1 border-t p-3 text-xs text-muted-foreground">
-      <div>
-        Open source ·{" "}
-        <a
-          href="https://github.com/xolah88457/trade-journal"
-          className="underline underline-offset-2 hover:text-foreground"
-          target="_blank"
-          rel="noreferrer"
+  const sidebarActions = (collapsed: boolean) => (
+    <div className="journal-sidebar-footer flex flex-col gap-2 p-3 pt-2">
+      <HoverHint content={collapsed ? "Search and commands" : null} side="right">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="journal-sidebar-search h-9 w-full justify-start gap-2 px-3 text-muted-foreground hover:text-foreground"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open command palette"
+          aria-keyshortcuts="Meta+K Control+K"
         >
-          GitHub
-        </a>
+          <Search strokeWidth={1.65} />
+          <span className="journal-sidebar-label">Search</span>
+          <ShortcutHint className="journal-sidebar-label ml-auto" />
+        </Button>
+      </HoverHint>
+      <div className="journal-sidebar-actions flex items-center gap-1">
+        <ThemeToggle iconOnly className="h-9 w-9" />
+        <PrivacyToggle compact={!collapsed} iconOnly={collapsed} />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="journal-sidebar-trigger ml-auto h-9 w-9 text-muted-foreground hover:text-foreground"
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!sidebarCollapsed}
+          aria-keyshortcuts="Meta+B Control+B"
+          title={`${sidebarCollapsed ? "Expand" : "Collapse"} sidebar (⌘B)`}
+        >
+          {sidebarCollapsed ? (
+            <PanelLeftOpen strokeWidth={1.65} />
+          ) : (
+            <PanelLeftClose strokeWidth={1.65} />
+          )}
+        </Button>
       </div>
-      <div>Local first. Not investment advice.</div>
+      <p className="journal-sidebar-note px-1 text-xs leading-snug text-muted-foreground">
+        Local first. Not investment advice.
+      </p>
     </div>
   );
   return (
@@ -213,16 +213,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
               className="journal-nav-drawer fixed inset-y-0 left-0 z-50 flex w-[min(288px,calc(100vw-40px))] flex-col border-r bg-card shadow-2xl"
               aria-describedby={undefined}
             >
-              <div className="flex h-14 shrink-0 items-center gap-2.5 border-b px-4">
-                <SumiMark className="h-[18px] w-5 text-brand" />
-                <DialogPrimitive.Title className="text-sm font-semibold">
-                  Sumi
+              <div className="flex h-14 shrink-0 items-center gap-2.5 px-5">
+                <SumiMark className="h-[22px] w-[22px] text-brand" />
+                <DialogPrimitive.Title className="journal-brand text-[21px] font-normal">
+                  Sumi<span className="text-brand">.</span>
                 </DialogPrimitive.Title>
                 <DialogPrimitive.Close asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="ml-auto h-8 w-8"
+                    className="ml-auto h-9 w-9"
                     aria-label="Close navigation"
                   >
                     <X />
@@ -230,63 +230,70 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 </DialogPrimitive.Close>
               </div>
               {navigation()}
-              <div className="border-t p-3">
+              <div className="flex flex-col gap-2 p-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-full justify-start gap-2 px-3 text-muted-foreground"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setPaletteOpen(true);
+                  }}
+                >
+                  <Search strokeWidth={1.65} />
+                  Search and commands
+                </Button>
                 <PrivacyToggle />
+                <p className="px-1 text-xs leading-snug text-muted-foreground">
+                  Local first. Not investment advice.
+                </p>
               </div>
-              {footer}
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
-        <Link
-          href="/"
-          className="mr-auto flex min-w-0 items-center gap-2 text-sm font-semibold tracking-tight"
-        >
+        <Link href="/" className="mr-auto flex min-w-0 items-center gap-2">
           <SumiMark className="hidden h-4 w-[18px] shrink-0 text-brand min-[380px]:block" />
-          <span className="truncate">Sumi</span>
+          <span className="journal-brand truncate text-[21px] font-normal">
+            Sumi<span className="text-brand">.</span>
+          </span>
         </Link>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          aria-label="Open command palette"
+          onClick={() => setPaletteOpen(true)}
+        >
+          <Search strokeWidth={1.65} />
+        </Button>
         <PrivacyToggle compact />
         <ThemeToggle iconOnly />
       </header>
       <aside
-        className="journal-desktop-sidebar sticky top-0 hidden h-dvh shrink-0 flex-col border-r bg-card/50 lg:flex"
+        className="journal-desktop-sidebar sticky top-0 hidden h-dvh shrink-0 flex-col border-r bg-background lg:flex"
         data-collapsed={sidebarCollapsed}
         data-ready={sidebarReady}
       >
-        <div className="journal-sidebar-header relative flex h-14 shrink-0 items-center border-b">
+        <div className="journal-sidebar-header flex h-16 shrink-0 items-center">
           <Link href="/" className="journal-sidebar-home flex h-full min-w-0 items-center gap-2.5">
             <SumiMark className="h-[22px] w-[22px] shrink-0 text-brand" />
-            <span className="journal-sidebar-brand-label text-sm font-semibold tracking-tight">
-              Sumi
+            <span className="journal-sidebar-brand-label">
+              Sumi<span className="text-brand">.</span>
             </span>
           </Link>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="journal-sidebar-trigger absolute h-7 w-7 rounded-full bg-background shadow-sm"
-            onClick={toggleSidebar}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!sidebarCollapsed}
-            aria-keyshortcuts="Meta+B Control+B"
-            title={`${sidebarCollapsed ? "Expand" : "Collapse"} sidebar (⌘B)`}
-          >
-            {sidebarCollapsed ? (
-              <PanelLeftOpen className="h-3.5 w-3.5" />
-            ) : (
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            )}
-          </Button>
         </div>
         {navigation(sidebarCollapsed)}
-        <div className="journal-sidebar-privacy border-t p-3">
-          <div className="w-full space-y-1">
-            <ThemeToggle iconOnly={sidebarCollapsed} />
-            <PrivacyToggle iconOnly={sidebarCollapsed} />
-          </div>
-        </div>
-        {footer}
+        {sidebarActions(sidebarCollapsed)}
       </aside>
       <PageTransition>{children}</PageTransition>
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onToggleSidebar={toggleSidebar}
+        filterQuery={filterQuery.toString()}
+      />
     </div>
   );
 }
