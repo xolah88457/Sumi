@@ -56,7 +56,9 @@ function sectionEyebrow(pathname: string) {
 
 /**
  * Page header and sticky capsule toolbar. `title` becomes the page's single h1 (rendered in a
- * PageHead that scrolls away); account, range, Filters and `actions` live in the capsule.
+ * PageHead that scrolls away); account, range, Filters and `actions` live in the capsule. Pages
+ * without filter controls have nothing to float, so their `actions` sit in the PageHead instead
+ * of an otherwise empty capsule.
  */
 export function FilterBar({
   title,
@@ -100,61 +102,55 @@ export function FilterBar({
         eyebrow={eyebrow ?? sectionEyebrow(pathname)}
         title={title}
         lede={compact ? undefined : lede}
+        actions={showFilters ? undefined : actions}
       />
-      {(showFilters || actions) && (
+      {showFilters && (
         <div className="journal-toolbar pointer-events-none sticky z-10 px-4 pb-4">
           <div
             role="toolbar"
             aria-label="Page filters and actions"
-            className={cn(
-              "journal-filter-bar pointer-events-auto flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[26px] border border-secondary bg-card px-2.5 py-1.5",
-              !showFilters && "ml-auto w-fit max-w-full",
-            )}
+            className="journal-filter-bar pointer-events-auto flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[26px] border border-secondary bg-card px-2.5 py-1.5"
           >
-            {showFilters && (
-              <>
-                <AccountSelector />
-                <div
-                  role="group"
-                  aria-label="Date range"
-                  className="flex max-w-full shrink-0 items-center gap-0.5"
-                >
-                  {["7d", "30d", "90d", "ytd", "all"].map((range) => (
-                    <Button
-                      key={range}
-                      variant={filters.range === range ? "secondary" : "ghost"}
-                      size="sm"
-                      aria-pressed={filters.range === range}
-                      className="h-8 px-3 text-[13px] text-muted-foreground aria-pressed:text-foreground"
-                      onClick={() => {
-                        const next = new URLSearchParams(params.toString());
-                        next.set("range", range);
-                        next.delete("from");
-                        next.delete("to");
-                        router.replace(`${pathname}?${next}`);
-                      }}
-                    >
-                      {range === "all" ? "All" : range.toUpperCase()}
-                    </Button>
-                  ))}
-                </div>
+            <AccountSelector />
+            <div
+              role="group"
+              aria-label="Date range"
+              className="flex max-w-full shrink-0 items-center gap-0.5"
+            >
+              {["7d", "30d", "90d", "ytd", "all"].map((range) => (
                 <Button
-                  variant="ghost"
+                  key={range}
+                  variant={filters.range === range ? "secondary" : "ghost"}
                   size="sm"
-                  className="h-8 px-3 text-[13px]"
-                  aria-label={`Filters${count > 0 ? `, ${count} active` : ""}`}
-                  title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
+                  aria-pressed={filters.range === range}
+                  className="h-8 px-3 text-[13px] text-muted-foreground aria-pressed:text-foreground"
                   onClick={() => {
-                    setDraft(filters.values);
-                    setOpen(true);
+                    const next = new URLSearchParams(params.toString());
+                    next.set("range", range);
+                    next.delete("from");
+                    next.delete("to");
+                    router.replace(`${pathname}?${next}`);
                   }}
                 >
-                  <SlidersHorizontal className="size-3.5" strokeWidth={1.65} />
-                  <span className="max-sm:hidden">Filters</span>
-                  {count > 0 && <span className="text-muted-foreground">· {count}</span>}
+                  {range === "all" ? "All" : range.toUpperCase()}
                 </Button>
-              </>
-            )}
+              ))}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-3 text-[13px]"
+              aria-label={`Filters${count > 0 ? `, ${count} active` : ""}`}
+              title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
+              onClick={() => {
+                setDraft(filters.values);
+                setOpen(true);
+              }}
+            >
+              <SlidersHorizontal className="size-3.5" strokeWidth={1.65} />
+              <span className="max-sm:hidden">Filters</span>
+              {count > 0 && <span className="text-muted-foreground">· {count}</span>}
+            </Button>
             {actions && (
               <div className="journal-header-actions ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-2">
                 {actions}

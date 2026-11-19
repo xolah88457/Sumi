@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ExportButtons } from "@/components/export-buttons";
+import { Notice } from "@/components/ui/notice";
+import { AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportPdf, exportPng, type ReviewDocument } from "@/lib/export-review";
 import { usePrivacy } from "./privacy";
@@ -59,11 +61,7 @@ export function ReviewExport({
         concealed={concealed}
         onExport={(format) => void run(format === "png")}
       />
-      {error && (
-        <p role="alert" className="text-[13px] text-destructive">
-          {error}
-        </p>
-      )}
+      {error && <Notice role="alert" tone="error" icon={<AlertCircle />} title={error} />}
       <Dialog open={open && !concealed} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>

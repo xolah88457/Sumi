@@ -2,6 +2,7 @@
 import { useApi } from "@/lib/use-api";
 import { useFilters } from "@/components/filter-bar";
 import { MonetaryValue } from "./privacy";
+import { pnlClass } from "@/lib/utils";
 import type { GroupSummary } from "@luxalgo/journal-core";
 interface Adherence {
   id: string;
@@ -56,7 +57,7 @@ export function AdherenceReport({ bookId }: { bookId: string }) {
                 {s.trades} trades · {pct(s.winRate)} win
               </p>
               {b.currencies.length <= 1 && (
-                <p className={s.netPnl >= 0 ? "text-profit" : "text-loss"}>
+                <p className={s.trades > 0 ? pnlClass(s.netPnl) : "text-muted-foreground"}>
                   <MonetaryValue>
                     {s.netPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
                     {b.currencies[0] ?? ""}

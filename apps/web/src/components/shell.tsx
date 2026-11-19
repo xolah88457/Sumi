@@ -188,7 +188,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           )}
         </Button>
       </div>
-      <p className="journal-sidebar-note px-1 text-xs leading-snug text-muted-foreground">
+      <p className="journal-sidebar-note mt-1 px-1 text-[13px] leading-snug text-muted-foreground">
         Local first. Not investment advice.
       </p>
     </div>
@@ -245,7 +245,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   Search and commands
                 </Button>
                 <PrivacyToggle />
-                <p className="px-1 text-xs leading-snug text-muted-foreground">
+                <p className="px-1 text-[13px] leading-snug text-muted-foreground">
                   Local first. Not investment advice.
                 </p>
               </div>

@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExportButtons } from "@/components/export-buttons";
-import { Card, CardContent } from "@/components/ui/card";
+import { Notice } from "@/components/ui/notice";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -424,11 +424,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
         onExport={(format) => void startExport(format)}
       />
 
-      {error && !open && (
-        <p role="alert" className="text-[13px] text-destructive">
-          {error}
-        </p>
-      )}
+      {error && !open && <Notice role="alert" tone="error" icon={<AlertCircle />} title={error} />}
 
       <Dialog
         open={open && !concealed}
@@ -506,21 +502,25 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
             )}
 
             {error && (
-              <div className="my-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-[15px] text-destructive">
-                <div className="flex items-center gap-2 font-medium">
-                  <AlertCircle className="size-4 shrink-0" />
-                  <span>Export preparation failed</span>
-                </div>
-                <p className="mt-1 text-[13px]">{error}</p>
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => void startExport(format)}>
-                    Retry
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={handleClose}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+              <Notice
+                role="alert"
+                tone="error"
+                icon={<AlertCircle />}
+                title="Export preparation failed"
+                className="my-4"
+                action={
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => void startExport(format)}>
+                      Retry
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={handleClose}>
+                      Cancel
+                    </Button>
+                  </>
+                }
+              >
+                {error}
+              </Notice>
             )}
 
             {!loading && !error && prepared && (
@@ -530,7 +530,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                   {/* Full page preview column (8 cols on lg) */}
                   <div className="space-y-3 lg:col-span-8">
                     {/* Page preview header & pagination controls */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-[13px]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-secondary px-3 py-2 text-[13px]">
                       <div className="flex items-center gap-2">
                         <Button
                           size="icon"
@@ -593,17 +593,17 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                     </div>
 
                     {/* Rendered full page preview display */}
-                    <div className="flex min-h-[380px] max-h-[56vh] items-center justify-center overflow-hidden rounded-xl border bg-background p-2 shadow-xs">
+                    <div className="flex min-h-[380px] max-h-[56vh] items-center justify-center overflow-hidden rounded-xl border bg-background p-2">
                       {currentPage && thumbnails[currentPage.id] ? (
                         <img
                           src={thumbnails[currentPage.id]}
                           alt={currentPage.title}
-                          className="max-h-[52vh] w-auto max-w-full rounded border border-border/60 object-contain shadow-xs"
+                          className="max-h-[52vh] w-auto max-w-full rounded border object-contain"
                         />
                       ) : currentPage && thumbnailErrors[currentPage.id] ? (
                         <div className="flex flex-col items-center justify-center p-8 text-center text-[13px]">
-                          <AlertCircle className="mb-2 size-6 text-destructive" />
-                          <span className="font-medium text-destructive">
+                          <AlertCircle className="mb-2 size-6 text-muted-foreground" />
+                          <span className="text-[15px] font-medium">
                             Failed to render preview for {currentPage.title}
                           </span>
                           <span className="mt-1 max-w-sm text-muted-foreground">
@@ -702,7 +702,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                                     className="h-full w-full object-cover"
                                   />
                                 ) : hasError ? (
-                                  <AlertCircle className="size-4 text-destructive/70" />
+                                  <AlertCircle className="size-4 text-muted-foreground" />
                                 ) : (
                                   <FileText className="size-4 text-muted-foreground/60" />
                                 )}
@@ -720,7 +720,9 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                                   {p.kind}
                                 </span>
                                 {hasError && (
-                                  <div className="text-[13px] text-destructive">Preview failed</div>
+                                  <div className="text-[13px] text-muted-foreground">
+                                    Preview failed
+                                  </div>
                                 )}
                               </div>
                             </button>
@@ -732,38 +734,29 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                 </div>
 
                 {/* Editorial notices and disclosures */}
-                <Card className="border-border/60 bg-muted/30">
-                  <CardContent className="space-y-1.5 p-3 text-[13px] text-muted-foreground">
-                    <div className="flex items-start gap-2">
-                      <Info className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                      <div className="space-y-1">
-                        <p>
-                          {isTrade ? (
-                            <>
-                              <strong>Private content:</strong> Trade notes, AI reviews and chart
-                              captures may contain private trading information.
-                            </>
-                          ) : (
-                            <>
-                              <strong>Day note disclosure:</strong> Day notes are shared across
-                              accounts. Written reflections and chart captures may contain private
-                              trading information.
-                            </>
-                          )}
-                        </p>
-                        <p>
-                          <strong>PDF attachments:</strong> Attached PDF documents are listed by
-                          filename and size; they are not merged into this report.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Notice icon={<Info />}>
+                  <p>
+                    {isTrade ? (
+                      <>
+                        <strong>Private content:</strong> Trade notes, AI reviews and chart captures
+                        may contain private trading information.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Day note disclosure:</strong> Day notes are shared across accounts.
+                        Written reflections and chart captures may contain private trading
+                        information.
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-1">
+                    <strong>PDF attachments:</strong> Attached PDF documents are listed by filename
+                    and size; they are not merged into this report.
+                  </p>
+                </Notice>
 
                 {downloadError && (
-                  <p role="alert" className="text-[13px] text-destructive">
-                    {downloadError}
-                  </p>
+                  <Notice role="alert" tone="error" icon={<AlertCircle />} title={downloadError} />
                 )}
 
                 {/* Action buttons and download triggers */}

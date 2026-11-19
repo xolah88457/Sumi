@@ -308,7 +308,7 @@ export function PropFirmTracker() {
         title="Prop firms"
         lede="See what you paid, what came back, and your net result."
         actions={
-          <div className="flex flex-wrap gap-2">
+          <>
             <Button
               size="sm"
               variant="outline"
@@ -335,20 +335,14 @@ export function PropFirmTracker() {
               <ArrowDownLeft className="h-4 w-4" />
               Track payout
             </Button>
-          </div>
-        }
-      />
-      <div className="space-y-5 px-4 pb-8">
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={switchDemo}>
-              {demo ? "Exit demo" : "Load demo data"}
-            </Button>
             <details className="relative">
               <summary className="inline-flex h-8 cursor-pointer list-none items-center rounded-full border border-input px-4 text-[13px] transition-colors hover:bg-accent [&::-webkit-details-marker]:hidden">
                 Data tools
               </summary>
               <div className="journal-menu-surface absolute right-0 z-20 mt-2 flex w-52 flex-col gap-1 rounded-xl border bg-popover p-2">
+                <Button size="sm" variant="outline" onClick={switchDemo}>
+                  {demo ? "Exit demo" : "Load demo data"}
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -369,10 +363,20 @@ export function PropFirmTracker() {
                 </Button>
               </div>
             </details>
-          </div>
-        </div>
+          </>
+        }
+      />
+      <div className="space-y-5 px-4 pb-8">
         {demo && (
-          <Notice role="status" title="Demo preview">
+          <Notice
+            role="status"
+            title="Demo preview"
+            action={
+              <Button size="sm" variant="outline" onClick={switchDemo}>
+                Exit demo
+              </Button>
+            }
+          >
             Simulated records · Read-only · Nothing is saved
           </Notice>
         )}

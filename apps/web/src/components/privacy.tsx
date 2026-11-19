@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { HoverHint } from "./ui/tooltip";
+import { SignedText } from "./ui/signed-text";
 import { PRIVACY_KEY, LEGACY_LAYOUT_KEY, privacyPreference } from "@/lib/privacy-preference";
 
 const PrivacyContext = createContext({ enabled: true, ready: false, error: "", toggle: () => {} });
@@ -100,7 +101,8 @@ export function PrivacyToggle({
 }
 
 export function MonetaryValue({ children }: { children: ReactNode }) {
-  return usePrivacy() ? <span aria-label="Monetary value hidden">••••</span> : children;
+  if (usePrivacy()) return <span aria-label="Monetary value hidden">••••</span>;
+  return typeof children === "string" ? <SignedText>{children}</SignedText> : children;
 }
 
 export function MonetaryField({

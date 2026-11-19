@@ -17,7 +17,7 @@ export function Calendar(props: DayPickerProps) {
         button_previous: "journal-calendar-nav",
         button_next: "journal-calendar-nav",
         month_grid: "w-full table-fixed border-collapse",
-        weekday: "h-8 text-center text-[11px] font-medium text-muted-foreground",
+        weekday: "h-8 text-center text-[13px] font-medium text-muted-foreground",
         day: "p-0.5 text-center",
         day_button: "journal-calendar-date",
         selected: "journal-date-selected",
