@@ -176,8 +176,8 @@ pub fn notice(title: &str, text: &str) {
 
 pub fn confirm_update(version: &str) -> bool {
     dialog(
-        "Update Sumi Rust?",
-        &format!("Install version {version} and restart Sumi Rust?"),
+        "Update Sumi?",
+        &format!("Install version {version} and restart Sumi?"),
         gtk::MessageType::Question,
         gtk::ButtonsType::YesNo,
     ) == gtk::ResponseType::Yes

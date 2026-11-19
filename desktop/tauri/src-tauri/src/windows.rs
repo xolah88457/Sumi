@@ -223,12 +223,12 @@ pub fn notice(title: &str, text: &str) {
 }
 
 pub fn confirm_update(version: &str) -> bool {
-    let text = format!("Install version {version} and restart Sumi Rust?");
+    let text = format!("Install version {version} and restart Sumi?");
     (unsafe {
         MessageBoxW(
             null_mut(),
             wide(text).as_ptr(),
-            wide("Update Sumi Rust?").as_ptr(),
+            wide("Update Sumi?").as_ptr(),
             MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
         )
     }) == IDYES

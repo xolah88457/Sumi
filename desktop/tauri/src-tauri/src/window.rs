@@ -72,7 +72,7 @@ pub fn open(app: &AppHandle, origin: Url) -> tauri::Result<()> {
         LABEL,
         WebviewUrl::External("about:blank".parse().unwrap()),
     )
-    .title("Sumi Rust")
+    .title("Sumi")
     .visible(false)
     .min_inner_size(MIN_WIDTH, MIN_HEIGHT)
     .inner_size(
@@ -172,34 +172,34 @@ pub fn persist(app: &AppHandle, state: &State) {
 pub fn menu(app: &App) -> tauri::Result<()> {
     let item = |id, name, shortcut| MenuItem::with_id(app, id, name, true, shortcut);
     #[cfg(target_os = "macos")]
-    let application = Submenu::with_items(app, "Sumi Rust", true, &[
-        &Role::about(app, Some("About Sumi Rust"), Some(AboutMetadata {
-            name: Some("Sumi Rust".into()), version: Some(app.package_info().version.to_string()),
+    let application = Submenu::with_items(app, "Sumi", true, &[
+        &Role::about(app, Some("About Sumi"), Some(AboutMetadata {
+            name: Some("Sumi".into()), version: Some(app.package_info().version.to_string()),
             credits: Some("A local trading journal. Built on LuxAlgo's MIT-licensed Trade Journal with a Kami-inspired theme (Tw93). Not affiliated with either project.".into()),
             ..Default::default()
         }))?,
         &item("show-data", "Show Journal Data", None)?, &Role::separator(app)?,
-        &Role::hide(app, Some("Hide Sumi Rust"))?, &Role::hide_others(app, None)?, &Role::show_all(app, None)?,
-        &Role::separator(app)?, &item("quit", "Quit Sumi Rust", Some("Cmd+Q"))?,
+        &Role::hide(app, Some("Hide Sumi"))?, &Role::hide_others(app, None)?, &Role::show_all(app, None)?,
+        &Role::separator(app)?, &item("quit", "Quit Sumi", Some("Cmd+Q"))?,
     ])?;
     #[cfg(not(target_os = "macos"))]
     let application = Submenu::with_items(
         app,
-        "Sumi Rust",
+        "Sumi",
         true,
         &[
             &Role::about(
                 app,
-                Some("About Sumi Rust"),
+                Some("About Sumi"),
                 Some(AboutMetadata {
-                    name: Some("Sumi Rust".into()),
+                    name: Some("Sumi".into()),
                     version: Some(app.package_info().version.to_string()),
                     ..Default::default()
                 }),
             )?,
             &item("show-data", "Show Journal Data", None)?,
             &Role::separator(app)?,
-            &item("quit", "Quit Sumi Rust", Some("Ctrl+Q"))?,
+            &item("quit", "Quit Sumi", Some("Ctrl+Q"))?,
         ],
     )?;
     #[cfg(not(target_os = "linux"))]

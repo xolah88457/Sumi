@@ -4,8 +4,10 @@ use std::{sync::atomic::Ordering, time::Duration};
 use tauri::{AppHandle, Manager, Url};
 use tauri_plugin_updater::UpdaterExt;
 
-// Deliberately separate from all Electron release metadata. No runtime env or
-// IPC argument can choose the endpoint or trust key.
+// The feed (a GitHub Releases `latest.json`) and the minisign public key are baked in at
+// build time from SUMI_TAURI_UPDATER_ENDPOINT / SUMI_TAURI_UPDATER_PUBKEY. No runtime
+// env or IPC argument can choose the endpoint or trust key. A build without both
+// reports "updates unavailable".
 fn settings() -> Option<(Url, &'static str)> {
     let key = option_env!("SUMI_TAURI_UPDATER_PUBKEY")?.trim();
     let url = Url::parse(option_env!("SUMI_TAURI_UPDATER_ENDPOINT")?).ok()?;
@@ -65,7 +67,7 @@ pub async fn check(app: AppHandle) -> Value {
         Err(err) => {
             eprintln!("Sumi signed update failed: {err}");
             let mut result = state(&app, "error", None);
-            result["error"] = json!("Could not check or install the signed Sumi Rust update.");
+            result["error"] = json!("Could not check or install the signed Sumi update.");
             result
         }
     }
@@ -81,7 +83,10 @@ async fn update(app: &AppHandle) -> Result<Value, Box<dyn std::error::Error + Se
         .configure_client(|client| {
             client
                 .https_only(true)
-                .redirect(reqwest::redirect::Policy::none())
+                // GitHub serves release assets through an HTTPS redirect to its CDN;
+                // https_only rejects any downgrade and the artifact signature is
+                // still verified independently.
+                .redirect(reqwest::redirect::Policy::limited(5))
         });
     #[cfg(windows)]
     let updater = {
@@ -108,11 +113,7 @@ async fn update(app: &AppHandle) -> Result<Value, Box<dyn std::error::Error + Se
     };
     let updater = updater.build()?;
     let Some(update) = updater.check().await? else {
-        return Ok(state(
-            app,
-            "not-available",
-            Some("Sumi Rust is up to date."),
-        ));
+        return Ok(state(app, "not-available", Some("Sumi is up to date.")));
     };
     if !https_url(&update.download_url) {
         return Err("Update artifact must use HTTPS".into());
@@ -130,5 +131,5 @@ async fn update(app: &AppHandle) -> Result<Value, Box<dyn std::error::Error + Se
     // Download verifies the independent Tauri signature before returning bytes.
     update.download_and_install(|_, _| {}, || {}).await?;
     app.request_restart();
-    Ok(state(app, "installing", Some("Restarting Sumi Rust.")))
+    Ok(state(app, "installing", Some("Restarting Sumi.")))
 }

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { SignedText } from "./signed-text";
 
 export interface KpiItem {
   /** Stable key; also used as the React key. */
@@ -47,7 +48,7 @@ function KpiStrip({
           )}
         >
           <dd className="tnum order-1 min-w-0 truncate text-[clamp(20px,1.1vw+15px,32px)] leading-tight">
-            {item.value}
+            {typeof item.value === "string" ? <SignedText>{item.value}</SignedText> : item.value}
           </dd>
           <dt className="order-2 text-[13px] leading-snug text-muted-foreground">{item.label}</dt>
           {item.detail && (

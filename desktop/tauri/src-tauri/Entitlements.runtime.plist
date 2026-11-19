@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Applied only to the bundled Node executable (runtime/node), which runs the journal
+       backend. The hardened runtime would otherwise block what Node needs: -->
+
+  <!-- V8 compiles JavaScript to machine code at run time. On Apple silicon and Intel
+       that requires MAP_JIT memory, which the hardened runtime only grants with this. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+
+  <!-- koffi (native FFI) and V8 allocate executable pages
+       without MAP_JIT (call trampolines, WebAssembly); the hardened runtime refuses
+       writable-and-executable memory without this. -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- Node dlopens native addons (better-sqlite3, koffi, the transcription library).
+       Every one is re-signed with our identity before bundling, so library validation
+       would pass; this is a safety net so an addon that kept a different signature
+       (for example a prebuilt for another architecture) still loads. Drop it after a
+       signed build has been exercised on a Mac if you want the stricter setting. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>

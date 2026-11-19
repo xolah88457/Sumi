@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-19
+
 ### Added
 
 - Customizable dashboard: drag cards to rearrange, hide and restore them, save named layouts; responsive layout with a mobile navigation drawer
@@ -27,6 +29,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- Releases are built by `.github/workflows/release.yml` from `v<semver>` tags (not `electron-v*`), on the native macOS arm64/x64, Windows x64 and Linux x64 matrix, and attached to a draft GitHub Release. Pushing to the default branch never releases.
+- In-app updates use `tauri-plugin-updater` with a signed `latest.json` on GitHub Releases. Updater artifacts exist only for builds signed with the owner's `TAURI_SIGNING_PRIVATE_KEY`; builds without it report "updates unavailable".
+- The About page shows the Tauri runtime version; web runtime detection no longer has an Electron branch
+
 - Data loads render as React transitions, so a tab change paints progressively instead of freezing while every card and chart mounts at once
 - The development server runs on Turbopack, roughly halving first-visit compile times when switching tabs in `pnpm dev`
 - Removed the gradient accent bar and gradient Edge Score number; the active nav item and the score now use the solid brand blue
@@ -35,6 +41,12 @@ All notable changes to this project are documented here. The format follows [Kee
 - Reports and dashboard aggregation reuse daily totals and equity for large histories; charts load only the components they use
 - Executions are validated and written together with their recomputed trades in one transaction
 - Node 22 or newer is required (already required by the AI dependencies)
+
+### Removed
+
+- **Electron is gone: Tauri is now the only desktop app.** The Electron shell, its packaging and update tooling (`electron`, `electron-builder`, `electron-updater`, Sparkle) and the `electron-v*` release workflow are removed. The previous "Sumi Rust" Tauri preview is now simply **Sumi**: product name `Sumi`, binary `sumi`, bundle identifier `local.sumi.journal`. It uses the operating system WebView instead of bundled Chromium.
+- **Moving from the Electron app (0.3.x):** the old app will not update itself into the Tauri app. Install the new build once (macOS `Sumi.app`, Windows setup `.exe`, Linux `.deb` or AppImage), after quitting the old app. Your journal is found automatically: the Tauri app uses the same data folder (`~/Library/Application Support/Sumi`, `%APPDATA%\Sumi`, `$XDG_CONFIG_HOME/Sumi` or `~/.config/Sumi`) and the same `journal.db`, `.secret` and `preferences.json`, and nothing is moved or deleted. The old `electron/` browser-profile folder inside it is no longer used and can be deleted.
+- Root scripts `desktop:package` and the Electron `desktop:*` implementations are removed; `desktop:build`, `desktop:open` and `desktop:check` are now aliases of `tauri:build`, `tauri:open` and `tauri:check`.
 
 ### Fixed
 

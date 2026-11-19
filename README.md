@@ -1,5 +1,14 @@
 # Sumi
 
+> [!IMPORTANT]
+> **macOS: the first launch needs one extra step.** I'm a broke college student and can't afford Apple's $99/year Developer Program yet, so the macOS app isn't signed or notarized by Apple. macOS will warn you the first time you open it. The app is open source, so you can read the code or build it yourself.
+>
+> 1. Open Sumi once. macOS says it can't verify the developer; click **Done** (or **Cancel**), not **Move to Trash**.
+> 2. Open **System Settings → Privacy & Security**, scroll to **Security** and click **Open Anyway** next to the Sumi message.
+> 3. Confirm with your password or Touch ID. Sumi opens, and you only need to do this once.
+>
+> Prefer Terminal? Run `xattr -dr com.apple.quarantine /Applications/Sumi.app` before opening it. Later updates from inside the app should not ask again. More detail is in [desktop/README.md](desktop/README.md#macos-unsigned-builds-the-default).
+
 Sumi is a local-first desktop trading journal for macOS, Windows and Linux. Your trades, notes and attachments live in a SQLite database on your own machine. Sumi imports broker statements or syncs read-only from supported brokers, rebuilds your fills into round-trip trades, and gives you analytics, a daily journal, prop firm cost tracking and optional AI reflection.
 
 Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlgo/trade-journal) (MIT). See [Attribution and license](#attribution-and-license).
@@ -205,17 +214,17 @@ Captured from the app with generated demo data and fictional prop firm records.
 
 Sumi ships as a desktop app:
 
-| Platform | Architectures                | Packages                  | In-app updates                             |
-| -------- | ---------------------------- | ------------------------- | ------------------------------------------ |
-| macOS 14 | Apple Silicon (arm64), Intel | `.dmg`, `.zip`            | Sparkle                                    |
-| Windows  | x64 (10/11)                  | NSIS `.exe`, portable zip | electron-updater                           |
-| Linux    | x64 (glibc 2.35+)            | `.deb`, `.AppImage`       | electron-updater (not for unpacked builds) |
+| Platform | Architectures                | Packages                            | In-app updates                         |
+| -------- | ---------------------------- | ----------------------------------- | -------------------------------------- |
+| macOS 13 | Apple Silicon (arm64), Intel | `.zip` of `Sumi.app`                | Signed Tauri updater (when configured) |
+| Windows  | x64 (10/11)                  | NSIS `Sumi_<version>_x64-setup.exe` | Signed Tauri updater (when configured) |
+| Linux    | x64 (glibc 2.35+)            | `.deb`, `.AppImage`                 | Signed Tauri updater for the AppImage  |
 
-Release builds are produced by CI from `electron-v*` tags and published to this repository's [GitHub Releases](https://github.com/xolah88457/trade-journal/releases). Builds are not code-signed, so macOS Gatekeeper and Windows SmartScreen show a first-launch warning. Build steps, first-launch instructions, data locations, backups and the update system are documented in **[desktop/README.md](desktop/README.md)**.
+Sumi is a [Tauri](https://tauri.app) app: it uses the operating system's WebView instead of bundling a browser. Release builds are produced by CI from `v<semver>` tags and attached to a draft on this repository's [GitHub Releases](https://github.com/xolah88457/trade-journal/releases). Builds are not code-signed, so macOS Gatekeeper and Windows SmartScreen show a first-launch warning. Build steps, first-launch instructions, data locations, backups, the update system and how to move over from the old Electron app are documented in **[desktop/README.md](desktop/README.md)**. Your journal lives in the same folder the Electron app used, so installing Sumi over an Electron install finds it automatically.
 
 ## Develop
 
-Requirements: Node 22+ and pnpm 11.0.8 (pinned in `package.json`). Desktop builds additionally pin Node 26.13.0; see [desktop/README.md](desktop/README.md).
+Requirements: Node 22+ and pnpm 11.0.8 (pinned in `package.json`). Desktop builds additionally pin Node 26.13.1 and need stable Rust; see [desktop/README.md](desktop/README.md).
 
 ```bash
 git clone https://github.com/xolah88457/trade-journal
@@ -230,7 +239,7 @@ The first run creates a SQLite database in `apps/web/data/` and applies schema u
 pnpm test          # vitest across packages and the app
 pnpm typecheck     # all workspaces
 pnpm format:check  # prettier
-pnpm desktop:build # build the desktop app (see desktop/README.md)
+pnpm tauri:build   # build the desktop app (alias: desktop:build; see desktop/README.md)
 ```
 
 When running the web app directly, these optional environment variables apply (set them in the shell or `apps/web/.env.local`; see [`.env.example`](.env.example)):
@@ -273,7 +282,7 @@ The **Dictate** button in note editors transcribes speech on your machine; no au
 | [`apps/web`](apps/web)                     | The app: Next.js 15, SQLite (Drizzle), Tailwind, Recharts, TanStack Table, ai-sdk          |
 | [`packages/core`](packages/core)           | Private workspace package: pure domain engine (round trips, metrics, calendar, Edge Score) |
 | [`packages/importers`](packages/importers) | Private workspace package: statement parsers and migration importers                       |
-| [`desktop`](desktop)                       | Electron shell, packaging, update and verification scripts                                 |
+| [`desktop`](desktop)                       | Tauri desktop shell (Rust), runtime staging, release and verification scripts              |
 
 ## Disclaimer
 

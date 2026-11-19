@@ -3469,8 +3469,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
-name = "sumi-tauri"
-version = "0.3.7"
+name = "sumi"
+version = "0.4.0"
 dependencies = [
  "block2",
  "getrandom 0.4.3",

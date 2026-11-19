@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { fmtMoney, fmtPercent } from "@/lib/utils";
+import { fmtMoney, fmtPercent, minusSign } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { tooltipStyle, useVizTokens } from "./tokens";
 import { ChartFrame } from "./chart-frame";
@@ -42,7 +42,7 @@ export function EquityArea({
   const privacy = usePrivacy();
   const privateMode = privacy && valueFormat === "money";
   const formatValue = (value: number) =>
-    valueFormat === "percent" ? fmtPercent(value, 2) : fmtMoney(value, currency);
+    valueFormat === "percent" ? fmtPercent(value, 2) : minusSign(fmtMoney(value, currency));
   if (!t) return <div style={{ height }} />;
   const line = t.brand;
   const top = Math.max(0, ...data.map((point) => point.cumNetPnl));

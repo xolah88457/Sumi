@@ -14,4 +14,6 @@ Trade Journal is self-hosted software: it stores broker credentials (encrypted a
 
 ## Supported versions
 
-Security fixes target the latest release on `main`.
+Security fixes target the latest release on the default branch.
+
+The desktop app is a Tauri shell. Report issues in its process isolation (loopback backend, environment whitelist, IPC and navigation policy), updater signature verification and release workflow privately. The Electron app (0.3.x and earlier) is no longer maintained; upgrade to the Tauri build.
