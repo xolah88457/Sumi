@@ -22,3 +22,16 @@ jobs:
       - run: pnpm test
       - run: node scripts/check-licenses.mjs
       - run: pnpm build
+
+  # release.yml runs `pnpm test` on Node 26, so keep that runtime covered on every change.
+  test-node-26:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.13.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
