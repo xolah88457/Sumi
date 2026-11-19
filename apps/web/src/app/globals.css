@@ -1016,7 +1016,7 @@ body.dashboard-is-dragging .journal-hover-card {
 }
 @media (min-width: 1280px) {
   .notebook-workspace {
-    grid-template-columns: 170px 240px minmax(0, 1fr);
+    grid-template-columns: 200px 260px minmax(0, 1fr);
   }
   .notebook-folders {
     display: block;
@@ -1407,63 +1407,140 @@ body.dashboard-is-dragging * {
   }
 }
 
+/*
+ * Long-form prose (day notes, notebook, playbook text, AI markdown): 17px serif, 1.65 leading
+ * and a ~66ch measure. Colours come from tokens, so dark mode follows with no extra rules.
+ */
 .journal-markdown {
-  font-size: 0.875rem;
-  line-height: 1.7;
+  max-width: 66ch;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--foreground);
   overflow-wrap: anywhere;
+}
+.journal-markdown > :first-child {
+  margin-top: 0;
+}
+.journal-markdown > :last-child {
+  margin-bottom: 0;
 }
 .journal-markdown h1,
 .journal-markdown h2,
-.journal-markdown h3 {
-  font-weight: 600;
-  margin: 1em 0 0.5em;
+.journal-markdown h3,
+.journal-markdown h4 {
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 1.4em 0 0.5em;
 }
 .journal-markdown h1 {
-  font-size: 1.4em;
+  font-size: 1.55em;
 }
 .journal-markdown h2 {
-  font-size: 1.2em;
+  font-size: 1.3em;
+}
+.journal-markdown h3,
+.journal-markdown h4 {
+  font-size: 1.1em;
+}
+.journal-markdown strong {
+  font-weight: 700;
 }
 .journal-markdown p,
 .journal-markdown ul,
 .journal-markdown ol {
-  margin-bottom: 0.75em;
+  margin-bottom: 0.9em;
 }
 .journal-markdown ul {
   list-style: disc;
-  padding-left: 1.5em;
+  padding-left: 1.4em;
 }
 .journal-markdown ol {
   list-style: decimal;
-  padding-left: 1.5em;
+  padding-left: 1.4em;
+}
+.journal-markdown li::marker {
+  color: var(--muted-foreground);
+}
+.journal-markdown li + li {
+  margin-top: 0.2em;
+}
+.journal-markdown input[type="checkbox"] {
+  margin-right: 0.4em;
+  accent-color: var(--brand);
 }
 .journal-markdown a {
-  color: var(--color-brand, #60dcca);
+  color: var(--brand);
   text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
 }
 .journal-markdown blockquote {
-  border-left: 3px solid #657386;
+  margin: 0 0 0.9em;
+  border-left: 2px solid var(--border);
   padding-left: 1em;
-  color: #9eabc0;
+  color: var(--muted-foreground);
+}
+.journal-markdown blockquote > :last-child {
+  margin-bottom: 0;
+}
+.journal-markdown hr {
+  margin: 1.4em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.journal-markdown code {
+  border-radius: 4px;
+  background: var(--secondary);
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
 }
 .journal-markdown pre {
   white-space: pre-wrap;
-  padding: 0.75em;
-  background: #121a27;
-  border-radius: 6px;
+  margin-bottom: 0.9em;
+  padding: 0.75em 1em;
+  background: var(--secondary);
+  border-radius: 8px;
+  font-size: 0.9em;
+}
+.journal-markdown pre code {
+  background: none;
+  padding: 0;
 }
 .journal-markdown table {
   border-collapse: collapse;
   width: 100%;
+  margin-bottom: 0.9em;
+  font-size: 0.9em;
 }
 .journal-markdown td,
 .journal-markdown th {
-  border: 1px solid #344155;
-  padding: 0.4em;
+  border: 1px solid var(--border);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.journal-markdown th {
+  font-weight: 400;
+  color: var(--muted-foreground);
 }
 .journal-markdown img {
   max-width: 100%;
-  border-radius: 6px;
+  border-radius: 8px;
+}
+/* Ivory writing surface with a hairline: editor, preview and the notebook sheet. */
+.journal-prose-surface {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 8px);
+  background: var(--card);
+  padding: 1.25rem 1.5rem;
+  font-size: 17px;
+  max-width: calc(66ch + 3rem);
+}
+@media (max-width: 640px) {
+  .journal-prose-surface {
+    padding: 1rem;
+  }
 }
 
 /* Table density (Trades and Reports): comfortable is the default; compact trims row padding. */

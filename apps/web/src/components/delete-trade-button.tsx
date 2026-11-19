@@ -46,7 +46,7 @@ export function DeleteTradeButton({ tradeKey, label }: { tradeKey: string; label
         {busy ? "Deleting…" : "Delete trade"}
       </Button>
       {failure && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {failure}
         </p>
       )}

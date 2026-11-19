@@ -73,8 +73,8 @@ function ScopedAskJournal({ filters, timeZone }: { filters: AnalysisFilters; tim
         <CardHeader>
           <CardTitle>Ask your journal</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-xs text-muted-foreground">
+        <CardContent className="space-y-3">
+          <p className="text-[13px] text-muted-foreground">
             Uses the selected accounts and journal filters. Changing filters clears the answer.
           </p>
           <form
@@ -100,7 +100,7 @@ function ScopedAskJournal({ filters, timeZone }: { filters: AnalysisFilters; tim
               <button
                 key={suggestion}
                 disabled={busy || preview.loading}
-                className="rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent disabled:cursor-wait disabled:opacity-50"
+                className="rounded-full border px-3 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-wait disabled:opacity-50"
                 onClick={() => {
                   setQuestion(suggestion);
                   void prepareAsk(suggestion);
@@ -121,9 +121,11 @@ function ScopedAskJournal({ filters, timeZone }: { filters: AnalysisFilters; tim
             />
           )}
           {answer && (
-            <div className="space-y-2 pt-1">
-              <p className="text-xs text-muted-foreground">{answer.scope.label}</p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{answer.answer}</p>
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-[13px] text-muted-foreground">{answer.scope.label}</p>
+              <p className="max-w-[66ch] whitespace-pre-wrap text-[17px] leading-[1.65]">
+                {answer.answer}
+              </p>
             </div>
           )}
         </CardContent>

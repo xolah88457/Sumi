@@ -74,12 +74,12 @@ export function TradeRating({
             />
           </button>
         ))}
-        <span className="ml-2 min-w-7 text-xs tabular-nums text-muted-foreground">
+        <span className="ml-2 min-w-7 text-[13px] tabular-nums text-muted-foreground">
           {preview ? `${preview}/5` : "—"}
         </span>
       </div>
       {error && (
-        <p role="alert" className="mt-1 text-xs text-destructive">
+        <p role="alert" className="mt-1 text-[13px] text-destructive">
           {error}
         </p>
       )}

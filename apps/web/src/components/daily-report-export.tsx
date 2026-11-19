@@ -425,7 +425,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
       />
 
       {error && !open && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {error}
         </p>
       )}
@@ -444,7 +444,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                   <DialogTitle className="text-lg font-semibold tracking-tight">
                     {isTrade ? "Trade report" : "Daily journal report"}
                   </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground">
+                  <DialogDescription className="text-[13px] text-muted-foreground">
                     {isTrade
                       ? "Trade summary, executions, notes, and chart screenshots"
                       : "Complete day overview, trade breakdown, and chart screenshots"}
@@ -458,10 +458,10 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                   className="shrink-0"
                 >
                   <TabsList className="h-8">
-                    <TabsTrigger value="pdf" className="text-xs">
+                    <TabsTrigger value="pdf" className="text-[13px]">
                       PDF Document
                     </TabsTrigger>
-                    <TabsTrigger value="png" className="text-xs">
+                    <TabsTrigger value="png" className="text-[13px]">
                       PNG Images
                     </TabsTrigger>
                   </TabsList>
@@ -470,7 +470,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
 
               {/* Scope / Snapshot labels */}
               {report && (
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[13px]">
                   <Badge variant="outline" className="font-mono">
                     {"trade" in report ? report.trade.symbol : report.date}
                   </Badge>
@@ -493,10 +493,10 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
             {loading && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Loader2 className="mb-3 size-8 animate-spin text-primary" />
-                <p className="text-sm font-medium">
+                <p className="text-[15px] font-medium">
                   Preparing {isTrade ? "trade" : "daily"} report...
                 </p>
-                <p className="mb-4 text-xs text-muted-foreground">
+                <p className="mb-4 text-[13px] text-muted-foreground">
                   Collecting trade metrics, executions, notes, and chart captures
                 </p>
                 <Button size="sm" variant="outline" onClick={handleClose}>
@@ -506,12 +506,12 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
             )}
 
             {error && (
-              <div className="my-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              <div className="my-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-[15px] text-destructive">
                 <div className="flex items-center gap-2 font-medium">
                   <AlertCircle className="size-4 shrink-0" />
                   <span>Export preparation failed</span>
                 </div>
-                <p className="mt-1 text-xs">{error}</p>
+                <p className="mt-1 text-[13px]">{error}</p>
                 <div className="mt-3 flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => void startExport(format)}>
                     Retry
@@ -530,7 +530,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                   {/* Full page preview column (8 cols on lg) */}
                   <div className="space-y-3 lg:col-span-8">
                     {/* Page preview header & pagination controls */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-[13px]">
                       <div className="flex items-center gap-2">
                         <Button
                           size="icon"
@@ -601,7 +601,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                           className="max-h-[52vh] w-auto max-w-full rounded border border-border/60 object-contain shadow-xs"
                         />
                       ) : currentPage && thumbnailErrors[currentPage.id] ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center text-xs">
+                        <div className="flex flex-col items-center justify-center p-8 text-center text-[13px]">
                           <AlertCircle className="mb-2 size-6 text-destructive" />
                           <span className="font-medium text-destructive">
                             Failed to render preview for {currentPage.title}
@@ -620,7 +620,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center p-8 text-center text-[13px] text-muted-foreground">
                           <Loader2 className="mb-2 size-6 animate-spin text-primary" />
                           <span>Rendering page preview...</span>
                         </div>
@@ -630,15 +630,15 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
 
                   {/* Thumbnails sidebar (4 cols on lg) */}
                   <div className="space-y-2 lg:col-span-4">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[13px]">
                         Pages ({totalPages})
                       </span>
                       <div className="flex gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 px-1.5 text-[11px]"
+                          className="h-6 px-1.5 text-[13px]"
                           onClick={selectAllPages}
                         >
                           Select all
@@ -646,7 +646,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 px-1.5 text-[11px]"
+                          className="h-6 px-1.5 text-[13px]"
                           onClick={clearAllPages}
                         >
                           Clear
@@ -669,7 +669,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                           <div
                             key={p.id}
                             className={cn(
-                              "flex items-center gap-2 rounded-lg border p-1.5 text-xs transition-colors",
+                              "flex items-center gap-2 rounded-lg border p-1.5 text-[13px] transition-colors",
                               isActive
                                 ? "border-primary bg-primary/5 ring-1 ring-primary"
                                 : "border-border/70 hover:border-foreground/30 bg-card",
@@ -716,11 +716,11 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                                 <div className="flex items-center gap-1.5">
                                   <span className="truncate font-medium">{p.title}</span>
                                 </div>
-                                <span className="text-[11px] capitalize text-muted-foreground">
+                                <span className="text-[13px] capitalize text-muted-foreground">
                                   {p.kind}
                                 </span>
                                 {hasError && (
-                                  <div className="text-[10px] text-destructive">Preview failed</div>
+                                  <div className="text-[13px] text-destructive">Preview failed</div>
                                 )}
                               </div>
                             </button>
@@ -733,7 +733,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
 
                 {/* Editorial notices and disclosures */}
                 <Card className="border-border/60 bg-muted/30">
-                  <CardContent className="space-y-1.5 p-3 text-xs text-muted-foreground">
+                  <CardContent className="space-y-1.5 p-3 text-[13px] text-muted-foreground">
                     <div className="flex items-start gap-2">
                       <Info className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                       <div className="space-y-1">
@@ -761,14 +761,14 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                 </Card>
 
                 {downloadError && (
-                  <p role="alert" className="text-xs text-destructive">
+                  <p role="alert" className="text-[13px] text-destructive">
                     {downloadError}
                   </p>
                 )}
 
                 {/* Action buttons and download triggers */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-[13px] text-muted-foreground">
                     {format === "pdf" ? (
                       <span>
                         {selectedCount === 0

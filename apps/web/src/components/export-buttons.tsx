@@ -38,7 +38,7 @@ export function ExportButtons({
         </Button>
       </div>
       {concealed && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Turn off privacy mode to export financial figures.
         </p>
       )}

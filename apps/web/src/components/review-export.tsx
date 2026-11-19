@@ -60,7 +60,7 @@ export function ReviewExport({
         onExport={(format) => void run(format === "png")}
       />
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {error}
         </p>
       )}
@@ -79,12 +79,12 @@ export function ReviewExport({
               </Button>
               {f.type === "application/pdf" ? (
                 <div className="rounded border bg-white p-6 text-slate-800">
-                  <p className="mb-4 text-xs text-slate-500">
+                  <p className="mb-4 text-[13px] text-slate-500">
                     Review text · download the PDF for the paginated document.
                   </p>
                   <h3 className="mb-2 text-xl font-semibold">{previewDocument?.title}</h3>
-                  <p className="mb-6 text-xs text-slate-500">{previewDocument?.subtitle}</p>
-                  <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                  <p className="mb-6 text-[13px] text-slate-500">{previewDocument?.subtitle}</p>
+                  <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
                     {previewDocument?.lines.join("\n")}
                   </div>
                 </div>
