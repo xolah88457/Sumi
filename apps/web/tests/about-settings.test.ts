@@ -440,6 +440,8 @@ describe("AboutSettings update functionality", () => {
       await vi.runAllTimersAsync();
     });
 
+    // The Electron migration notice links to the new app's download; it is not the updater UI.
+    container.querySelector('[data-testid="electron-migration-notice"]')?.remove();
     const text = container.textContent ?? "";
     // Should NOT show false "installed verified" message
     expect(text).not.toContain("installed verified");

@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/ui/notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useDesktopInfo } from "@/lib/desktop-info";
+import { isElectronInfo, useDesktopInfo } from "@/lib/desktop-info";
+import { ElectronMigrationNotice } from "./electron-migration-notice";
 
 export const SOURCE_REPO_URL = "https://github.com/xolah88457/trade-journal";
 
@@ -129,6 +130,7 @@ export function AboutSettings() {
   const { isDesktop, info, isLoading, isChecking, error, checkCompletionKey, checkForUpdates } =
     useDesktopInfo();
   const isTauri = info?.runtime === "tauri";
+  const isElectron = isElectronInfo(info);
 
   return (
     <div className="space-y-6">
@@ -222,6 +224,7 @@ export function AboutSettings() {
           <CardTitle>Application updates</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isElectron && <ElectronMigrationNotice />}
           {!isDesktop ? (
             <Notice title="Web browser mode">
               Running in a web browser. Native desktop features, local shell integration, and

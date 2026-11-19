@@ -92,6 +92,12 @@ test("isTrustedSender verifies webContents identity, mainFrame identity, and exa
   assert.equal(isTrustedSender({ sender: webContents }, mainWindow, expectedOrigin), false);
 });
 
+test("the Sumi 0.4 migration link is a safe external URL (opens in the system browser)", () => {
+  // The Electron migration notice links here. The allowlist is protocol-based, so no
+  // extension was needed; this pins that the exact URL stays accepted.
+  assert.equal(isSafeExternalUrl("https://github.com/xolah88457/Sumi/releases/tag/v0.4.0"), true);
+});
+
 test("isSafeExternalUrl allows deliberate http/https/mailto without credentials and blocks others", () => {
   // Allowed safe external URLs
   assert.equal(isSafeExternalUrl("https://github.com/LuxAlgo/trade-journal"), true);

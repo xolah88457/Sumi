@@ -87,6 +87,14 @@ export function redactUpdateError(raw: unknown): string {
 }
 
 /**
+ * True when the bridge info describes the Electron shell. Both shells expose
+ * window.sumiDesktop; only the Tauri bridge reports runtime "tauri".
+ */
+export function isElectronInfo(info: AppInfo | null | undefined): boolean {
+  return !!info && info.runtime !== "tauri";
+}
+
+/**
  * Reads local runtime info from the desktop bridge.
  * Purely local IPC on mount — does not call background update servers.
  */
@@ -231,4 +239,20 @@ export function useDesktopInfo(): UseDesktopInfoResult {
     lastChecked,
     checkForUpdates,
   };
+}
+
+/** True only after the bridge confirms the app is running inside Electron. */
+export function useElectronRuntime(): boolean {
+  const [isElectron, setIsElectron] = useState(false);
+  useEffect(() => {
+    if (!isSumiDesktop()) return;
+    let cancelled = false;
+    void getDesktopInfo().then((info) => {
+      if (!cancelled) setIsElectron(isElectronInfo(info));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return isElectron;
 }
