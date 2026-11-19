@@ -45,7 +45,7 @@ export function AiImportOptions({
         />
         <Label
           htmlFor="ai-import-enabled"
-          className="flex cursor-pointer items-center gap-1.5 text-xs font-normal text-muted-foreground"
+          className="flex cursor-pointer items-center gap-1.5 text-[13px] font-normal text-muted-foreground"
         >
           Parse with AI
         </Label>
@@ -69,10 +69,10 @@ export function AiImportOptions({
           sideOffset={8}
           collisionPadding={12}
           aria-label="AI parsing settings"
-          className="z-50 w-[360px] max-w-[calc(100vw-24px)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl"
+          className="z-50 w-[360px] max-w-[calc(100vw-24px)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto journal-menu-surface rounded-xl border bg-popover p-4 text-popover-foreground"
         >
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-medium">AI parsing settings</span>
+            <span className="text-[15px] font-medium">AI parsing settings</span>
             <Popover.Close
               aria-label="Close AI parsing settings"
               className="rounded-md p-1 text-muted-foreground hover:bg-accent"
@@ -128,7 +128,7 @@ export function AiImportOptions({
                     : "Enter your API key"
                 }
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 Keys entered here are used for this upload session only. Manage saved keys in{" "}
                 <a href="/settings#ai-settings" className="underline">
                   Settings
@@ -136,12 +136,12 @@ export function AiImportOptions({
                 .
               </p>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Your file will be sent to {AI_PROVIDER_NAMES[value.provider]} when you select{" "}
               <strong>Preview with AI</strong>. Provider charges apply. Review the extracted trades
               before importing.
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               CSV, TSV, HTML, XML, TXT and PDF · Up to 200 executions per preview. PDFs up to 8 MB;
               text exports up to 150,000 characters. For spreadsheets, export as CSV first. PDF
               support depends on your selected model.

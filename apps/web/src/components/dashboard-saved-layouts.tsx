@@ -116,8 +116,8 @@ export function DashboardSavedLayouts({
               {matchingPresets.length > 0 && (
                 <>
                   <div className="px-3 pb-2 pt-2">
-                    <h3 className="text-[11px] font-medium text-muted-foreground">Presets</h3>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
+                    <h3 className="text-[13px] font-medium text-muted-foreground">Presets</h3>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                       Choose a focus, then make it yours with Customize.
                     </p>
                   </div>
@@ -140,18 +140,18 @@ export function DashboardSavedLayouts({
                           <LayoutTemplate size={15} />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-xs font-medium">
+                          <span className="block text-[13px] font-medium">
                             {preset.name}
-                            <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                            <span className="ml-2 text-[13px] font-normal text-muted-foreground">
                               {visibleCardIds(preset.arrangement).length} cards
                             </span>
                             {preset.name === "Overview" && (
-                              <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                              <span className="ml-2 text-[13px] font-normal text-muted-foreground">
                                 Default
                               </span>
                             )}
                           </span>
-                          <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+                          <span className="mt-0.5 block text-[13px] leading-relaxed text-muted-foreground">
                             {preset.description}
                           </span>
                         </span>
@@ -164,7 +164,7 @@ export function DashboardSavedLayouts({
                 </>
               )}
               {matches.length > 0 && (
-                <h3 className="px-3 pb-2 pt-3 text-[11px] font-medium text-muted-foreground">
+                <h3 className="px-3 pb-2 pt-3 text-[13px] font-medium text-muted-foreground">
                   Your saved layouts
                 </h3>
               )}
@@ -189,8 +189,8 @@ export function DashboardSavedLayouts({
                       <LayoutTemplate size={15} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-medium">{name}</span>
-                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      <span className="block truncate text-[13px] font-medium">{name}</span>
+                      <span className="mt-0.5 block text-[13px] text-muted-foreground">
                         {visibleCardIds(layout).length} cards{active ? " · Current layout" : ""}
                       </span>
                     </span>
@@ -221,7 +221,7 @@ export function DashboardSavedLayouts({
           >
             <label
               htmlFor={`${titleId}-name`}
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-[13px] font-medium text-muted-foreground"
             >
               Save current layout
             </label>
@@ -236,7 +236,7 @@ export function DashboardSavedLayouts({
                   setName(event.target.value);
                   setSaved("");
                 }}
-                className="h-9 rounded-xl text-xs"
+                className="h-9 rounded-xl text-[13px]"
               />
               <Button
                 size="sm"
@@ -249,7 +249,7 @@ export function DashboardSavedLayouts({
               </Button>
             </div>
             {saved && (
-              <p role="status" className="text-[11px] text-muted-foreground">
+              <p role="status" className="text-[13px] text-muted-foreground">
                 {saved}
               </p>
             )}

@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, type ReactNode } from "react";
 import { Button } from "./ui/button";
+import { Notice } from "./ui/notice";
 import { Input } from "./ui/input";
 import { OptionSelect } from "./ui/option-select";
 import { DatePicker } from "./ui/date-picker";
@@ -122,11 +123,7 @@ function Form({
         <fieldset disabled={busy} className="space-y-4">
           {children}
         </fieldset>
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        {error && <Notice role="alert" tone="error" title={error} />}
         <Button type="submit" disabled={busy}>
           {busy ? "Saving…" : "Save record"}
         </Button>
@@ -302,8 +299,8 @@ function AccountForm({
         </Field>
       </div>
       <details>
-        <summary className="cursor-pointer text-sm">Renewal reminder</summary>
-        <p className="my-2 text-xs text-muted-foreground">
+        <summary className="cursor-pointer text-[15px]">Renewal reminder</summary>
+        <p className="my-2 text-[13px] text-muted-foreground">
           A reminder only. Record an expense when charged; nothing is charged or added
           automatically.
         </p>
@@ -325,7 +322,7 @@ function AccountForm({
           Clear reminder
         </Button>
       </details>
-      <div className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+      <div className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
         <div className="flex items-center justify-between">
           <span>Notes / rules / breach reason</span>
           <div className="flex items-center gap-1">
@@ -461,7 +458,7 @@ function EntryForm({
           <>
             {input("splitPercent", "Your share (%)", true)}
             {input("fee", "Fees withheld from your share", true)}
-            <p className="col-span-full text-xs text-muted-foreground">
+            <p className="col-span-full text-[13px] text-muted-foreground">
               If your amount is already after the firm split, enter 100% and only fees still to be
               deducted. Never deduct the split twice.
             </p>
@@ -502,7 +499,7 @@ function EntryForm({
         )}
         {input("reference", "Invoice / payment reference")}
       </div>
-      <div className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+      <div className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
         <div className="flex items-center justify-between">
           <span>Notes</span>
           <div className="flex items-center gap-1">
@@ -523,7 +520,7 @@ function EntryForm({
         />
       </div>
       {refund && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Linked expense: {values.parentId}. Refunds reduce costs and are shown separately from
           payout income.
         </p>
@@ -594,7 +591,7 @@ function ReceiptForm({
           />
         </Field>
       </div>
-      <div className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+      <div className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
         <div className="flex items-center justify-between">
           <span>Notes</span>
           <div className="flex items-center gap-1">
@@ -614,7 +611,7 @@ function ReceiptForm({
           onChange={(e) => set({ ...values, notes: e.target.value })}
         />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         Keep the request open for partial payments. Once the final payment arrives, edit the payout
         status to Completed; a difference from the expected amount remains visible.
       </p>
@@ -669,23 +666,23 @@ function Detail({ modal, data }: Props & { modal: Extract<PropModal, { kind: "de
           {account?.firm ?? entry?.firm} · {modal.id}
         </DialogDescription>
       </DialogHeader>
-      <p className="whitespace-pre-wrap text-sm">
+      <p className="whitespace-pre-wrap text-[15px]">
         {account?.notes || entry?.notes || "No notes added."}
       </p>
       {account && (
         <>
-          <p className="break-all text-xs text-muted-foreground">
+          <p className="break-all text-[13px] text-muted-foreground">
             Account ID for CSV imports: {account.id}
           </p>
           {account.parentId && (
-            <p className="text-sm">
+            <p className="text-[15px]">
               Previous attempt / phase:{" "}
               {data.accounts.find((a) => a.id === account.parentId)?.name ?? account.parentId}
             </p>
           )}
           {account.journalAccountId && (
             <a
-              className="text-sm underline"
+              className="text-[15px] underline"
               href={`/trades?accounts=${encodeURIComponent(account.journalAccountId)}`}
             >
               Open linked journal trades
@@ -695,21 +692,21 @@ function Detail({ modal, data }: Props & { modal: Extract<PropModal, { kind: "de
       )}
       <Attachments type={modal.type === "account" ? "prop-account" : "prop-entry"} id={modal.id} />
       <details>
-        <summary className="cursor-pointer text-sm">Edit history · latest 100 changes</summary>
+        <summary className="cursor-pointer text-[15px]">Edit history · latest 100 changes</summary>
         <div className="mt-3 space-y-3">
           {history?.history.map((item) => (
-            <details key={item.id} className="rounded-md border p-2 text-xs">
+            <details key={item.id} className="rounded-lg border p-3 text-[13px]">
               <summary className="cursor-pointer">
                 {item.createdAt} ·{" "}
                 {item.reason.startsWith("CSV import") ? "CSV import" : item.reason}
               </summary>
-              <p className="my-2 font-medium">Before</p>
+              <p className="my-2 text-foreground">Before</p>
               <pre className="whitespace-pre-wrap break-all">
                 {item.beforeJson
                   ? JSON.stringify(JSON.parse(item.beforeJson), null, 2)
                   : "New record"}
               </pre>
-              <p className="my-2 font-medium">After</p>
+              <p className="my-2 text-foreground">After</p>
               <pre className="whitespace-pre-wrap break-all">
                 {JSON.stringify(JSON.parse(item.afterJson), null, 2)}
               </pre>
@@ -754,10 +751,10 @@ function ImportForm({ close, refresh }: Props) {
           is all-or-nothing and repeated stable IDs are skipped.
         </DialogDescription>
       </DialogHeader>
-      <a className="text-sm underline" href="/prop-cash-template.csv" download>
+      <a className="text-[15px] underline" href="/prop-cash-template.csv" download>
         Download generic cash header template
       </a>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         Use kind expense, refund or payout; date YYYY-MM-DD; positive amount in currency units. A
         payout amount is cash already received after splits and fees. Payouts need account_id from
         an account’s Details. A refund’s expense_id references its original CSV row ID. Put expenses
@@ -788,19 +785,15 @@ function ImportForm({ close, refresh }: Props) {
       <Button variant="outline" disabled={!content || busy} onClick={() => void act("preview")}>
         {busy ? "Validating…" : "Validate & preview"}
       </Button>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      {error && <Notice role="alert" tone="error" title={error} />}
       {result && (
         <>
-          <p className="text-sm">
+          <p className="text-[15px]">
             {result.imported} new records · {result.skipped} already imported.
           </p>
           <div className="space-y-2">
             {result.sample.map((row) => (
-              <p key={row.id} className="rounded border p-2 text-xs">
+              <p key={row.id} className="rounded-lg border p-3 text-[13px]">
                 {row.date} · {row.firm} · {row.kind} · {row.amount} {row.currency}
               </p>
             ))}

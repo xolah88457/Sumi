@@ -18,15 +18,19 @@ import { ReportOverview } from "@/components/report-overview";
 import { MonetaryValue, usePrivacy } from "@/components/privacy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DensityToggle } from "@/components/density-toggle";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiStrip } from "@/components/ui/kpi-strip";
+import { useTableDensity } from "@/lib/table-density";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
-import { fmtDuration } from "@/lib/utils";
+import { cn, fmtDuration } from "@/lib/utils";
 const TradeExplorer = dynamic(
   () => import("@/components/trade-explorer").then((module) => module.TradeExplorer),
   {
     loading: () => (
-      <p role="status" className="py-6 text-sm text-muted-foreground">
+      <p role="status" className="py-6 text-[15px] text-muted-foreground">
         Loading trade explorer…
       </p>
     ),
@@ -36,7 +40,7 @@ const PerformanceTrendsReport = dynamic(
   () => import("@/components/performance-trends").then((module) => module.PerformanceTrendsReport),
   {
     loading: () => (
-      <p role="status" className="py-6 text-sm text-muted-foreground">
+      <p role="status" className="py-6 text-[15px] text-muted-foreground">
         Loading performance trends…
       </p>
     ),
@@ -58,29 +62,50 @@ const number = (n: number | null) =>
   n === null ? "-" : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 const percent = (n: number | null) => (n === null ? "-" : `${(n * 100).toFixed(1)}%`);
 const money = (n: number, currency: string) => `${number(n)} ${currency}`;
-function Summary({ data }: { data: Analysis }) {
+function Summary({ data, strip = false }: { data: Analysis; strip?: boolean }) {
   const s = data.summary;
+  const rows: [string, string][] = [
+    ["Closed trades", String(s.trades)],
+    ["Net P&L", money(s.netPnl, data.currencies[0] ?? "USD")],
+    ["Win rate", percent(s.winRate)],
+    ["Profit factor", s.noLosses ? "∞" : number(s.profitFactor)],
+    ["Entry volume", number(s.volume)],
+    ["Avg holding time", fmtDuration(s.avgDurationMs)],
+    ["Avg planned R", number(s.avgPlannedR)],
+    ["Avg realized R", number(s.avgRealizedR)],
+  ];
+  const value = (label: string, text: string) =>
+    label === "Net P&L" ? <MonetaryValue>{text}</MonetaryValue> : text;
   return (
     <div className="report-summary">
-      <div className="report-summary-grid grid grid-cols-2 gap-4">
-        {[
-          ["Closed trades", String(s.trades)],
-          ["Net P&L", money(s.netPnl, data.currencies[0] ?? "USD")],
-          ["Win rate", percent(s.winRate)],
-          ["Profit factor", s.noLosses ? "∞" : number(s.profitFactor)],
-          ["Entry volume", number(s.volume)],
-          ["Avg holding time", fmtDuration(s.avgDurationMs)],
-          ["Avg planned R", number(s.avgPlannedR)],
-          ["Avg realized R", number(s.avgRealizedR)],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1 break-words text-base font-semibold tabular-nums sm:text-lg">
-              {label === "Net P&L" ? <MonetaryValue>{value}</MonetaryValue> : value}
-            </p>
-          </div>
-        ))}
-      </div>
+      {strip ? (
+        <div className="space-y-0">
+          <KpiStrip
+            aria-label="Report summary"
+            items={rows
+              .slice(0, 4)
+              .map(([label, text]) => ({ id: label, label, value: value(label, text) }))}
+          />
+          <KpiStrip
+            aria-label="Report volume and risk"
+            className="border-t-0"
+            items={rows
+              .slice(4)
+              .map(([label, text]) => ({ id: label, label, value: value(label, text) }))}
+          />
+        </div>
+      ) : (
+        <div className="report-summary-grid grid grid-cols-2 gap-4">
+          {rows.map(([label, text]) => (
+            <div key={label}>
+              <p className="text-[13px] text-muted-foreground">{label}</p>
+              <p className="tnum mt-1 break-words text-[21px] tracking-[-0.02em]">
+                {value(label, text)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -129,6 +154,7 @@ function Breakdown({
   primary: Dimension;
   secondary: Dimension;
 }) {
+  const cell = "journal-table-cell px-3 py-3 text-right tabular-nums";
   const rowLabel = (k: string) => (primary === "playbook" ? labels(data, k) : k),
     colLabel = (k: string) => (secondary === "playbook" ? labels(data, k) : k);
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -141,18 +167,22 @@ function Breakdown({
   if (primary === "weekday") rows.sort((a, b) => weekdays.indexOf(a) - weekdays.indexOf(b));
   const max = data.groups.reduce((max, g) => Math.max(max, Math.abs(g.netPnl)), 1);
   const cells = new Map(data.groups.map((g) => [JSON.stringify([g.row, g.column]), g]));
+  const [density, setDensity] = useTableDensity();
   return (
-    <div className="space-y-4">
+    <div className="space-y-5" data-density={density}>
+      <div className="flex justify-end">
+        <DensityToggle value={density} onChange={setDensity} />
+      </div>
       {cross && rows.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-[13px]">
             <thead>
               <tr>
-                <th className="p-3 text-left">
+                <th className="p-3 text-left font-normal text-muted-foreground">
                   {DIMENSIONS[primary]} / {DIMENSIONS[secondary]}
                 </th>
                 {columns.map((c) => (
-                  <th key={c} className="min-w-24 p-2">
+                  <th key={c} className="min-w-24 p-2 font-normal text-muted-foreground">
                     <GroupLabel dimension={secondary}>{colLabel(c)}</GroupLabel>
                   </th>
                 ))}
@@ -178,7 +208,7 @@ function Breakdown({
                           className="border border-background p-2 text-center tabular-nums"
                           style={{
                             background: g
-                              ? `color-mix(in srgb, ${g.netPnl >= 0 ? "var(--profit-fill)" : "var(--loss)"} ${8 + (Math.abs(g.netPnl) / max) * 35}%, transparent)`
+                              ? `color-mix(in srgb, ${g.netPnl >= 0 ? "var(--profit-fill)" : "var(--loss)"} ${6 + (Math.abs(g.netPnl) / max) * 22}%, transparent)`
                               : undefined,
                           }}
                           tabIndex={0}
@@ -192,14 +222,14 @@ function Breakdown({
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             Cell values are net P&L in {data.currencies[0] ?? "account currency"}.
           </p>
         </div>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-xs text-muted-foreground">
+        <table className="w-full text-[15px] leading-[1.35]">
+          <thead className="text-[13px] text-muted-foreground">
             <tr>
               {[
                 DIMENSIONS[primary],
@@ -211,8 +241,14 @@ function Breakdown({
                 "Avg planned R",
                 "Avg realized R",
                 "Avg duration",
-              ].map((h) => (
-                <th key={h} className="whitespace-nowrap border-b px-3 py-3 text-left font-medium">
+              ].map((h, index, all) => (
+                <th
+                  key={h}
+                  className={cn(
+                    "journal-table-head whitespace-nowrap border-b px-3 py-3 font-normal",
+                    index >= all.length - 6 ? "text-right" : "text-left",
+                  )}
+                >
                   {h}
                 </th>
               ))}
@@ -222,36 +258,40 @@ function Breakdown({
             {data.groups.map((g) => (
               <tr
                 key={JSON.stringify([g.row, g.column])}
-                className="border-b border-border/50 hover:bg-accent/30"
+                className="border-b border-border last:border-0 hover:bg-muted"
               >
-                <td className="px-3 py-3 font-medium">
+                <td className="journal-table-cell px-3 py-3">
                   <GroupLabel dimension={primary}>{rowLabel(g.row)}</GroupLabel>
                 </td>
                 {cross && (
-                  <td className="px-3 py-3">
+                  <td className="journal-table-cell px-3 py-3">
                     <GroupLabel dimension={secondary}>{colLabel(g.column)}</GroupLabel>
                   </td>
                 )}
-                <td className="px-3">{g.trades}</td>
-                <td className="px-3">{percent(g.winRate)}</td>
+                <td className={cell}>{g.trades}</td>
+                <td className={cell}>{percent(g.winRate)}</td>
                 <td
-                  className={`whitespace-nowrap px-3 tabular-nums ${g.netPnl >= 0 ? "text-profit" : "text-loss"}`}
+                  className={cn(
+                    cell,
+                    "whitespace-nowrap",
+                    g.netPnl >= 0 ? "text-profit" : "text-loss",
+                  )}
                 >
                   <MonetaryValue>{money(g.netPnl, data.currencies[0] ?? "USD")}</MonetaryValue>
                 </td>
-                <td className="px-3">{number(g.volume)}</td>
-                <td className="px-3">{number(g.avgPlannedR)}</td>
-                <td className="px-3">{number(g.avgRealizedR)}</td>
-                <td className="whitespace-nowrap px-3">{fmtDuration(g.avgDurationMs)}</td>
+                <td className={cell}>{number(g.volume)}</td>
+                <td className={cell}>{number(g.avgPlannedR)}</td>
+                <td className={cell}>{number(g.avgRealizedR)}</td>
+                <td className={cn(cell, "whitespace-nowrap")}>{fmtDuration(g.avgDurationMs)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       {!data.groups.length && (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          No closed trades match these filters.
-        </p>
+        <EmptyState title="No closed trades match these filters">
+          Adjust Filters above to widen the selection.
+        </EmptyState>
       )}
     </div>
   );
@@ -278,10 +318,13 @@ function Reports() {
   const multi = (data?.currencies.length ?? 0) > 1;
   return (
     <div>
-      <FilterBar title="Reports" />
-      <div className="space-y-4 p-4">
+      <FilterBar
+        title="Reports"
+        lede="Dig into what is working: overview, trends, and breakdowns by symbol, weekday, tag and more."
+      />
+      <div className="space-y-6 px-4 pb-8">
         <AskJournal />
-        <div className="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="Report view" className="flex flex-wrap items-center gap-1">
           {(
             [
               ["overview", "Overview"],
@@ -295,15 +338,16 @@ function Reports() {
             <Button
               key={key}
               size="sm"
-              variant={mode === key ? "default" : "outline"}
+              variant={mode === key ? "secondary" : "ghost"}
               aria-pressed={mode === key}
+              className="text-muted-foreground aria-pressed:text-foreground"
               onClick={() => setMode(key)}
             >
               {name}
             </Button>
           ))}
         </div>
-        <div key={mode} className="journal-report-section space-y-4" data-report-section={mode}>
+        <div key={mode} className="journal-report-section space-y-6" data-report-section={mode}>
           {mode === "overview" ? (
             <ReportOverview query={query} filters={values} />
           ) : mode === "trends" ? (
@@ -356,14 +400,14 @@ function Reports() {
                       {error}
                     </p>
                   ) : loading ? (
-                    <p className="text-sm text-muted-foreground">Loading report…</p>
+                    <p className="text-[15px] text-muted-foreground">Loading report…</p>
                   ) : multi ? (
-                    <p className="text-sm">
+                    <p className="text-[15px]">
                       These accounts use different currencies ({data?.currencies.join(", ")}).
                       Select accounts with the same currency in Filters to compare monetary results.
                     </p>
                   ) : data ? (
-                    <Summary data={data} />
+                    <Summary data={data} strip />
                   ) : null}
                 </CardContent>
               </Card>
@@ -386,7 +430,7 @@ function Reports() {
                   </CardContent>
                 </Card>
               )}
-              <p className="text-xs leading-relaxed text-muted-foreground">
+              <p className="text-[13px] leading-relaxed text-muted-foreground">
                 Closed trades only. Dates use the closing day; weekday and entry time use the
                 opening time in {data?.timeZone ?? "your journal timezone"}. Volume is total entry
                 quantity. R uses weighted entry and total entry quantity; missing or invalid risk
@@ -419,13 +463,13 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
     `Win rate: ${percent(d.summary.winRate)} | Planned R: ${number(d.summary.avgPlannedR)} | Realized R: ${number(d.summary.avgRealizedR)}`,
   ];
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+    <div className="space-y-6">
+      <p className="text-[15px] text-muted-foreground">
         Each group has its own filters. Compare strategies, accounts, periods, or trade
         characteristics. Groups may overlap.
       </p>
       {multi && (
-        <p role="alert" className="rounded-md border p-3 text-sm">
+        <p role="alert" className="rounded-lg bg-secondary p-3 text-[15px]">
           Select accounts with the same currency in both groups. Currency conversion is not applied.
         </p>
       )}
@@ -456,7 +500,7 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                   Edit filters
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground break-words">
+              <p className="text-[13px] text-muted-foreground break-words">
                 {describeFilters(
                   group.filters,
                   group.result.data?.accounts,
@@ -482,7 +526,7 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
       {aa.data && bb.data && !aa.loading && !bb.loading && !multi && (
         <Card>
           <CardContent className="space-y-4 pt-5">
-            <p className="text-sm">
+            <p className="text-[15px]">
               {nameB} minus {nameA}:{" "}
               <strong>
                 <MonetaryValue>

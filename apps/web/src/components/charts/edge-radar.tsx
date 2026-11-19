@@ -51,7 +51,7 @@ export function EdgeRadar({
         <RadarChart className="journal-edge-radar" data={data} outerRadius={radius}>
           <PolarGrid stroke={t.gridline} />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-          <PolarAngleAxis dataKey="metric" tick={{ fill: t.inkMuted, fontSize: 11 }} />
+          <PolarAngleAxis dataKey="metric" tick={{ fill: t.inkMuted, fontSize: 12 }} />
           <Tooltip
             cursor={false}
             allowEscapeViewBox={{ x: false, y: false }}

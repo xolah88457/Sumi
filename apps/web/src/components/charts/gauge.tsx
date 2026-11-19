@@ -45,7 +45,7 @@ export function Gauge({
         />
       </svg>
       <div className="-mt-5 text-center">
-        <div className="text-lg font-semibold tnum">
+        <div className="text-[21px] font-normal tracking-[-0.02em] tnum">
           {value === null ? "–" : `${(ratio * 100).toFixed(1)}%`}
         </div>
       </div>

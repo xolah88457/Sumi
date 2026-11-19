@@ -55,7 +55,10 @@ export function AccountPicker({
   return (
     <div className="flex min-w-0 flex-wrap items-end gap-2">
       <div className="min-w-0 flex-[1_1_180px]">
-        <Label htmlFor={`${fieldId}-account`} className="mb-1 block text-xs text-muted-foreground">
+        <Label
+          htmlFor={`${fieldId}-account`}
+          className="mb-1 block text-[13px] text-muted-foreground"
+        >
           Into account
         </Label>
         <Select value={value} onValueChange={onChange}>
@@ -81,12 +84,12 @@ export function AccountPicker({
         {creating ? "Cancel new account" : "New account"}
       </Button>
       {accountError && (
-        <p role="alert" className="w-full text-sm text-destructive">
+        <p role="alert" className="w-full text-[15px] text-destructive">
           {accountError}
         </p>
       )}
       {kind === "manual" && accounts.length === 0 && !creating && (
-        <p role="alert" className="w-full text-sm text-muted-foreground">
+        <p role="alert" className="w-full text-[15px] text-muted-foreground">
           No manual accounts found. Create one with "New account" to record trades.
         </p>
       )}

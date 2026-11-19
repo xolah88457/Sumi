@@ -58,7 +58,7 @@ pub fn open(app: &AppHandle, origin: Url) -> tauri::Result<()> {
     let bridge_key = Some(state.bridge_key.as_str());
     let bootstrap = format!(
         "({})(...{});",
-        include_str!("../../bridge.js").trim(),
+        include_str!("../../bridge.js").trim().trim_end_matches(';'),
         json!([
             url_origin,
             state.prefs.lock().unwrap().value(),
@@ -79,7 +79,7 @@ pub fn open(app: &AppHandle, origin: Url) -> tauri::Result<()> {
         bounds.as_ref().map_or(1440., |b| b.width),
         bounds.as_ref().map_or(920., |b| b.height),
     )
-    .background_color(tauri::window::Color(245, 244, 237, 255))
+    .background_color(tauri::window::Color(251, 250, 246, 255))
     .center()
     .disable_drag_drop_handler()
     .incognito(state.profile.test)
@@ -87,6 +87,24 @@ pub fn open(app: &AppHandle, origin: Url) -> tauri::Result<()> {
     #[cfg(not(target_os = "macos"))]
     let builder = platform::configure(builder, &state, &origin);
     let window = builder.build()?;
+    // Paper is #fbfaf6; use the dark paper (#171512) when the saved choice is dark, or
+    // when nothing is saved and the OS is dark. The window is still hidden here.
+    let saved_theme = state
+        .prefs
+        .lock()
+        .unwrap()
+        .value()
+        .get("journal-theme-v1")
+        .and_then(|v| v.as_str())
+        .map(str::to_owned);
+    let dark = match saved_theme.as_deref() {
+        Some("dark") => true,
+        Some("light") => false,
+        _ => matches!(window.theme(), Ok(tauri::Theme::Dark)),
+    };
+    if dark {
+        let _ = window.set_background_color(Some(tauri::window::Color(23, 21, 18, 255)));
+    }
     platform::install(&window, origin.clone())?;
     if let Some(b) = bounds.take() {
         if let Ok(monitors) = window.available_monitors() {

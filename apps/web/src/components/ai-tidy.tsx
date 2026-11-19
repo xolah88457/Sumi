@@ -5,6 +5,7 @@ import { Loader2, Sparkles, Undo2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { AiNotice } from "./ai-notice";
+import { Notice } from "./ui/notice";
 import { AiPreviewDialog } from "./ai-preview-dialog";
 import { postJson } from "@/lib/use-api";
 import { useAiPreview, useAiRequest } from "@/lib/use-ai-request";
@@ -134,10 +135,10 @@ export function AiTidy({
           if (!busy) setResultOpen(open);
         }}
       >
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col gap-3">
+        <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <Sparkles aria-hidden="true" className="size-5 text-primary" />
               Tidied note
             </DialogTitle>
             <DialogDescription>
@@ -147,9 +148,12 @@ export function AiTidy({
           {busy ? (
             <div
               role="status"
-              className="flex flex-col items-center justify-center gap-2 py-12 text-sm text-muted-foreground"
+              className="flex flex-col items-center justify-center gap-2 py-12 text-[15px] text-muted-foreground"
             >
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <Loader2
+                aria-hidden="true"
+                className="size-6 animate-spin text-primary motion-reduce:animate-none"
+              />
               Tidying your note…
             </div>
           ) : error ? (
@@ -168,19 +172,19 @@ export function AiTidy({
           ) : result ? (
             <>
               {changedSinceSent && (
-                <p role="alert" className="text-xs text-destructive">
+                <Notice role="alert" tone="error">
                   The note changed after it was sent. Replacing it will drop those newer edits.
-                </p>
+                </Notice>
               )}
               <div
                 aria-label="Tidied note"
-                className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/40 p-3 text-sm leading-relaxed"
+                className="journal-prose-surface min-h-0 w-full flex-1 overflow-y-auto whitespace-pre-wrap leading-[1.65]"
               >
                 {result.text}
               </div>
             </>
           ) : null}
-          <div className="flex items-center justify-end gap-2 border-t pt-2">
+          <div className="flex items-center justify-end gap-2 border-t pt-4">
             <Button
               type="button"
               variant="outline"

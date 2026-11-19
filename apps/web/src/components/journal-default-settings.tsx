@@ -84,14 +84,14 @@ export function JournalDefaultSettings() {
             </OptionSelect>
           </Field>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Closed trades within this net P&L range count as breakeven. Actual P&L is unchanged.
           Percentage mode uses entry price × total entry quantity × contract multiplier; configure
           multipliers for derivatives first.
         </p>
         <div className="space-y-3">
-          <h3 className="text-sm font-medium">Default fees</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="text-[15px] font-medium">Default fees</h3>
+          <p className="text-[13px] text-muted-foreground">
             Applied to new fills with a zero fee, including explicit zeroes. Nonzero imported fees
             and existing fills are kept. The first matching rule wins.
           </p>
@@ -163,8 +163,8 @@ export function JournalDefaultSettings() {
           </Button>
         </div>
         <div className="space-y-3">
-          <h3 className="text-sm font-medium">Stop and target defaults</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="text-[15px] font-medium">Stop and target defaults</h3>
+          <p className="text-[13px] text-muted-foreground">
             Distances from weighted entry, adjusted for long or short direction. Applied only when a
             new trade is first created. The first matching rule wins.
           </p>
@@ -263,7 +263,7 @@ export function JournalDefaultSettings() {
           >
             Save defaults
           </Button>
-          <span role="status" className="text-xs">
+          <span role="status" className="text-[13px]">
             {status}
           </span>
         </div>

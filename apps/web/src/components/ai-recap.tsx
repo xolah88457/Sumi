@@ -72,7 +72,7 @@ export function AiRecap({
         {busy || preview.loading ? "Writing…" : "AI recap"}
       </Button>
       {disabled && disabledReason && (
-        <p className="text-xs text-muted-foreground">{disabledReason}</p>
+        <p className="text-[13px] text-muted-foreground">{disabledReason}</p>
       )}
       {(error || preview.error) && (
         <AiNotice

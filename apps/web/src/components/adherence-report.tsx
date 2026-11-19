@@ -2,6 +2,7 @@
 import { useApi } from "@/lib/use-api";
 import { useFilters } from "@/components/filter-bar";
 import { MonetaryValue } from "./privacy";
+import { pnlClass } from "@/lib/utils";
 import type { GroupSummary } from "@luxalgo/journal-core";
 interface Adherence {
   id: string;
@@ -28,35 +29,35 @@ export function AdherenceReport({ bookId }: { bookId: string }) {
   const b = data?.books.find((b) => b.id === bookId);
   if (error)
     return (
-      <p role="alert" className="text-xs text-destructive">
+      <p role="alert" className="text-[13px] text-destructive">
         {error}
       </p>
     );
   if (!b) return null;
   return (
-    <div className="space-y-3 border-t pt-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Rule adherence</span>
-        <strong className="text-lg">{pct(b.rate)}</strong>
+    <div className="space-y-3 pt-2">
+      <div className="flex items-baseline justify-between">
+        <span className="text-[13px] text-muted-foreground">Rule adherence</span>
+        <strong className="tnum text-[26px] font-normal tracking-[-0.02em]">{pct(b.rate)}</strong>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         {b.evaluated}/{b.possible} rule assessments across {b.total} filtered closed trades.{" "}
         {b.unassessed} trades still need assessment.
       </p>
-      <div className="grid grid-cols-2 gap-3 text-xs">
+      <div className="grid grid-cols-2 gap-3 text-[13px]">
         {[
           ["All rules followed", b.followed],
           ["At least one broken", b.broken],
         ].map(([title, stats]) => {
           const s = stats as GroupSummary;
           return (
-            <div key={String(title)} className="rounded-md bg-muted/40 p-2">
-              <p className="mb-1 font-medium">{String(title)}</p>
+            <div key={String(title)} className="rounded-lg bg-secondary px-3 py-2.5">
+              <p className="mb-1 text-[15px]">{String(title)}</p>
               <p>
                 {s.trades} trades · {pct(s.winRate)} win
               </p>
               {b.currencies.length <= 1 && (
-                <p className={s.netPnl >= 0 ? "text-profit" : "text-loss"}>
+                <p className={s.trades > 0 ? pnlClass(s.netPnl) : "text-muted-foreground"}>
                   <MonetaryValue>
                     {s.netPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
                     {b.currencies[0] ?? ""}
@@ -68,9 +69,9 @@ export function AdherenceReport({ bookId }: { bookId: string }) {
         })}
       </div>
       {b.currencies.length > 1 && (
-        <p className="text-xs text-muted-foreground">P&L hidden for mixed currencies.</p>
+        <p className="text-[13px] text-muted-foreground">P&L hidden for mixed currencies.</p>
       )}
-      <details className="text-xs">
+      <details className="text-[13px]">
         <summary className="cursor-pointer text-muted-foreground">Performance by rule</summary>
         <div className="mt-2 space-y-3">
           {b.rules.map((r) => (

@@ -50,13 +50,13 @@ export function CalendarDailyChart({
             dataKey="date"
             tickFormatter={(date: string) => date.slice(5).replace("-", "/")}
             minTickGap={24}
-            tick={{ fill: tokens.inkMuted, fontSize: 11 }}
+            tick={{ fill: tokens.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: tokens.baseline }}
           />
           <YAxis
             width={76}
-            tick={{ fill: tokens.inkMuted, fontSize: 11 }}
+            tick={{ fill: tokens.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value: number) =>
@@ -76,6 +76,7 @@ export function CalendarDailyChart({
             {data.map((day) => (
               <Cell
                 key={day.date}
+                fillOpacity={0.72}
                 fill={
                   day.netPnl > 0
                     ? tokens.profitFill

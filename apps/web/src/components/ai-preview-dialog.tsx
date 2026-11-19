@@ -48,10 +48,10 @@ export function AiPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col gap-3">
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles aria-hidden="true" className="size-5 text-primary" />
             {title}
           </DialogTitle>
           <DialogDescription>
@@ -61,9 +61,9 @@ export function AiPreviewDialog({
         </DialogHeader>
 
         {preview && (
-          <div className="rounded-lg border bg-muted/40 p-3 text-xs space-y-1.5">
+          <div className="space-y-2 rounded-lg bg-secondary px-4 py-3 text-[13px]">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <div className="flex items-center gap-1.5 text-[15px] text-foreground">
                 {isLocal ? (
                   <Server className="h-3.5 w-3.5 text-profit" />
                 ) : (
@@ -71,16 +71,16 @@ export function AiPreviewDialog({
                 )}
                 <span>Provider: {preview.providerName}</span>
               </div>
-              <span className="rounded bg-muted px-2 py-0.5 font-mono text-[11px] text-foreground">
+              <span className="rounded-sm border bg-card px-2 py-0.5 font-mono text-[13px] text-foreground">
                 Model: {preview.model || "default"}
               </span>
             </div>
-            <p className="text-muted-foreground leading-relaxed flex items-center gap-1">
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <p className="flex items-start gap-1.5 leading-relaxed text-muted-foreground">
+              <ShieldCheck aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
               <span>{preview.networkPrivacy}</span>
             </p>
-            <p className="text-[11px] text-muted-foreground/80 border-t pt-1 flex items-center gap-1">
-              <Info className="h-3 w-3 shrink-0" />
+            <p className="flex items-start gap-1.5 border-t border-border pt-2 text-muted-foreground">
+              <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
               <span>
                 Snapshot at review time (id: {preview.snapshotFingerprint}). Exact prompt is rebuilt
                 on send; sending halts if data or instructions change.
@@ -90,64 +90,61 @@ export function AiPreviewDialog({
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-sm text-muted-foreground gap-2">
-            <Sparkles className="h-6 w-6 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-[15px] text-muted-foreground">
+            <Sparkles
+              aria-hidden="true"
+              className="size-6 animate-spin text-primary motion-reduce:animate-none"
+            />
             <span>Generating context preview snapshot…</span>
           </div>
         ) : error ? (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive space-y-2">
+          <div role="alert" className="space-y-2 rounded-lg bg-secondary px-4 py-3 text-[15px]">
             <p>{error}</p>
             {isDriftError && onRefresh && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={onRefresh}
-              >
+              <Button type="button" size="sm" variant="outline" onClick={onRefresh}>
                 Refresh preview snapshot
               </Button>
             )}
           </div>
         ) : preview ? (
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+          <div className="flex-1 space-y-4 overflow-y-auto pr-1 text-[13px]">
             {preview.customInstructions ? (
               <div>
-                <div className="font-semibold text-foreground mb-1">
+                <div className="mb-1.5 text-[15px] text-foreground">
                   Personal trading instructions
                 </div>
-                <pre className="whitespace-pre-wrap rounded bg-muted/60 p-2.5 font-mono text-[11px] leading-relaxed border border-border/80">
+                <pre className="whitespace-pre-wrap rounded-lg border bg-secondary p-3 font-mono text-[13px] leading-relaxed">
                   {preview.customInstructions}
                 </pre>
               </div>
             ) : null}
 
             <div>
-              <div className="font-semibold text-foreground mb-1">Task prompt</div>
-              <pre className="whitespace-pre-wrap rounded bg-muted/60 p-2.5 font-mono text-[11px] leading-relaxed border border-border/80">
+              <div className="mb-1.5 text-[15px] text-foreground">Task prompt</div>
+              <pre className="whitespace-pre-wrap rounded-lg border bg-secondary p-3 font-mono text-[13px] leading-relaxed">
                 {preview.taskPrompt}
               </pre>
             </div>
 
             <div>
-              <div className="font-semibold text-foreground mb-1">{contextLabel}</div>
-              <pre className="whitespace-pre-wrap rounded bg-muted/60 p-2.5 font-mono text-[11px] leading-relaxed border border-border/80 max-h-56 overflow-y-auto">
+              <div className="mb-1.5 text-[15px] text-foreground">{contextLabel}</div>
+              <pre className="whitespace-pre-wrap rounded-lg border bg-secondary p-3 font-mono text-[13px] leading-relaxed max-h-56 overflow-y-auto">
                 {preview.journalContext}
               </pre>
             </div>
 
             <div>
-              <div className="font-semibold text-foreground mb-1">
+              <div className="mb-1.5 text-[15px] text-foreground">
                 System instructions & boundaries
               </div>
-              <pre className="whitespace-pre-wrap rounded bg-muted/60 p-2.5 font-mono text-[11px] leading-relaxed border border-border/80 max-h-36 overflow-y-auto">
+              <pre className="whitespace-pre-wrap rounded-lg border bg-secondary p-3 font-mono text-[13px] leading-relaxed max-h-36 overflow-y-auto">
                 {preview.effectiveSystemPrompt}
               </pre>
             </div>
           </div>
         ) : null}
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t">
+        <div className="flex items-center justify-end gap-2 border-t pt-4">
           <Button type="button" variant="outline" size="sm" disabled={sending} onClick={close}>
             Cancel
           </Button>

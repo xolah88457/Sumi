@@ -4,10 +4,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { HoverHint } from "./ui/tooltip";
+import { SignedText } from "./ui/signed-text";
 import { PRIVACY_KEY, LEGACY_LAYOUT_KEY, privacyPreference } from "@/lib/privacy-preference";
 
 const PrivacyContext = createContext({ enabled: true, ready: false, error: "", toggle: () => {} });
 export const usePrivacy = () => useContext(PrivacyContext).enabled;
+export const usePrivacyControls = () => useContext(PrivacyContext);
 
 export function PrivacyProvider({ children }: { children: ReactNode }) {
   // Hide amounts until the saved preference has loaded, avoiding a flash on direct navigation.
@@ -65,9 +67,9 @@ export function PrivacyToggle({
       <Button
         className={
           iconOnly
-            ? "h-9 w-9 rounded-lg p-0"
+            ? "h-9 w-9 rounded-full p-0"
             : compact
-              ? "h-9 gap-1.5 rounded-xl px-2.5 text-xs"
+              ? "h-9 gap-1.5 rounded-full px-3 text-[13px]"
               : "w-full justify-start gap-2"
         }
         size="sm"
@@ -99,7 +101,8 @@ export function PrivacyToggle({
 }
 
 export function MonetaryValue({ children }: { children: ReactNode }) {
-  return usePrivacy() ? <span aria-label="Monetary value hidden">••••</span> : children;
+  if (usePrivacy()) return <span aria-label="Monetary value hidden">••••</span>;
+  return typeof children === "string" ? <SignedText>{children}</SignedText> : children;
 }
 
 export function MonetaryField({

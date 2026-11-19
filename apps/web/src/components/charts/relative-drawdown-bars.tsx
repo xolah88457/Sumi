@@ -21,14 +21,14 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
 
   return (
     <div className="mt-2 border-t pt-3">
-      <div className="mb-1 flex items-center justify-between gap-3 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+      <div className="mb-1 flex items-center justify-between gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
         <span>Relative drawdown</span>
         <span className="tnum text-loss">
           {available.length === 0 ? "Initial balance required" : `Max −${fmtPercent(maxDrawdown)}`}
         </span>
       </div>
       {available.length === 0 ? (
-        <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
+        <div className="flex h-20 items-center justify-center text-[13px] text-muted-foreground">
           Set an initial balance to chart relative drawdown.
         </div>
       ) : (
@@ -48,7 +48,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
                 height={8}
               />
               <YAxis
-                tick={{ fill: tokens.inkMuted, fontSize: 10 }}
+                tick={{ fill: tokens.inkMuted, fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
                 width={70}
@@ -65,7 +65,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
               <Bar
                 dataKey="drawdownPct"
                 fill={tokens.loss}
-                fillOpacity={0.82}
+                fillOpacity={0.55}
                 stroke={tokens.loss}
                 strokeWidth={1}
                 isAnimationActive={false}

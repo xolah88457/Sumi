@@ -28,22 +28,22 @@ export function RuleChecklist({
       <CardContent className="space-y-3">
         {data?.name ? (
           <>
-            <p className="text-sm font-medium">{data.name}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[15px] font-medium">{data.name}</p>
+            <p className="text-[13px] text-muted-foreground">
               {evaluated.length
                 ? `${Math.round((followed / evaluated.length) * 100)}% followed · `
                 : ""}
               {evaluated.length}/{data.rules.length} rules assessed
             </p>
             {data.rules.length === 0 && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 Add rules to this playbook to review adherence.
               </p>
             )}
             {data.rules.map((r) => (
               <label
                 key={r.rule}
-                className="flex items-center justify-between gap-3 border-t pt-2 text-sm"
+                className="flex items-center justify-between gap-3 border-t pt-2 text-[15px]"
               >
                 <span>{r.rule}</span>
                 <OptionSelect
@@ -71,12 +71,12 @@ export function RuleChecklist({
             ))}
           </>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Assign a playbook to check its rules for this trade.
           </p>
         )}
         {(error || failure) && (
-          <p role="alert" className="text-xs text-destructive">
+          <p role="alert" className="text-[13px] text-destructive">
             {error || failure}
           </p>
         )}

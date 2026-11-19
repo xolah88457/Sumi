@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { KpiStrip } from "@/components/ui/kpi-strip";
 import {
   Select,
   SelectContent,
@@ -107,9 +108,9 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
     return (
       <div>
         <FilterBar title="Trade" />
-        <div className="p-4">
+        <div className="px-4 pb-8">
           {error ? (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-[15px] text-destructive">
               {error}
             </p>
           ) : (
@@ -150,59 +151,92 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
 
   return (
     <div>
-      <FilterBar title={`${trade.symbol} · ${trade.direction.toUpperCase()}`} />
+      <FilterBar
+        title={`${trade.symbol} · ${trade.direction.toUpperCase()}`}
+        lede={`${formatTimestamp(trade.openedAt, timeZone)} to ${trade.closedAt ? formatTimestamp(trade.closedAt, timeZone) : "now (still open)"}, shown in ${timeZone}.`}
+      />
       <TradeNavigation tradeKey={tradeKey} />
-      <div className="grid gap-3 p-4 xl:grid-cols-3">
-        <div className="min-w-0 space-y-3 xl:col-span-2">
-          <Card>
-            <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-3 py-4">
-              <div>
-                <div className="text-xs text-muted-foreground">Net P&L</div>
-                <Pnl value={trade.netPnl} className="text-2xl font-semibold" />
-              </div>
-              <Badge
-                variant={
-                  trade.status === "win" ? "profit" : trade.status === "loss" ? "loss" : "secondary"
-                }
-                className="text-sm"
-              >
-                {trade.status.toUpperCase()}
-              </Badge>
-              <Meta label="Gross" value={fmtMoney(trade.grossPnl)} monetary />
-              <Meta label="Fees" value={fmtMoney(trade.fees)} monetary />
-              <Meta label="Volume" value={fmtNumber(trade.quantity, 4)} />
-              <Meta label="Avg entry" value={fmtNumber(trade.avgEntry)} monetary />
-              <Meta
-                label="Avg exit"
-                monetary
-                value={trade.avgExit === null ? "open" : fmtNumber(trade.avgExit)}
-              />
-              <Meta label="Duration" value={fmtDuration(trade.durationMs)} />
-              <Meta label="Net / entry notional" value={fmtPercent(netReturnOnEntry(trade), 2)} />
-              <Meta
-                label="Planned R"
-                value={trade.plannedR === null ? "–" : `${fmtNumber(trade.plannedR)}R`}
-              />
-              <Meta
-                label="Realized R"
-                value={trade.realizedR === null ? "–" : `${fmtNumber(trade.realizedR)}R`}
-              />
-              <div className="ml-auto">
-                <DeleteTradeButton
-                  tradeKey={tradeKey}
-                  label={`this ${trade.symbol} ${trade.direction} trade`}
-                />
-              </div>
-            </CardContent>
-          </Card>
+      <div className="space-y-5 px-4 pt-2">
+        <KpiStrip
+          aria-label="Trade summary"
+          items={[
+            {
+              id: "net",
+              label: "Net P&L",
+              value: <Pnl value={trade.netPnl} />,
+              detail: (
+                <Badge
+                  variant={
+                    trade.status === "win"
+                      ? "profit"
+                      : trade.status === "loss"
+                        ? "loss"
+                        : "secondary"
+                  }
+                >
+                  {trade.status.toUpperCase()}
+                </Badge>
+              ),
+            },
+            {
+              id: "gross",
+              label: "Gross",
+              value: <MonetaryValue>{fmtMoney(trade.grossPnl)}</MonetaryValue>,
+            },
+            {
+              id: "fees",
+              label: "Fees",
+              value: <MonetaryValue>{fmtMoney(trade.fees)}</MonetaryValue>,
+            },
+            { id: "duration", label: "Duration", value: fmtDuration(trade.durationMs) },
+            {
+              id: "roi",
+              label: "Net / entry notional",
+              value: fmtPercent(netReturnOnEntry(trade), 2),
+            },
+          ]}
+        />
 
+        <KpiStrip
+          aria-label="Trade prices and risk"
+          items={[
+            { id: "volume", label: "Volume", value: fmtNumber(trade.quantity, 4) },
+            {
+              id: "entry",
+              label: "Avg entry",
+              value: <MonetaryValue>{fmtNumber(trade.avgEntry)}</MonetaryValue>,
+            },
+            {
+              id: "exit",
+              label: "Avg exit",
+              value: (
+                <MonetaryValue>
+                  {trade.avgExit === null ? "open" : fmtNumber(trade.avgExit)}
+                </MonetaryValue>
+              ),
+            },
+            {
+              id: "planned",
+              label: "Planned R",
+              value: trade.plannedR === null ? "–" : `${fmtNumber(trade.plannedR)}R`,
+            },
+            {
+              id: "realized",
+              label: "Realized R",
+              value: trade.realizedR === null ? "–" : `${fmtNumber(trade.realizedR)}R`,
+            },
+          ]}
+        />
+      </div>
+      <div className="grid gap-6 px-4 pb-8 pt-6 xl:grid-cols-3">
+        <div className="min-w-0 space-y-5 xl:col-span-2">
           <Attachments type="trade" id={trade.key} variant="trade-gallery" />
 
           {runningPnl.length > 1 && (
             <Card>
               <CardHeader>
                 <CardTitle>Running P&L</CardTitle>
-                <p className="text-xs text-muted-foreground">Times in {timeZone}</p>
+                <p className="text-[13px] text-muted-foreground">Times in {timeZone}</p>
               </CardHeader>
               <CardContent>
                 <EquityArea data={runningPnl} height={180} />
@@ -215,7 +249,7 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
           <Card>
             <CardHeader>
               <CardTitle>Executions</CardTitle>
-              <p className="text-xs text-muted-foreground">Times in {timeZone}</p>
+              <p className="text-[13px] text-muted-foreground">Times in {timeZone}</p>
             </CardHeader>
             <CardContent>
               <Table>
@@ -254,32 +288,19 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
               </Table>
             </CardContent>
           </Card>
+          <div className="flex justify-end">
+            <DeleteTradeButton
+              tradeKey={tradeKey}
+              label={`this ${trade.symbol} ${trade.direction} trade`}
+            />
+          </div>
         </div>
 
-        <div className="min-w-0 space-y-3">
+        <div className="min-w-0 space-y-5">
           <AnnotationsCard key={trade.key} trade={trade} onPatch={patch} />
           <RuleChecklist tradeKey={trade.key} playbookId={trade.playbookId} />
           <TradeCritiqueSection tradeKey={trade.key} />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function Meta({
-  label,
-  value,
-  monetary = false,
-}: {
-  label: string;
-  value: string;
-  monetary?: boolean;
-}) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="tnum text-sm font-medium">
-        {monetary ? <MonetaryValue>{value}</MonetaryValue> : value}
       </div>
     </div>
   );
@@ -331,7 +352,7 @@ function AnnotationsCard({
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between">
           <TradeRating value={trade.rating} onChange={(rating) => onPatch({ rating })} />
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-[15px]">
             <Checkbox
               checked={trade.reviewedAt !== null}
               onCheckedChange={(checked) => void onPatch({ reviewed: checked === true })}
@@ -342,7 +363,7 @@ function AnnotationsCard({
 
         <div className="grid grid-cols-2 gap-2">
           <div className={slGreyed ? "opacity-50 transition-opacity" : "transition-opacity"}>
-            <label className="text-xs text-muted-foreground">
+            <label className="text-[13px] text-muted-foreground">
               Stop loss {isSlHit ? "(Hit)" : ""}
             </label>
             <MonetaryField>
@@ -360,7 +381,7 @@ function AnnotationsCard({
             </MonetaryField>
           </div>
           <div className={tpGreyed ? "opacity-50 transition-opacity" : "transition-opacity"}>
-            <label className="text-xs text-muted-foreground">
+            <label className="text-[13px] text-muted-foreground">
               Profit target {isTpHit ? "(Hit)" : ""}
             </label>
             <MonetaryField>
@@ -380,7 +401,7 @@ function AnnotationsCard({
         </div>
 
         <div>
-          <label className="text-xs text-muted-foreground">Playbook</label>
+          <label className="text-[13px] text-muted-foreground">Playbook</label>
           <Select
             value={trade.playbookId ?? "none"}
             onValueChange={(value) => void onPatch({ playbookId: value === "none" ? null : value })}
@@ -400,7 +421,7 @@ function AnnotationsCard({
         </div>
 
         <div>
-          <label className="text-xs text-muted-foreground">Tags (comma-separated)</label>
+          <label className="text-[13px] text-muted-foreground">Tags (comma-separated)</label>
           <Input
             value={tags}
             onChange={(event) => {
@@ -411,7 +432,7 @@ function AnnotationsCard({
           />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Mistakes</label>
+          <label className="text-[13px] text-muted-foreground">Mistakes</label>
           <Input
             value={mistakes}
             onChange={(event) => {
@@ -424,7 +445,7 @@ function AnnotationsCard({
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="text-xs text-muted-foreground">Notes</label>
+            <label className="text-[13px] text-muted-foreground">Notes</label>
           </div>
           <RichEditor
             editorRef={noteEditor}
@@ -435,7 +456,7 @@ function AnnotationsCard({
               debounced({ notes: value });
             }}
           />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-[13px] text-muted-foreground">
             <span role="status">{saveStatus}</span>
             <Button variant="ghost" size="sm" onClick={() => void flush()}>
               Save now

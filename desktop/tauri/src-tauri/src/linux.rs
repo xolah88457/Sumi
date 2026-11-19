@@ -7,7 +7,9 @@ use std::{
 };
 use tauri::{AppHandle, Manager, Url, WebviewWindow};
 use webkit2gtk::{
-    prelude::*, PolicyDecisionType, ResponsePolicyDecision, UserMediaPermissionRequest,
+    DownloadExt, PermissionRequestExt, PolicyDecisionExt, PolicyDecisionType,
+    ResponsePolicyDecision, ResponsePolicyDecisionExt, SettingsExt, URIRequestExt, URIResponseExt,
+    UserMediaPermissionRequest, UserMediaPermissionRequestExt, WebContextExt, WebViewExt,
 };
 
 pub fn install(window: &WebviewWindow, origin: Url) -> tauri::Result<()> {

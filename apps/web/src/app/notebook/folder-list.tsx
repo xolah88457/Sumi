@@ -155,7 +155,7 @@ function SortableFolder({
       data-folder-row={folder.id}
       data-dragging={dragging || undefined}
       className={cn(
-        "group relative flex items-center rounded-md",
+        "group relative flex items-center rounded-full",
         dragging && "z-10 bg-background shadow-md ring-1 ring-border",
       )}
       {...pointerListeners}
@@ -177,8 +177,8 @@ function SortableFolder({
       <button
         type="button"
         className={cn(
-          "min-w-0 flex-1 break-words rounded-md py-1.5 pl-3 pr-2 text-left text-sm",
-          selected ? "bg-accent font-medium" : "text-muted-foreground hover:bg-accent/60",
+          "min-w-0 flex-1 break-words rounded-full py-2 pl-4 pr-3 text-left text-[15px]",
+          selected ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-muted",
         )}
         onClick={() => onSelect(folder.id)}
       >

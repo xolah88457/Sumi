@@ -192,7 +192,7 @@ export function VoiceNote({
                 ? "Stop dictation (Esc to cancel)"
                 : "Dictate note using local Parakeet speech recognition"
             }
-            className={`transition-all select-none ${isListening ? "pr-3 pl-2.5 shadow-sm" : ""} ${className || ""}`}
+            className={`transition-all select-none ${isListening ? "pr-4 pl-3" : ""} ${className || ""}`}
           >
             {isBusy ? (
               <Loader2 className="size-3.5 animate-spin text-current" />
@@ -231,7 +231,7 @@ export function VoiceNote({
             size="sm"
             onClick={handleCancel}
             title="Cancel dictation without saving (Esc)"
-            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+            className="h-8 px-2 text-[13px] text-muted-foreground hover:text-foreground"
           >
             Cancel
           </Button>
@@ -258,30 +258,32 @@ export function VoiceNote({
             align="end"
             sideOffset={8}
             collisionPadding={12}
-            className="journal-popup z-50 max-h-[var(--radix-popover-content-available-height)] w-84 max-w-[calc(100vw-24px)] space-y-3.5 overflow-y-auto rounded-xl border bg-card p-4 text-sm shadow-xl animate-in fade-in-50 zoom-in-95"
+            className="journal-popup z-50 max-h-[var(--radix-popover-content-available-height)] w-84 max-w-[calc(100vw-24px)] space-y-3.5 overflow-y-auto journal-menu-surface rounded-xl border bg-card p-4 text-[15px] animate-in fade-in-50 zoom-in-95"
           >
             {setupOpen ? (
               <>
                 <div className="flex items-start gap-2.5">
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground">
                     <Sparkles className="size-4" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="font-semibold text-sm leading-none">Local Voice Dictation</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <h4 className="text-[17px] font-normal leading-none tracking-[-0.01em]">
+                      Local voice dictation
+                    </h4>
+                    <p className="text-[13px] text-muted-foreground leading-relaxed">
                       Sumi runs <strong>Parakeet Unified EN 0.6B</strong> with Silero VAD locally on
                       your Mac. Audio never leaves your computer.
                     </p>
                   </div>
                 </div>
 
-                <div className="rounded-md border bg-muted/40 p-2.5 text-xs text-muted-foreground">
+                <div className="rounded-lg bg-secondary px-3 py-2.5 text-[13px] text-muted-foreground">
                   Model download size: ~730 MB. Downloaded once to your local cache and accelerated
                   via Apple Silicon Metal.
                 </div>
 
                 {error && (
-                  <p role="alert" className="text-xs text-destructive">
+                  <p role="alert" className="text-[13px] text-destructive">
                     {error}
                   </p>
                 )}
@@ -321,8 +323,10 @@ export function VoiceNote({
                 <div className="flex items-start gap-2.5">
                   <AlertCircle className="size-5 shrink-0 text-destructive" />
                   <div className="space-y-1">
-                    <h4 className="font-medium text-sm leading-none">Dictation Notice</h4>
-                    <p role="alert" className="text-xs text-muted-foreground leading-relaxed">
+                    <h4 className="text-[17px] font-normal leading-none tracking-[-0.01em]">
+                      Dictation notice
+                    </h4>
+                    <p role="alert" className="text-[13px] text-muted-foreground leading-relaxed">
                       {error}
                     </p>
                   </div>

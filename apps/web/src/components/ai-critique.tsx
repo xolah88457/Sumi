@@ -181,7 +181,7 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
         {latestReview ? (
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-1 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2 text-[13px] text-muted-foreground">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span className="capitalize text-foreground">{latestReview.provider}</span>
                   <span>•</span>
@@ -189,12 +189,14 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span>{formatReviewTimestamp(latestReview.createdAt)}</span>
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <span className="rounded-sm bg-secondary px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.08em] text-foreground">
                     Latest
                   </span>
                 </div>
               </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{latestReview.content}</p>
+              <p className="max-w-[66ch] whitespace-pre-wrap text-[17px] leading-[1.65]">
+                {latestReview.content}
+              </p>
             </div>
 
             {earlierReviews.length > 0 && (
@@ -204,7 +206,7 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
                   size="sm"
                   aria-expanded={showEarlier}
                   aria-controls={earlierSectionId}
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  className="h-7 px-2 text-[13px] text-muted-foreground hover:text-foreground"
                   onClick={() => setShowEarlier((v) => !v)}
                 >
                   {showEarlier ? (
@@ -221,8 +223,8 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
                       .slice()
                       .reverse()
                       .map((rev) => (
-                        <div key={rev.id} className="space-y-2 rounded-md border bg-muted/30 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                        <div key={rev.id} className="space-y-2 rounded-lg bg-secondary p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                               <span className="font-medium capitalize text-foreground">
                                 {rev.provider}
@@ -232,7 +234,7 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
                             </div>
                             <span>{formatReviewTimestamp(rev.createdAt)}</span>
                           </div>
-                          <p className="whitespace-pre-wrap text-xs leading-relaxed">
+                          <p className="whitespace-pre-wrap text-[15px] leading-[1.6]">
                             {rev.content}
                           </p>
                         </div>
@@ -244,7 +246,9 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
           </CardContent>
         ) : fallbackCritique ? (
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">{fallbackCritique}</p>
+            <p className="max-w-[66ch] whitespace-pre-wrap text-[17px] leading-[1.65]">
+              {fallbackCritique}
+            </p>
           </CardContent>
         ) : null}
       </Card>

@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ExportButtons } from "@/components/export-buttons";
+import { Notice } from "@/components/ui/notice";
+import { AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportPdf, exportPng, type ReviewDocument } from "@/lib/export-review";
 import { usePrivacy } from "./privacy";
@@ -59,11 +61,7 @@ export function ReviewExport({
         concealed={concealed}
         onExport={(format) => void run(format === "png")}
       />
-      {error && (
-        <p role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
+      {error && <Notice role="alert" tone="error" icon={<AlertCircle />} title={error} />}
       <Dialog open={open && !concealed} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
@@ -79,12 +77,12 @@ export function ReviewExport({
               </Button>
               {f.type === "application/pdf" ? (
                 <div className="rounded border bg-white p-6 text-slate-800">
-                  <p className="mb-4 text-xs text-slate-500">
+                  <p className="mb-4 text-[13px] text-slate-500">
                     Review text · download the PDF for the paginated document.
                   </p>
                   <h3 className="mb-2 text-xl font-semibold">{previewDocument?.title}</h3>
-                  <p className="mb-6 text-xs text-slate-500">{previewDocument?.subtitle}</p>
-                  <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                  <p className="mb-6 text-[13px] text-slate-500">{previewDocument?.subtitle}</p>
+                  <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
                     {previewDocument?.lines.join("\n")}
                   </div>
                 </div>

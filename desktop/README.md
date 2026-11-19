@@ -235,6 +235,7 @@ Sumi is distributed independently without paid code-signing certificates:
   - **Terminal alternative** (any version): `xattr -dr com.apple.quarantine /Applications/Sumi.app`
 
   You only need to do this once per downloaded copy; later launches open normally. Installing a newer version from a fresh download asks again.
+
 - **Windows**: Unsigned (no Authenticode certificate). Windows Defender SmartScreen may display an "Unrecognized app" prompt on first launch:
   1. Click **More info**.
   2. Click **Run anyway**.

@@ -68,14 +68,14 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   };
   return (
     <div className="space-y-3 rounded-lg border p-3" id="market-csv">
-      <h3 className="text-sm font-medium">Market data CSV</h3>
-      <p className="text-xs text-muted-foreground">
+      <h3 className="text-[15px] font-medium">Market data CSV</h3>
+      <p className="text-[13px] text-muted-foreground">
         Upload one instrument and candle resolution per file, up to 5 MB / 50,000 rows. Required
         columns: time, open, high, low, close. Volume is optional. Time is the bar open: ISO-8601
         with timezone, Unix seconds or milliseconds. Daily bars must start at 00:00 UTC. These are
         market candles, separate from trade execution imports.
       </p>
-      <a className="text-xs underline" href="/market-data-template.csv" download>
+      <a className="text-[13px] underline" href="/market-data-template.csv" download>
         Download generic CSV header template
       </a>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -188,11 +188,11 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
       </Button>
       {preview && (
         <div className="space-y-2 rounded-lg border p-3">
-          <p className="text-xs">
+          <p className="text-[13px]">
             {preview.count.toLocaleString()} candles · {preview.from} to {preview.to}
           </p>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-[13px]">
               <caption className="text-left">First candles (UTC)</caption>
               <thead>
                 <tr>
@@ -223,12 +223,12 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
         </div>
       )}
       {(error || listError) && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {error || listError}
         </p>
       )}
       {message && (
-        <p role="status" className="text-xs text-muted-foreground">
+        <p role="status" className="text-[13px] text-muted-foreground">
           {message}
         </p>
       )}
@@ -237,7 +237,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           key={dataset.id}
           className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
         >
-          <div className="min-w-0 text-xs">
+          <div className="min-w-0 text-[13px]">
             <p className="break-all font-medium">
               {dataset.name} · {dataset.symbol} · {dataset.resolution}
             </p>

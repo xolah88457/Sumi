@@ -143,8 +143,8 @@ export function RichEditor({
     });
   }
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-1.5">
         {showModeToggle && (
           <Button type="button" variant="outline" size="sm" onClick={() => setPreview(!preview)}>
             {preview ? "Edit" : "Preview"}
@@ -241,7 +241,7 @@ export function RichEditor({
                   variant="outline"
                   size="sm"
                   aria-label="Insert note template"
-                  className="gap-2 rounded-lg"
+                  className="gap-2"
                 >
                   Insert template…
                   <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -284,7 +284,7 @@ export function RichEditor({
         )}
       </div>
       {linkOpen && !preview && (
-        <div className="space-y-2 rounded-md border p-2">
+        <div className="space-y-2 rounded-lg border bg-card p-3">
           <input
             aria-label="Find trade by symbol, date or account"
             placeholder="Search symbol, date or account"
@@ -294,12 +294,12 @@ export function RichEditor({
           />
           <div className="max-h-40 overflow-y-auto">
             {tradesLoading && (
-              <p role="status" className="text-xs text-muted-foreground">
+              <p role="status" className="text-[13px] text-muted-foreground">
                 Loading trades…
               </p>
             )}
             {tradeError && (
-              <p role="alert" className="text-xs text-destructive">
+              <p role="alert" className="text-[13px] text-destructive">
                 {tradeError}
               </p>
             )}
@@ -309,7 +309,7 @@ export function RichEditor({
                 <button
                   key={t.key}
                   type="button"
-                  className="block w-full rounded p-1 text-left text-xs hover:bg-accent"
+                  className="block w-full rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-accent"
                   onClick={() => {
                     onChange(value + `\n${tradeMarkdownLink(t)}\n`);
                     setLinkOpen(false);
@@ -320,10 +320,10 @@ export function RichEditor({
                 </button>
               ))}
             {!tradesLoading && !tradeError && trades?.trades.length === 0 && (
-              <p className="text-xs text-muted-foreground">No matching trades.</p>
+              <p className="text-[13px] text-muted-foreground">No matching trades.</p>
             )}
             {!tradesLoading && !tradeError && trades?.hasMore && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 Showing the latest 50 matches. Search by date or account to find older trades.
               </p>
             )}
@@ -331,21 +331,21 @@ export function RichEditor({
         </div>
       )}
       {preview ? (
-        <div className="min-h-40 rounded-md border p-3">
+        <div className="journal-prose-surface min-h-40">
           <Markdown>{value || "Nothing written yet."}</Markdown>
         </div>
       ) : (
         <textarea
           ref={ref}
           aria-label="Review notes"
-          className={`${fieldClass} min-h-48 resize-y font-mono text-[13px]`}
+          className="journal-prose-surface block min-h-48 w-full resize-y text-[17px] leading-[1.65] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
         />
       )}
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {error}
         </p>
       )}

@@ -12,6 +12,8 @@ import { MonetaryValue } from "@/components/privacy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiStrip } from "@/components/ui/kpi-strip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
 import { Attachments } from "@/components/attachments";
@@ -96,51 +98,61 @@ function JournalDay({ date }: { date: string }) {
   const noteInScope = Object.keys(filters).every((key) => key === "from" || key === "to");
   return (
     <div>
-      <FilterBar title={`Journal · ${date}`} />
-      <div className="grid gap-3 p-4 xl:grid-cols-3">
-        <div className="min-w-0 space-y-3 xl:col-span-2">
-          {m && m.closedTrades > 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Day stats</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3 2xl:grid-cols-5">
-                <Stat label="Net P&L">
-                  <Pnl value={m.netPnl} className="font-semibold" />
-                </Stat>
-                <Stat label="Trades">{m.closedTrades}</Stat>
-                <Stat label="Winrate">{fmtPercent(m.winRate)}</Stat>
-                <Stat label="Winners">{m.wins}</Stat>
-                <Stat label="Losers">{m.losses}</Stat>
-                <Stat label="Gross">
-                  <MonetaryValue>{fmtMoney(m.grossPnl)}</MonetaryValue>
-                </Stat>
-                <Stat label="Fees">
-                  <MonetaryValue>{fmtMoney(m.fees)}</MonetaryValue>
-                </Stat>
-                <Stat label="Volume">{fmtNumber(m.totalVolume, 0)}</Stat>
-                <Stat label="Profit factor">
-                  {m.profitFactorIsInfinite
-                    ? "∞"
-                    : m.profitFactor === null
-                      ? "–"
-                      : fmtNumber(m.profitFactor)}
-                </Stat>
-                <Stat label="Expectancy">
+      <FilterBar
+        title={`Journal · ${date}`}
+        lede="Look back over the day, then write what you noticed. Your note saves as you type."
+      />
+      {m && m.closedTrades > 0 && (
+        <div className="px-4 pt-2">
+          <KpiStrip
+            rowRules
+            className="grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]"
+            aria-label="Day stats"
+            items={[
+              { id: "net", label: "Net P&L", value: <Pnl value={m.netPnl} /> },
+              { id: "trades", label: "Trades", value: m.closedTrades },
+              { id: "win", label: "Winrate", value: fmtPercent(m.winRate) },
+              { id: "winners", label: "Winners", value: m.wins },
+              { id: "losers", label: "Losers", value: m.losses },
+              {
+                id: "gross",
+                label: "Gross",
+                value: <MonetaryValue>{fmtMoney(m.grossPnl)}</MonetaryValue>,
+              },
+              {
+                id: "fees",
+                label: "Fees",
+                value: <MonetaryValue>{fmtMoney(m.fees)}</MonetaryValue>,
+              },
+              { id: "volume", label: "Volume", value: fmtNumber(m.totalVolume, 0) },
+              {
+                id: "pf",
+                label: "Profit factor",
+                value: m.profitFactorIsInfinite
+                  ? "∞"
+                  : m.profitFactor === null
+                    ? "–"
+                    : fmtNumber(m.profitFactor),
+              },
+              {
+                id: "expectancy",
+                label: "Expectancy",
+                value: (
                   <MonetaryValue>
                     {m.expectancy === null ? "–" : fmtMoney(m.expectancy)}
                   </MonetaryValue>
-                </Stat>
-              </CardContent>
-            </Card>
-          ) : (
-            m && (
-              <Card>
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  No closed trades this day.
-                </CardContent>
-              </Card>
-            )
+                ),
+              },
+            ]}
+          />
+        </div>
+      )}
+      <div className="grid gap-6 px-4 pb-8 pt-6 xl:grid-cols-5">
+        <div className="min-w-0 space-y-5 xl:col-span-2">
+          {m && m.closedTrades === 0 && (
+            <EmptyState title="No closed trades this day">
+              Anything you write in the day note is still kept.
+            </EmptyState>
           )}
 
           {data && data.intraday.length > 0 && (
@@ -161,63 +173,66 @@ function JournalDay({ date }: { date: string }) {
           )}
 
           {data && data.trades.length > 0 && (
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle>Trades</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1">
+              <ul className="divide-y divide-border pb-1">
                 {data.trades.map((trade) => (
-                  <Link
-                    key={trade.key}
-                    href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          trade.status === "win"
-                            ? "profit"
-                            : trade.status === "loss"
-                              ? "loss"
-                              : "secondary"
-                        }
-                      >
-                        {trade.status.toUpperCase()}
-                      </Badge>
-                      <span className="font-medium">{trade.symbol}</span>
-                      <span className="text-xs text-muted-foreground">{trade.direction}</span>
-                    </span>
-                    <span className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
-                      <span className="tnum text-xs text-muted-foreground">
-                        {fmtNumber(trade.quantity, 4)} @{" "}
-                        <MonetaryValue>{fmtNumber(trade.avgEntry)}</MonetaryValue>
-                        {trade.avgExit !== null && (
-                          <>
-                            {" "}
-                            → <MonetaryValue>{fmtNumber(trade.avgExit)}</MonetaryValue>
-                          </>
-                        )}
+                  <li key={trade.key}>
+                    <Link
+                      href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
+                      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3 text-[15px] transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            trade.status === "win"
+                              ? "profit"
+                              : trade.status === "loss"
+                                ? "loss"
+                                : "secondary"
+                          }
+                        >
+                          {trade.status.toUpperCase()}
+                        </Badge>
+                        <span className="text-[17px]">{trade.symbol}</span>
+                        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                          {trade.direction}
+                        </span>
                       </span>
-                      <Pnl value={trade.netPnl} />
-                    </span>
-                  </Link>
+                      <span className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
+                        <span className="tnum text-[13px] text-muted-foreground">
+                          {fmtNumber(trade.quantity, 4)} @{" "}
+                          <MonetaryValue>{fmtNumber(trade.avgEntry)}</MonetaryValue>
+                          {trade.avgExit !== null && (
+                            <>
+                              {" "}
+                              → <MonetaryValue>{fmtNumber(trade.avgExit)}</MonetaryValue>
+                            </>
+                          )}
+                        </span>
+                        <Pnl value={trade.netPnl} />
+                      </span>
+                    </Link>
+                  </li>
                 ))}
-              </CardContent>
+              </ul>
             </Card>
           )}
           {!data && <Skeleton className="h-64" />}
         </div>
 
-        <Card className="h-fit">
+        <Card className="h-fit min-w-0 xl:col-span-3">
           <CardHeader>
             <CardTitle>Day note</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="mb-3 text-xs text-muted-foreground">
+          <CardContent className="space-y-4">
+            <p className="max-w-[66ch] text-[13px] text-muted-foreground">
               This note is shared across accounts. AI recaps use the selected filters and append a
               labeled section. Shared notes are excluded from filtered AI context.
             </p>
-            <div className="mb-3">
+            <div>
               <AiRecap
                 key={`${date}:${timeZone}:${query}`}
                 date={date}
@@ -250,13 +265,13 @@ function JournalDay({ date }: { date: string }) {
                 aiContext={`Daily journal note for ${date}`}
               />
             ) : error ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-[15px] text-destructive">
                 {error}
               </p>
             ) : (
               <Skeleton className="h-48" />
             )}
-            <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-1 text-[13px] text-muted-foreground">
               <span role="status">{saving}</span>
               <span className="flex items-center gap-1">
                 <Button variant="ghost" size="sm" onClick={() => void flush()}>
@@ -275,7 +290,7 @@ function JournalDay({ date }: { date: string }) {
               </span>
             </div>
             {deleteError && (
-              <p role="alert" className="text-xs text-destructive">
+              <p role="alert" className="text-[13px] text-destructive">
                 {deleteError}
               </p>
             )}
@@ -284,15 +299,6 @@ function JournalDay({ date }: { date: string }) {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="tnum">{children}</div>
     </div>
   );
 }

@@ -76,7 +76,7 @@ export function TradeScatter({
             ticks={x === "entryMinute" ? [0, 360, 720, 1080, 1440] : undefined}
             minTickGap={24}
             tickFormatter={xLabel}
-            tick={{ fill: tokens.inkMuted, fontSize: 11 }}
+            tick={{ fill: tokens.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: tokens.baseline }}
           />
@@ -86,7 +86,7 @@ export function TradeScatter({
             width={82}
             domain={[(min: number) => Math.min(min, 0), (max: number) => Math.max(max, 0)]}
             tickFormatter={yLabel}
-            tick={{ fill: tokens.inkMuted, fontSize: 11 }}
+            tick={{ fill: tokens.inkMuted, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
           />

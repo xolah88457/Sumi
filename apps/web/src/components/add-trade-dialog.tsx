@@ -13,17 +13,37 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 
-export function AddTradeDialog({ onSaved }: { onSaved?: (tradeKey?: string) => void }) {
-  const [open, setOpen] = useState(false);
+/**
+ * Add trade form in a dialog. Uncontrolled it renders its own button; pass `open` and
+ * `onOpenChange` to drive it from elsewhere (the command palette) without a trigger.
+ */
+export function AddTradeDialog({
+  onSaved,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  onSaved?: (tradeKey?: string) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [innerOpen, setInnerOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : innerOpen;
+  const setOpen = (next: boolean) => {
+    if (!controlled) setInnerOpen(next);
+    onOpenChange?.(next);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-3.5 w-3.5" />
-          Add trade
-        </Button>
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
+            Add trade
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Add trade</DialogTitle>

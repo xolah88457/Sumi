@@ -1396,6 +1396,10 @@ export async function stageBackend({
   cpSync(join(root, "LICENSE"), join(resources, "licenses/Trade-Journal-MIT.txt"));
   cpSync(join(root, "desktop/Kami-LICENSE.txt"), join(resources, "licenses/Kami-MIT.txt"));
   cpSync(
+    join(root, "apps/web/public/licenses/CharisSIL-OFL.txt"),
+    join(resources, "licenses/CharisSIL-OFL.txt"),
+  );
+  cpSync(
     join(root, "desktop/THIRD-PARTY-NOTICES.md"),
     join(resources, "licenses/THIRD-PARTY-NOTICES.md"),
   );

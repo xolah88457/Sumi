@@ -59,7 +59,7 @@ export function TimeZonePicker({
           id={id}
           type="button"
           variant="outline"
-          className="w-full min-w-0 justify-between font-normal"
+          className="w-full min-w-0 justify-between rounded-md bg-card px-3.5 text-[15px] font-normal"
           disabled={disabled}
           aria-label={`${label}: ${value || "Choose a timezone"}`}
           aria-describedby={describedBy}
@@ -132,7 +132,7 @@ export function TimeZonePicker({
                 role="option"
                 aria-selected={zone === value}
                 className={cn(
-                  "flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+                  "flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[15px]",
                   index === active && "bg-accent text-accent-foreground",
                 )}
                 onPointerMove={() => setActive(index)}
@@ -147,7 +147,7 @@ export function TimeZonePicker({
               </div>
             ))}
           </div>
-          <p role="status" className="shrink-0 px-2 pb-1 pt-2 text-xs text-muted-foreground">
+          <p role="status" className="shrink-0 px-2 pb-1 pt-2 text-[13px] text-muted-foreground">
             {options.length
               ? `${options.length} timezone${options.length === 1 ? "" : "s"}`
               : "No matching timezone. Try a city or a full timezone name."}

@@ -21,17 +21,17 @@ export const readVizTokens = (): VizTokens => {
   const style = getComputedStyle(document.documentElement);
   const v = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    surface: v("--viz-surface", "#1a1a19"),
-    inkMuted: v("--ink-muted", "#898781"),
-    gridline: v("--gridline", "#2c2c2a"),
-    baseline: v("--baseline", "#30303a"),
-    brand: v("--brand", "#1197e2"),
+    surface: v("--viz-surface", "#201d19"),
+    inkMuted: v("--ink-muted", "#a8a499"),
+    gridline: v("--gridline", "#2a2722"),
+    baseline: v("--baseline", "#4a463d"),
+    brand: v("--brand", "#a3b2dd"),
     profit: v("--profit", "#0ca30c"),
     profitFill: v("--profit-fill", "#0ca30c"),
-    loss: v("--loss", "#d03b3b"),
-    foreground: v("--foreground", "#f4f4f2"),
-    card: v("--card", "#1a1a19"),
-    border: v("--border", "#2c2c2a"),
+    loss: v("--loss", "#ee7777"),
+    foreground: v("--foreground", "#ebe7dc"),
+    card: v("--card", "#201d19"),
+    border: v("--border", "#36322b"),
   };
 };
 
@@ -78,5 +78,5 @@ export const tooltipStyle = (t: VizTokens): React.CSSProperties => ({
   fontSize: 13,
   lineHeight: 1.6,
   color: t.foreground,
-  boxShadow: "0 12px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1)",
+  boxShadow: "var(--shadow-pop)",
 });

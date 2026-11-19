@@ -30,11 +30,11 @@ export function CalendarDayPreview({
   return (
     <div className="w-64 max-w-full">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs">Running P&L</span>
+        <span className="text-[13px]">Running P&L</span>
         {monetary ? (
-          <Pnl value={total} currency={currency} className="text-sm font-semibold" />
+          <Pnl value={total} currency={currency} className="text-[15px] font-medium" />
         ) : (
-          <span className="text-xs">Multiple currencies</span>
+          <span className="text-[13px]">Multiple currencies</span>
         )}
       </div>
       {monetary && points.length > 0 ? (
@@ -56,28 +56,28 @@ export function CalendarDayPreview({
               stroke="var(--border)"
               strokeDasharray="3 3"
             />
-            <path d={`${line} H256 V${baseline} Z`} fill="currentColor" fillOpacity={0.1} />
+            <path d={`${line} H256 V${baseline} Z`} fill="currentColor" fillOpacity={0.08} />
             <path
               className="journal-calendar-pnl-line"
               d={line}
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.75"
               strokeLinejoin="round"
               pathLength="1"
             />
             <circle cx="256" cy={y(points.at(-1)!.cumNetPnl)} r="3" fill="currentColor" />
           </svg>
-          <div className="flex justify-between text-[10px]">
+          <div className="flex justify-between text-[13px]">
             <span>Before first close</span>
             <span>After last close</span>
           </div>
-          <p className="mt-2 text-[11px]">
+          <p className="mt-2 text-[13px]">
             {trades} closed trade{trades === 1 ? "" : "s"} · Net of fees
           </p>
         </>
       ) : (
-        <p className="mt-3 text-xs">
+        <p className="mt-3 text-[13px]">
           {!monetary
             ? "Select accounts with one currency to view the running P&L."
             : "No closed trades on this day."}

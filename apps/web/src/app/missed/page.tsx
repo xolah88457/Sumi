@@ -7,6 +7,8 @@ import { FilterBar } from "@/components/filter-bar";
 import { Field, fieldClass } from "@/components/filter-fields";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Notice } from "@/components/ui/notice";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RichEditor, Markdown } from "@/components/rich-editor";
 import { Attachments } from "@/components/attachments";
@@ -103,18 +105,15 @@ function Missed() {
     <div>
       <FilterBar
         title="Missed trades"
+        lede="Setups you watched but did not take. They never count toward your trades, P&L or win rate."
         actions={
           <Button size="sm" onClick={() => edit()}>
             Log opportunity
           </Button>
         }
       />
-      <div className="space-y-4 p-4">
-        <p className="text-sm text-muted-foreground">
-          Record setups you watched but did not take. These observations never enter your trade
-          count, P&L, or win rate.
-        </p>
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="space-y-5 px-4 pb-8">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <input
             aria-label="Search missed trades"
             className={`${fieldClass} max-w-sm`}
@@ -122,7 +121,7 @@ function Missed() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-[15px]">
             <Checkbox
               checked={archived}
               onCheckedChange={(checked) => setArchived(checked === true)}
@@ -130,20 +129,19 @@ function Missed() {
             Show archived
           </label>
         </div>
-        {(error || failure) && (
-          <p role="alert" className="text-sm text-destructive">
-            {error || failure}
-          </p>
-        )}
-        <div className="grid gap-4 lg:grid-cols-2">
+        {(error || failure) && <Notice role="alert" tone="error" title={error || failure} />}
+        <div className="grid gap-5 lg:grid-cols-2">
           {rows.map((t) => (
             <Card key={t.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle>
-                    {t.symbol} · {t.direction}
+                  <CardTitle className="text-[21px] leading-tight tracking-[-0.02em] text-foreground">
+                    {t.symbol}{" "}
+                    <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                      {t.direction}
+                    </span>
                   </CardTitle>
-                  <div className="flex gap-2">
+                  <div className="-mr-2 flex gap-1">
                     <Button variant="ghost" size="sm" onClick={() => edit(t)}>
                       Edit
                     </Button>
@@ -167,24 +165,26 @@ function Missed() {
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   {new Date(t.observedAt).toLocaleString()} ·{" "}
                   {books?.playbooks.find((b) => b.id === t.playbookId)?.name ?? "No strategy"}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-5 text-sm">
+                <dl className="grid grid-cols-3 border-y border-border">
                   {[
                     ["Entry", t.entry],
                     ["Stop", t.stop],
                     ["Target", t.target],
                   ].map(([label, value]) => (
-                    <span key={label}>
-                      <span className="text-muted-foreground">{label}: </span>
-                      <MonetaryValue>{value ?? "-"}</MonetaryValue>
-                    </span>
+                    <div key={label} className="min-w-0 px-3 py-3 not-first:border-l">
+                      <dd className="tnum truncate text-[17px]">
+                        <MonetaryValue>{value ?? "–"}</MonetaryValue>
+                      </dd>
+                      <dt className="text-[13px] text-muted-foreground">{label}</dt>
+                    </div>
                   ))}
-                </div>
+                </dl>
                 <Markdown>{t.notes || "No review yet."}</Markdown>
                 <ReviewExport
                   containsFinancialData
@@ -205,9 +205,18 @@ function Missed() {
           ))}
         </div>
         {data && !rows.length && (
-          <p className="py-16 text-center text-sm text-muted-foreground">
-            No {archived ? "archived " : ""}opportunities here yet.
-          </p>
+          <EmptyState
+            title={`No ${archived ? "archived " : ""}opportunities yet`}
+            action={
+              !archived && !search ? (
+                <Button onClick={() => edit()}>Log opportunity</Button>
+              ) : undefined
+            }
+          >
+            {archived
+              ? "Archived opportunities appear here."
+              : "Log a setup you passed on, and what you would do differently."}
+          </EmptyState>
         )}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -255,7 +264,7 @@ function Missed() {
               placeholder="Why did you miss it? What will you do differently?"
             />
             {failure && (
-              <p role="alert" className="text-xs text-destructive">
+              <p role="alert" className="text-[13px] text-destructive">
                 {failure}
               </p>
             )}

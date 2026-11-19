@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { HoverHint } from "./ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { postJson, useApi } from "@/lib/use-api";
 
@@ -200,7 +201,7 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
           }
         }}
       >
-        <DialogTitle className="truncate text-sm font-medium">{activeImage.name}</DialogTitle>
+        <DialogTitle className="truncate text-[15px] font-medium">{activeImage.name}</DialogTitle>
         <DialogDescription className="sr-only">
           Full-size screenshot. Right-click it to download. Press Escape or Close to go back.
         </DialogDescription>
@@ -215,7 +216,7 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
           />
           {menuHere(activeImage, false)}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-[13px] text-muted-foreground">
           <span className="flex items-center gap-1">
             {imageAttachments.length > 1 && (
               <>
@@ -267,8 +268,8 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
   // Default variant (used across other pages/drawers)
   if (variant === "default") {
     return (
-      <div className="space-y-3 border-t pt-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="space-y-3 border-t pt-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Button
             type="button"
             size="sm"
@@ -279,19 +280,15 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
             <Paperclip className="h-4 w-4" />
             {busy ? "Uploading…" : "Add attachment"}
           </Button>
-          <span className="text-xs text-muted-foreground">Images or PDF · up to 8 MB each</span>
+          <span className="text-[13px] text-muted-foreground">Images or PDF · up to 8 MB each</span>
         </div>
         {fileInput}
-        {(failure || error) && (
-          <p role="alert" className="text-xs text-destructive">
-            {failure || error}
-          </p>
-        )}
-        <div className="grid grid-cols-2 gap-2">
+        {(failure || error) && <Notice role="alert" tone="error" title={failure || error} />}
+        <div className="grid grid-cols-2 gap-3">
           {allAttachments.map((a) => {
             const isImage = a.mime.startsWith("image/");
             return (
-              <div key={a.id} className="relative min-w-0 rounded-md border p-2">
+              <div key={a.id} className="relative min-w-0 rounded-lg border bg-card p-2">
                 {isImage ? (
                   <HoverHint content={`${a.name} · click to view, right-click to download`}>
                     <button
@@ -306,21 +303,21 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
                         alt={a.name}
                         className="mb-2 h-28 w-full rounded object-contain"
                       />
-                      <span className="block truncate text-xs">{a.name}</span>
+                      <span className="block truncate text-[13px]">{a.name}</span>
                     </button>
                   </HoverHint>
                 ) : (
                   <a
                     href={fileUrl(a)}
                     download={a.name}
-                    className="flex min-w-0 items-center gap-1 text-xs underline"
+                    className="flex min-w-0 items-center gap-1 text-[13px] underline"
                   >
                     <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="truncate">{a.name}</span>
                   </a>
                 )}
                 {menuHere(a)}
-                <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                <div className="mt-1 flex items-center justify-between text-[13px] text-muted-foreground">
                   <span>{sizeLabel(a)}</span>
                   <span className="flex items-center">
                     <Button
@@ -363,17 +360,17 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
       role="region"
       aria-label="Trade screenshots gallery"
       onKeyDown={handleKeyDown}
-      className="space-y-4 outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-xl"
+      className="space-y-5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {fileInput}
 
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+      <div className="overflow-hidden rounded-xl border bg-card text-card-foreground">
         {/* Gallery Header / Controls */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold tracking-tight">Screenshots</h2>
+            <h2 className="text-[21px] font-normal leading-snug tracking-[-0.02em]">Screenshots</h2>
             {imageAttachments.length > 0 && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              <span className="tnum rounded-full bg-secondary px-2.5 py-0.5 text-[13px] text-muted-foreground">
                 {safeIndex + 1} / {imageAttachments.length}
               </span>
             )}
@@ -395,11 +392,8 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
 
         {/* Failure alert banner */}
         {(failure || error) && (
-          <div
-            className="border-b bg-destructive/10 px-4 py-2 text-xs text-destructive"
-            role="alert"
-          >
-            {failure || error}
+          <div className="border-b p-3">
+            <Notice role="alert" tone="error" title={failure || error} />
           </div>
         )}
 
@@ -412,14 +406,16 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
               e.preventDefault();
               void handleUpload(e.dataTransfer.files);
             }}
-            className="flex min-h-[300px] cursor-pointer flex-col items-center justify-center gap-3 p-8 text-center transition-colors hover:bg-muted/40"
+            className="m-4 flex min-h-[260px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8 text-center transition-colors hover:bg-muted"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <UploadCloud className="h-6 w-6 text-muted-foreground" />
+            <div className="flex size-12 items-center justify-center rounded-full bg-secondary">
+              <UploadCloud aria-hidden="true" className="size-6 text-muted-foreground" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium">No screenshots for this trade yet</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[21px] font-normal leading-snug tracking-[-0.02em]">
+                No screenshots for this trade yet
+              </p>
+              <p className="text-[13px] text-muted-foreground">
                 Click or drag & drop screenshots here (PNG, JPEG, WebP up to 8 MB)
               </p>
             </div>
@@ -474,7 +470,7 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
 
             {/* Bottom bar for active image metadata & actions */}
             {activeImage && (
-              <div className="flex w-full items-center justify-between border-t bg-card px-4 py-2 text-xs">
+              <div className="flex w-full items-center justify-between border-t bg-card px-4 py-2 text-[13px]">
                 <span className="truncate max-w-[280px] sm:max-w-md font-medium text-foreground">
                   {activeImage.name} ({sizeLabel(activeImage)})
                 </span>
@@ -524,9 +520,9 @@ export function Attachments({ type, id, variant = "default" }: AttachmentsProps)
 
       {/* Non-image document attachments section (PDFs / docs) */}
       {nonImageAttachments.length > 0 && (
-        <div className="rounded-lg border bg-card p-3 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">Attached Documents & PDFs</p>
-          <div className="divide-y text-xs">
+        <div className="space-y-2 rounded-xl border bg-card p-4">
+          <p className="text-[13px] text-muted-foreground">Attached Documents & PDFs</p>
+          <div className="divide-y text-[13px]">
             {nonImageAttachments.map((doc) => (
               <div key={doc.id} className="flex items-center justify-between py-2">
                 <a
@@ -592,13 +588,13 @@ function ScreenshotMenu({
   }, [onClose]);
 
   const item =
-    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none [&_svg]:h-4 [&_svg]:w-4";
+    "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[15px] hover:bg-accent focus-visible:bg-accent focus-visible:outline-none [&_svg]:h-4 [&_svg]:w-4";
   return (
     <div
       ref={ref}
       role="menu"
       aria-label={`${menu.attachment.name} options`}
-      className="absolute z-50 w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+      className="journal-menu-surface absolute z-50 w-48 rounded-xl border bg-popover p-1 text-popover-foreground"
       style={{ left: menu.x, top: menu.y }}
       onContextMenu={(e) => e.preventDefault()}
       onClick={(e) => e.stopPropagation()}

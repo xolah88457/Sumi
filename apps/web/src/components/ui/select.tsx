@@ -16,7 +16,7 @@ function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        "flex h-9 w-full min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs transition-[border-color,box-shadow,background-color] hover:bg-accent/40 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25 focus-visible:border-ring data-[state=open]:border-ring/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate motion-reduce:transition-none",
+        "flex h-10 w-full min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-card px-3.5 py-2 text-[15px] text-foreground transition-[border-color,box-shadow,background-color] duration-[120ms] hover:border-muted-foreground/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-ring data-[state=open]:border-ring disabled:cursor-not-allowed disabled:opacity-55 [&>span]:truncate motion-reduce:transition-none",
         className,
       )}
       {...props}
@@ -70,7 +70,7 @@ function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex min-h-8 w-full cursor-default select-none items-center rounded-md py-1.5 pl-2.5 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[state=checked]:font-medium data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>span:last-child]:break-words",
+        "relative flex min-h-9 w-full cursor-default select-none items-center rounded-md py-1.5 pl-2.5 pr-8 text-[15px] outline-none focus:bg-accent focus:text-accent-foreground data-[state=checked]:font-medium data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>span:last-child]:break-words",
         className,
       )}
       {...props}

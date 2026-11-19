@@ -107,22 +107,22 @@ export function AiSettings() {
         <CardTitle>AI (bring your own key)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[15px] text-muted-foreground">
           Use Anthropic, OpenAI, or an OpenAI-compatible server such as Ollama, LM Studio,
           OpenRouter or Groq for recaps, trade critiques, and “ask your journal”. Your key is
           encrypted at rest. AI requests go from your server directly to the provider you select.
         </p>
         <section
           aria-labelledby="ai-free-heading"
-          className="space-y-2 rounded-md border bg-muted/40 p-3"
+          className="space-y-2 rounded-lg bg-secondary px-4 py-3"
         >
-          <h3 id="ai-free-heading" className="text-sm font-medium">
+          <h3 id="ai-free-heading" className="text-[17px] font-normal">
             Start free: no API fees
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             OpenRouter and Groq give free API keys with free models. Create a key, choose{" "}
-            <span className="font-medium text-foreground">Use</span> below to fill in the server and
-            model, paste the key, and save.
+            <span className="text-foreground">Use</span> below to fill in the server and model,
+            paste the key, and save.
           </p>
           <ul className="space-y-2">
             {FREE_AI_SERVICES.map((service) => (
@@ -130,9 +130,9 @@ export function AiSettings() {
                 key={service.name}
                 className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
               >
-                <div className="min-w-0 space-y-0.5 text-xs">
+                <div className="min-w-0 space-y-0.5 text-[13px]">
                   <p>
-                    <span className="font-medium">{service.name}</span>{" "}
+                    <span className="text-[15px] text-foreground">{service.name}</span>{" "}
                     <span className="text-muted-foreground">
                       · model <code className="break-all">{service.model}</code>
                     </span>
@@ -171,7 +171,7 @@ export function AiSettings() {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Free plans have request limits and the free model lineup changes over time. Free models
             may log prompts or use them for training, and prompts include your journal data. If
             OpenRouter finds no free endpoint, check the data policy options in its privacy
@@ -179,7 +179,7 @@ export function AiSettings() {
           </p>
         </section>
         {data && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Active provider: {AI_PROVIDER_NAMES[data.aiProvider]} ·{" "}
             {data.aiConfigured
               ? data.aiProvider === "compatible"
@@ -225,7 +225,7 @@ export function AiSettings() {
             />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Use a text model available to your provider account or server. Each provider keeps its own
           model and key.
         </p>
@@ -245,7 +245,7 @@ export function AiSettings() {
               autoComplete="off"
               spellCheck={false}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               The API root your server documents, usually ending in /v1, such as
               http://localhost:11434/v1 for Ollama or https://openrouter.ai/api/v1. It must be
               reachable from the machine running the journal.
@@ -283,7 +283,7 @@ export function AiSettings() {
             autoComplete="off"
             spellCheck={false}
           />
-          <p className="text-xs text-muted-foreground">{keyHint}</p>
+          <p className="text-[13px] text-muted-foreground">{keyHint}</p>
         </div>
         <div className="space-y-1.5 pt-2 border-t">
           <div className="flex items-center justify-between">
@@ -307,7 +307,7 @@ export function AiSettings() {
                 }}
               />
               <span
-                className={`text-xs tabular-nums ${instructions.length > AI_INSTRUCTIONS_MAX_LENGTH ? "text-destructive" : "text-muted-foreground"}`}
+                className={`text-[13px] tabular-nums ${instructions.length > AI_INSTRUCTIONS_MAX_LENGTH ? "text-destructive" : "text-muted-foreground"}`}
               >
                 {instructions.length}/{AI_INSTRUCTIONS_MAX_LENGTH}
               </span>
@@ -326,18 +326,18 @@ export function AiSettings() {
               setSaved("");
             }}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Custom rules and guidance included in recaps, trade critiques, and “ask your journal”.
             Grounding in your recorded data always takes precedence over instructions.
           </p>
         </div>
         {(error || failure) && (
-          <p role="alert" className="text-xs text-destructive">
+          <p role="alert" className="text-[13px] text-destructive">
             {failure || error}
           </p>
         )}
         {saved && (
-          <p role="status" className="text-xs text-profit">
+          <p role="status" className="text-[13px] text-profit">
             {saved}
           </p>
         )}

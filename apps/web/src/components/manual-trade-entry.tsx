@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MonetaryField } from "@/components/privacy";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VoiceNote } from "@/components/voice-note";
@@ -225,7 +226,10 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
       <div className="grid gap-3 sm:grid-cols-2">
         <AccountPicker value={accountId} onChange={setAccountId} kind="manual" />
         <div>
-          <Label htmlFor={`${fieldId}-symbol`} className="mb-1 block text-xs text-muted-foreground">
+          <Label
+            htmlFor={`${fieldId}-symbol`}
+            className="mb-1 block text-[13px] text-muted-foreground"
+          >
             Symbol
           </Label>
           <Input
@@ -238,10 +242,10 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
       </div>
 
       {/* 1. ENTRY SECTION */}
-      <fieldset className="grid min-w-0 gap-3 rounded-lg border p-3">
-        <legend className="px-1 text-xs font-semibold text-foreground">Entry</legend>
+      <fieldset className="grid min-w-0 gap-3 rounded-xl border p-4">
+        <legend className="px-1 text-[13px] text-foreground">Entry</legend>
         <div className="grid min-w-0 gap-2 sm:grid-cols-2 md:grid-cols-5">
-          <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Date & time
             <Input
               type="datetime-local"
@@ -249,7 +253,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
               onChange={(e) => setEntryDatetime(e.target.value)}
             />
           </label>
-          <div className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <div className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             <span id={`${fieldId}-entry-side`}>Side</span>
             <Select value={direction} onValueChange={(val) => setDirection(val as "buy" | "sell")}>
               <SelectTrigger aria-labelledby={`${fieldId}-entry-side`}>
@@ -261,7 +265,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
               </SelectContent>
             </Select>
           </div>
-          <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Quantity
             <Input
               placeholder="1"
@@ -270,7 +274,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
               onChange={(e) => setQuantity(e.target.value)}
             />
           </label>
-          <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Entry Price
             <MonetaryField>
               <Input
@@ -281,7 +285,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
               />
             </MonetaryField>
           </label>
-          <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Fee
             <MonetaryField>
               <Input
@@ -297,20 +301,18 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
 
       {/* 2. STOP LOSS SECTION */}
       <fieldset
-        className={`grid min-w-0 gap-3 rounded-lg border p-3 transition-opacity ${
+        className={`grid min-w-0 gap-3 rounded-xl border p-4 transition-opacity ${
           outcome === "tp_hit" ? "opacity-50" : ""
         }`}
       >
         <div className="flex items-center justify-between">
-          <legend className="px-1 text-xs font-semibold text-foreground">
-            Stop loss (Planned level)
-          </legend>
-          <span className="text-xs text-muted-foreground">
-            Target side: <span className="font-medium uppercase">{exitSide}</span>
+          <legend className="px-1 text-[13px] text-foreground">Stop loss (Planned level)</legend>
+          <span className="text-[13px] text-muted-foreground">
+            Target side: <span className="uppercase text-foreground">{exitSide}</span>
           </span>
         </div>
         <div className="grid min-w-0 gap-2 sm:grid-cols-2">
-          <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Stop loss price
             <MonetaryField>
               <Input
@@ -321,7 +323,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
               />
             </MonetaryField>
           </label>
-          <p className="flex items-center text-xs text-muted-foreground">
+          <p className="flex items-center text-[13px] text-muted-foreground">
             Used for planned risk calculation. Never executed unless &ldquo;Stop loss hit&rdquo; is
             selected.
           </p>
@@ -330,20 +332,18 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
 
       {/* 3. TAKE PROFIT SECTION */}
       <fieldset
-        className={`grid min-w-0 gap-3 rounded-lg border p-3 transition-opacity ${
+        className={`grid min-w-0 gap-3 rounded-xl border p-4 transition-opacity ${
           outcome === "sl_hit" ? "opacity-50" : ""
         }`}
       >
         <div className="flex items-center justify-between">
-          <legend className="px-1 text-xs font-semibold text-foreground">
-            Take profit (Planned level)
-          </legend>
-          <span className="text-xs text-muted-foreground">
-            Target side: <span className="font-medium uppercase">{exitSide}</span>
+          <legend className="px-1 text-[13px] text-foreground">Take profit (Planned level)</legend>
+          <span className="text-[13px] text-muted-foreground">
+            Target side: <span className="uppercase text-foreground">{exitSide}</span>
           </span>
         </div>
         <div className="grid min-w-0 gap-2 sm:grid-cols-2">
-          <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+          <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
             Take profit price
             <MonetaryField>
               <Input
@@ -354,7 +354,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
               />
             </MonetaryField>
           </label>
-          <p className="flex items-center text-xs text-muted-foreground">
+          <p className="flex items-center text-[13px] text-muted-foreground">
             Used for planned R:R reward calculation. Never executed unless &ldquo;Take profit
             hit&rdquo; is selected.
           </p>
@@ -362,8 +362,8 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
       </fieldset>
 
       {/* OUTCOME SELECTOR */}
-      <fieldset className="grid min-w-0 gap-3 rounded-lg border bg-muted/20 p-3">
-        <legend className="px-1 text-xs font-semibold text-foreground">Trade Outcome</legend>
+      <fieldset className="grid min-w-0 gap-3 rounded-xl border p-4">
+        <legend className="px-1 text-[13px] text-foreground">Trade Outcome</legend>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -401,7 +401,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
 
         {outcome !== "open" && (
           <div className="grid min-w-0 gap-2 pt-2 sm:grid-cols-3">
-            <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+            <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
               Exit date & time
               <Input
                 type="datetime-local"
@@ -409,7 +409,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
                 onChange={(e) => setExitDatetime(e.target.value)}
               />
             </label>
-            <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+            <label className="grid min-w-0 gap-1 text-[13px] text-muted-foreground">
               Exit Fee
               <MonetaryField>
                 <Input
@@ -420,7 +420,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
                 />
               </MonetaryField>
             </label>
-            <div className="flex flex-col justify-end text-xs text-muted-foreground">
+            <div className="flex flex-col justify-end text-[13px] text-muted-foreground">
               <span>
                 Exit fill: <strong className="uppercase">{exitSide}</strong> {quantity || 1} @{" "}
                 <strong>
@@ -432,7 +432,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
                 </strong>
               </span>
               {outcome === "break_even" && (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[13px] text-muted-foreground">
                   (Gross P&L: 0.00, fees deducted normally)
                 </span>
               )}
@@ -462,19 +462,15 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
           maxLength={100000}
           rows={3}
           placeholder="Your setup, trade context, or review notes…"
-          className="flex w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          className="flex w-full min-w-0 rounded-md border border-input bg-card px-3.5 py-2.5 text-[15px] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-55"
         />
       </div>
 
       {/* FEEDBACK & ACTIONS */}
-      {errorMessage && (
-        <p role="alert" className="text-sm font-medium text-destructive">
-          {errorMessage}
-        </p>
-      )}
+      {errorMessage && <Notice role="alert" tone="error" title={errorMessage} />}
 
       {successNotice && (
-        <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted p-2 text-sm text-foreground">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-secondary px-4 py-3 text-[15px] text-foreground">
           <span>{successNotice.message}</span>
           {successNotice.tradeKey && (
             <Button

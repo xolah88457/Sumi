@@ -73,13 +73,13 @@ export function AccountCreateForm({
         if (!saving) void create();
       }}
     >
-      {showTitle && <h3 className="text-sm font-medium">Create account</h3>}
+      {showTitle && <h3 className="text-[15px] font-medium">Create account</h3>}
       {!kind && (
         <div className="space-y-1">
           <Label htmlFor={`${fieldId}-kind`}>Account type</Label>
           <select
             id={`${fieldId}-kind`}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-[15px]"
             value={accountKind}
             disabled={saving}
             onChange={(event) => setAccountKind(event.target.value as "manual" | "import")}
@@ -127,7 +127,7 @@ export function AccountCreateForm({
         </div>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-[15px] text-destructive">
           {error}
         </p>
       )}

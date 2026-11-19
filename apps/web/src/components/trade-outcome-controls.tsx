@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MonetaryField } from "@/components/privacy";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Input } from "@/components/ui/input";
 import { getLocalNowString } from "@/lib/date-input";
 import { postJson } from "@/lib/use-api";
@@ -98,11 +99,14 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
   };
 
   return (
-    <div className="space-y-3 rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-foreground">Close open position</h4>
-        <span className="text-xs text-muted-foreground">
-          Open: <strong>{trade.openQuantity}</strong> ({trade.direction.toUpperCase()})
+    <div className="space-y-4 rounded-xl border bg-card p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h4 className="text-[21px] font-normal leading-snug tracking-[-0.02em]">
+          Close open position
+        </h4>
+        <span className="text-[13px] text-muted-foreground">
+          Open: <strong className="tnum font-normal text-foreground">{trade.openQuantity}</strong> (
+          {trade.direction.toUpperCase()})
         </span>
       </div>
 
@@ -146,9 +150,9 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
         </Button>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {outcome === "custom" && (
-          <label className="grid gap-1 text-xs text-muted-foreground">
+          <label className="grid gap-1 text-[13px] text-muted-foreground">
             Exit Price
             <MonetaryField>
               <Input
@@ -160,7 +164,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
             </MonetaryField>
           </label>
         )}
-        <label className="grid gap-1 text-xs text-muted-foreground">
+        <label className="grid gap-1 text-[13px] text-muted-foreground">
           Exit Date & Time
           <Input
             type="datetime-local"
@@ -169,7 +173,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
             onChange={(e) => setExitDatetime(e.target.value)}
           />
         </label>
-        <label className="grid gap-1 text-xs text-muted-foreground">
+        <label className="grid gap-1 text-[13px] text-muted-foreground">
           Exit Fee
           <MonetaryField>
             <Input
@@ -183,7 +187,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-        <span className="text-xs text-muted-foreground">
+        <span className="text-[13px] text-muted-foreground">
           Will record {exitSide} {trade.openQuantity} fill.
         </span>
         <Button type="button" size="sm" onClick={closeTrade} disabled={busy}>
@@ -191,11 +195,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
         </Button>
       </div>
 
-      {error && (
-        <p role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
+      {error && <Notice role="alert" tone="error" title={error} />}
     </div>
   );
 }

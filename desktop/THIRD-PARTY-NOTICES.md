@@ -4,6 +4,7 @@ Sumi is an independent local desktop adaptation, not an official product of LuxA
 
 - Journal application: [LuxAlgo Trade Journal](https://github.com/LuxAlgo/trade-journal), copyright LuxAlgo Global, LLC, MIT. See `Trade-Journal-MIT.txt` in the built app.
 - Theme influences: [Kami](https://github.com/tw93/Kami), copyright 2026 Tw93, MIT. See `Kami-MIT.txt`. Sumi adapts Kami's parchment/ivory/navy palette and editorial typography. No Kami logo or remotely hosted fonts are used.
+- Typeface: [Charis SIL](https://software.sil.org/charis/) (latin subset, regular, italic, bold and bold italic woff2, via `@fontsource/charis-sil`), Copyright (c) 1997-2022 SIL International, licensed under the SIL Open Font License 1.1. Self-hosted in the app bundle, never fetched at runtime. See `licenses/CharisSIL-OFL.txt`.
 - Runtime: Node.js and its bundled dependencies. See `Node-LICENSE.txt`.
 - Desktop framework: [Electron](https://github.com/electron/electron), Copyright (c) Electron contributors, Copyright (c) GitHub Inc., MIT License. See `Electron-LICENSE.txt`.
 - Software update framework (macOS): [Sparkle](https://sparkle-project.org/), Copyright (c) 2006-2013 Andy Matuschak, Copyright (c) 2009-2013 Elgato Systems GmbH, Copyright (c) 2011-2014 Kornel Lesiński. MIT License. See `Sparkle-LICENSE.txt`.
