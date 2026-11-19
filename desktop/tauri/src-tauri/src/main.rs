@@ -167,7 +167,7 @@ fn failure(app: &AppHandle, message: &str) {
     if state.backend.stopping() || state.failed.swap(true, Ordering::AcqRel) {
         return;
     }
-    eprintln!("Sumi Rust: {message}");
+    eprintln!("Sumi: {message}");
     if state.profile.smoke {
         if write_smoke(&state, json!({"ok": false, "checks": {}, "error":message})).is_some() {
             app.exit(1);
@@ -176,7 +176,7 @@ fn failure(app: &AppHandle, message: &str) {
         let handle = app.clone();
         let message = message.to_string();
         let _ = app.run_on_main_thread(move || {
-            platform::notice("Sumi Rust could not open", &message);
+            platform::notice("Sumi could not open", &message);
             handle.exit(1);
         });
     }
@@ -317,9 +317,9 @@ fn main() -> std::process::ExitCode {
         })
         .setup(|app| {
             if let Err(err) = setup(app) {
-                eprintln!("Sumi Rust startup failed: {err}");
+                eprintln!("Sumi startup failed: {err}");
                 if std::env::var_os("SUMI_TEST_MODE").is_none_or(|v| v != "1") {
-                    platform::notice("Sumi Rust could not start", &err.to_string());
+                    platform::notice("Sumi could not start", &err.to_string());
                 }
                 app.handle().exit(1);
             }
@@ -330,7 +330,7 @@ fn main() -> std::process::ExitCode {
     let app = match result {
         Ok(app) => app,
         Err(err) => {
-            eprintln!("Sumi Rust startup failed: {err}");
+            eprintln!("Sumi startup failed: {err}");
             return std::process::ExitCode::FAILURE;
         }
     };

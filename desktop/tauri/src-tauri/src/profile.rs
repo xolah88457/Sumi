@@ -189,6 +189,9 @@ fn reject_link_entries(dir: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Journal data directory shared with the former Electron app, so an existing journal is
+/// found as is: macOS `~/Library/Application Support/Sumi`, Linux
+/// `$XDG_CONFIG_HOME/Sumi` (else `~/.config/Sumi`), Windows `%APPDATA%\Sumi`.
 fn production_dir(home: &Path) -> PathBuf {
     #[cfg(target_os = "macos")]
     return home.join("Library/Application Support/Sumi");
@@ -221,6 +224,12 @@ impl Profile {
         } else {
             production
         };
+        Self::at(dir, test, smoke)
+    }
+
+    /// Opens (creating if needed) the profile at `dir` and takes its single-instance lock.
+    /// Existing files, including an Electron-era journal, are never modified or removed.
+    pub(crate) fn at(dir: PathBuf, test: bool, smoke: bool) -> io::Result<Self> {
         let mut builder = fs::DirBuilder::new();
         #[cfg(unix)]
         builder.mode(0o700);
@@ -468,5 +477,81 @@ mod tests {
             Preferences::open(dir.path(), true).unwrap().value(),
             &json!({"journal-mode": "dark"})
         );
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn data_directory_matches_the_former_electron_app() {
+        let home = Path::new("/home/someone");
+        let abs = if cfg!(windows) { "C:\\Data" } else { "/data" };
+        let (default, name) = (home.join("cfg"), "Sumi");
+        assert_eq!(app_data_dir(default.clone(), None), default.join(name));
+        assert_eq!(
+            app_data_dir(default.clone(), Some(format!("  {abs}  ").into())),
+            Path::new(abs).join(name)
+        );
+        // Electron ignored relative XDG_CONFIG_HOME / APPDATA values too.
+        assert_eq!(
+            app_data_dir(default.clone(), Some("relative/dir".into())),
+            default.join(name)
+        );
+        assert_eq!(
+            app_data_dir(default.clone(), Some("".into())),
+            default.join(name)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_default_is_dot_config_sumi() {
+        if env::var_os("XDG_CONFIG_HOME").is_none() {
+            assert_eq!(
+                production_dir(Path::new("/home/someone")),
+                Path::new("/home/someone/.config/Sumi")
+            );
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_default_is_application_support_sumi() {
+        assert_eq!(
+            production_dir(Path::new("/Users/someone")),
+            Path::new("/Users/someone/Library/Application Support/Sumi")
+        );
+    }
+
+    #[test]
+    fn existing_electron_era_journal_is_opened_untouched_and_single_instance() {
+        let temp = tempfile::tempdir().unwrap();
+        let dir = temp.path().join("Sumi");
+        fs::create_dir_all(dir.join("electron")).unwrap();
+        // Synthetic stand-ins for what the Electron app left behind.
+        let files: [(&str, &[u8]); 4] = [
+            ("journal.db", b"synthetic journal database bytes"),
+            (
+                "preferences.json",
+                br#"{"journal-theme-v1":"dark","other":"x"}"#,
+            ),
+            ("desktop.log", b"old electron log"),
+            ("electron/SingletonLock", b"leftover"),
+        ];
+        for (name, bytes) in files {
+            fs::write(dir.join(name), bytes).unwrap();
+        }
+        let profile = Profile::at(dir.clone(), false, false).unwrap();
+        assert_eq!(profile.dir, dir);
+        // A second launch on the same journal is refused while the first holds it.
+        assert!(Profile::at(dir.clone(), false, false).is_err());
+        for (name, bytes) in files {
+            assert_eq!(fs::read(dir.join(name)).unwrap(), bytes, "{name}");
+        }
+        // The Electron preferences file is read as is; non journal-* keys are dropped.
+        assert_eq!(
+            Preferences::open(&dir, false).unwrap().value(),
+            &json!({"journal-theme-v1": "dark"})
+        );
+        // Reading preferences does not rewrite the original file.
+        assert_eq!(fs::read(dir.join("preferences.json")).unwrap(), files[1].1);
     }
 }
