@@ -128,7 +128,6 @@ SOFTWARE.`,
 export function AboutSettings() {
   const { isDesktop, info, isLoading, isChecking, error, checkCompletionKey, checkForUpdates } =
     useDesktopInfo();
-  const isTauri = info?.runtime === "tauri";
 
   return (
     <div className="space-y-6">
@@ -241,8 +240,7 @@ export function AboutSettings() {
                   </div>
                   {info && (
                     <p className="font-mono text-[13px] text-muted-foreground">
-                      Version {info.version} &bull; {isTauri ? "Tauri" : "Electron"}{" "}
-                      {(isTauri ? info.tauriVersion : info.electronVersion) || "unknown"} &bull;{" "}
+                      Version {info.version} &bull; Tauri {info.tauriVersion || "unknown"} &bull;{" "}
                       {info.platform} ({info.arch})
                     </p>
                   )}
@@ -278,9 +276,8 @@ export function AboutSettings() {
               </div>
 
               <p className="text-[13px] text-muted-foreground leading-relaxed">
-                {isTauri || info?.platform === "win32" || info?.platform === "linux"
-                  ? "Checks for updates and prompts to download, install, and restart Sumi. Save your work first."
-                  : "Opens the update window to download, install, and restart Sumi. Save your work first."}
+                Checks for updates and prompts to download, install, and restart Sumi. Save your
+                work first.
               </p>
 
               {error && (
