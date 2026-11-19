@@ -58,7 +58,7 @@ pub fn open(app: &AppHandle, origin: Url) -> tauri::Result<()> {
     let bridge_key = Some(state.bridge_key.as_str());
     let bootstrap = format!(
         "({})(...{});",
-        include_str!("../../bridge.js").trim(),
+        include_str!("../../bridge.js").trim().trim_end_matches(';'),
         json!([
             url_origin,
             state.prefs.lock().unwrap().value(),
