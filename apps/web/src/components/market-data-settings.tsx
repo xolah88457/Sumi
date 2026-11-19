@@ -21,17 +21,19 @@ export function MarketDataSettings() {
         <CardTitle>Market data</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[15px] text-muted-foreground">
           Connect historical prices for estimated MAE/MFE on closed trades. No data source is
           enabled or selected by default. Choose a connection or upload your own candles. Market
           data connections are separate from broker sync and AI.
         </p>
         {error && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-[15px] text-destructive">
             {error}
           </p>
         )}
-        {!data && !error && <p className="text-sm text-muted-foreground">Loading connections…</p>}
+        {!data && !error && (
+          <p className="text-[15px] text-muted-foreground">Loading connections…</p>
+        )}
         {data?.connections
           .filter((connection) => connection.id !== "market-csv")
           .map((connection) => (
@@ -91,8 +93,8 @@ function Connection({
   return (
     <div className="space-y-3 rounded-lg border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{connection.name}</h3>
-        <span className="text-xs text-muted-foreground">
+        <h3 className="text-[15px] font-medium">{connection.name}</h3>
+        <span className="text-[13px] text-muted-foreground">
           {managed
             ? "Managed by server environment"
             : connection.configured
@@ -102,15 +104,15 @@ function Connection({
               : "Not connected"}
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">{info.description}</p>
+      <p className="text-[13px] text-muted-foreground">{info.description}</p>
       {!publicSource && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Credentials are encrypted locally and used only by the server for market data. Saved
           secrets are never returned to the browser or included in journal exports.
         </p>
       )}
       {managed && !connection.configured && (
-        <p className="text-xs text-destructive">
+        <p className="text-[13px] text-destructive">
           Complete all required fields in the server environment.
         </p>
       )}
@@ -180,12 +182,12 @@ function Connection({
         )}
       </div>
       {message && (
-        <p role="status" className="text-xs text-muted-foreground">
+        <p role="status" className="text-[13px] text-muted-foreground">
           {message}
         </p>
       )}
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[13px] text-destructive">
           {error}
         </p>
       )}

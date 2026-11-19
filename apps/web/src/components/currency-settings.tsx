@@ -73,11 +73,11 @@ export function CurrencySettings() {
         <CardTitle>Currency conversion</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[15px] text-muted-foreground">
           Combine accounts using your own saved exchange rates. Works entirely offline.
         </p>
         <fieldset disabled={busy || !settings.data || !accounts.data} className="space-y-4">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-[15px]">
             <input
               type="checkbox"
               checked={enabled}
@@ -100,7 +100,7 @@ export function CurrencySettings() {
                 dirty();
               }}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Changing the reporting currency clears the draft rates. Enter new rates before saving.
             </p>
           </div>
@@ -108,7 +108,7 @@ export function CurrencySettings() {
             {currencies.map((code) => (
               <div key={code} className="space-y-1">
                 <Label htmlFor={`conversion-${code}`}>{currencyName(code)}</Label>
-                <div className="flex flex-wrap items-center gap-2 text-sm">
+                <div className="flex flex-wrap items-center gap-2 text-[15px]">
                   <span className="tnum">1 {code} =</span>
                   <Input
                     id={`conversion-${code}`}
@@ -129,7 +129,7 @@ export function CurrencySettings() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             These are fixed baseline rates, not live market rates. Changing saved rates recalculates
             all dashboard and calendar history, including starting balances and drawdown. Original
             account records, trade details and reports keep their account currencies.
@@ -139,12 +139,12 @@ export function CurrencySettings() {
           </Button>
         </fieldset>
         {(error || settings.error || accounts.error) && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-[15px] text-destructive">
             {error || settings.error || accounts.error}
           </p>
         )}
         {saved && (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className="text-[15px] text-muted-foreground">
             Conversion settings saved. Dashboard and calendar figures now use these settings.
           </p>
         )}

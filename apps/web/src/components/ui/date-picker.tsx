@@ -86,7 +86,7 @@ export function DatePicker({
             </button>
           </Popover.Trigger>
           {invalid && (
-            <span id={errorId} role="alert" className="mt-1 block text-xs text-destructive">
+            <span id={errorId} role="alert" className="mt-1 block text-[13px] text-destructive">
               Enter a valid date (YYYY-MM-DD){max ? ` on or before ${max}` : ""}
               {min ? ` on or after ${min}` : ""}.
             </span>

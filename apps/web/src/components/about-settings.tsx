@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle2, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { SumiMark } from "@/components/sumi-mark";
 import { Badge } from "@/components/ui/badge";
+import { Notice } from "@/components/ui/notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDesktopInfo } from "@/lib/desktop-info";
@@ -137,26 +138,28 @@ export function AboutSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30 p-2 text-foreground">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary p-2 text-foreground">
               <SumiMark className="size-6" />
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold text-foreground">Sumi Trading Journal</h3>
-                <Badge variant="outline" className="text-[11px] font-normal">
+                <h3 className="text-[21px] font-normal leading-snug tracking-[-0.02em] text-foreground">
+                  Sumi Trading Journal
+                </h3>
+                <Badge variant="outline" className="text-[13px] font-normal">
                   Local Desktop
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[15px] text-muted-foreground">
                 An independent, private local desktop trading journal engineered for offline-first
                 trade tracking, multi-asset analytics, and disciplined reflection.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="space-y-2 text-[15px] text-muted-foreground">
             <p>
-              <strong className="font-medium text-foreground">Core Application:</strong> Based on
+              <strong className="font-normal text-foreground">Core Application:</strong> Based on
               the open-source{" "}
               <a
                 href="https://github.com/LuxAlgo/trade-journal"
@@ -169,7 +172,7 @@ export function AboutSettings() {
               (MIT License, Copyright &copy; 2026 LuxAlgo Global, LLC).
             </p>
             <p>
-              <strong className="font-medium text-foreground">Visual Theme:</strong> Inspired by{" "}
+              <strong className="font-normal text-foreground">Visual Theme:</strong> Inspired by{" "}
               <a
                 href="https://github.com/tw93/Kami"
                 target="_blank"
@@ -179,20 +182,18 @@ export function AboutSettings() {
                 Kami
               </a>{" "}
               by Tw93 (MIT License, Copyright &copy; 2026 Tw93), adapting its parchment, ivory, and
-              deep navy editorial aesthetic. Sumi uses independent branding and local system
-              typography without remote tracking or hosted fonts.
+              deep navy editorial aesthetic. Sumi uses independent branding and the Charis SIL
+              typeface (SIL Open Font License 1.1), bundled with the app. Nothing is fetched at
+              runtime and there is no remote tracking.
             </p>
           </div>
 
-          <div className="rounded-lg border border-border/70 bg-muted/40 p-3.5 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Independence & No-Affiliation Notice</p>
-            <p className="mt-1 leading-relaxed">
-              Sumi is an independent local desktop adaptation, not an official product of LuxAlgo or
-              Tw93. Sumi is not affiliated with, maintained by, or endorsed by LuxAlgo Global, LLC
-              or Tw93. References to upstream projects and trademarks are made solely for factual
-              attribution under nominative fair use.
-            </p>
-          </div>
+          <Notice title="Independence & No-Affiliation Notice">
+            Sumi is an independent local desktop adaptation, not an official product of LuxAlgo or
+            Tw93. Sumi is not affiliated with, maintained by, or endorsed by LuxAlgo Global, LLC or
+            Tw93. References to upstream projects and trademarks are made solely for factual
+            attribution under nominative fair use.
+          </Notice>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button variant="outline" size="sm" asChild>
@@ -206,10 +207,10 @@ export function AboutSettings() {
                 Source repository
               </a>
             </Button>
-            <span className="text-xs text-muted-foreground font-mono">{SOURCE_REPO_URL}</span>
+            <span className="text-[13px] text-muted-foreground font-mono">{SOURCE_REPO_URL}</span>
           </div>
 
-          <p className="text-xs leading-relaxed text-muted-foreground">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Open source and local first: your journal is stored on this device. Sumi is a journaling
             tool, not investment advice.
           </p>
@@ -222,34 +223,33 @@ export function AboutSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!isDesktop ? (
-            <div className="rounded-lg border border-border/70 bg-muted/30 p-3.5 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Web browser mode</p>
-              <p className="mt-1 leading-relaxed">
-                Running in a web browser. Native desktop features, local shell integration, and
-                automatic software updates are active only in the Sumi desktop application.
-              </p>
-            </div>
+            <Notice title="Web browser mode">
+              Running in a web browser. Native desktop features, local shell integration, and
+              automatic software updates are active only in the Sumi desktop application.
+            </Notice>
           ) : (
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">Sumi Desktop</span>
+                    <span className="text-[17px] text-foreground">Sumi Desktop</span>
                     {info?.version && (
-                      <Badge variant="outline" className="font-mono text-[11px]">
+                      <Badge variant="outline" className="font-mono text-[13px]">
                         v{info.version}
                       </Badge>
                     )}
                   </div>
                   {info && (
-                    <p className="font-mono text-xs text-muted-foreground">
+                    <p className="font-mono text-[13px] text-muted-foreground">
                       Version {info.version} &bull; {isTauri ? "Tauri" : "Electron"}{" "}
                       {(isTauri ? info.tauriVersion : info.electronVersion) || "unknown"} &bull;{" "}
                       {info.platform} ({info.arch})
                     </p>
                   )}
                   {isLoading && !info && (
-                    <p className="text-xs text-muted-foreground">Reading desktop runtime info…</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      Reading desktop runtime info…
+                    </p>
                   )}
                 </div>
 
@@ -277,89 +277,61 @@ export function AboutSettings() {
                 </div>
               </div>
 
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
                 {isTauri || info?.platform === "win32" || info?.platform === "linux"
                   ? "Checks for updates and prompts to download, install, and restart Sumi. Save your work first."
                   : "Opens the update window to download, install, and restart Sumi. Save your work first."}
               </p>
 
               {error && (
-                <div
+                <Notice
                   role="alert"
-                  className="flex items-start justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
-                >
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-                    <span>{error}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={checkForUpdates}
-                    disabled={isChecking}
-                    className="h-6 px-2 text-xs hover:bg-destructive/20 text-destructive hover:text-destructive"
-                  >
-                    Retry
-                  </Button>
-                </div>
+                  tone="error"
+                  icon={<AlertCircle />}
+                  title={error}
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={checkForUpdates}
+                      disabled={isChecking}
+                    >
+                      Retry
+                    </Button>
+                  }
+                />
               )}
-
               {!error && info?.update?.status === "available" && (
-                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-foreground">
-                  <CheckCircle2
-                    className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    Update available
-                    {info.update.availableVersion ? `: v${info.update.availableVersion}` : ""}.{" "}
-                    {info.update.message ||
-                      "Native updater window will guide download and restart."}
-                  </span>
-                </div>
+                <Notice icon={<CheckCircle2 />}>
+                  Update available
+                  {info.update.availableVersion ? `: v${info.update.availableVersion}` : ""}.{" "}
+                  {info.update.message || "Native updater window will guide download and restart."}
+                </Notice>
               )}
 
               {!error && info?.update?.status === "downloading" && (
-                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-foreground">
-                  <Loader2
-                    className="size-4 shrink-0 animate-spin text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <span>{info.update.message || "Downloading update…"}</span>
-                </div>
+                <Notice icon={<Loader2 className="animate-spin" />}>
+                  {info.update.message || "Downloading update…"}
+                </Notice>
               )}
 
               {!error && info?.update?.status === "downloaded" && (
-                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-foreground">
-                  <CheckCircle2
-                    className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                    aria-hidden="true"
-                  />
-                  <span>{info.update.message || "Update downloaded; ready to install."}</span>
-                </div>
+                <Notice icon={<CheckCircle2 />}>
+                  {info.update.message || "Update downloaded; ready to install."}
+                </Notice>
               )}
 
               {!error && info?.update?.status === "installing" && (
-                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-foreground">
-                  <Loader2
-                    className="size-4 shrink-0 animate-spin text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <span>{info.update.message || "Installing update…"}</span>
-                </div>
+                <Notice icon={<Loader2 className="animate-spin" />}>
+                  {info.update.message || "Installing update…"}
+                </Notice>
               )}
 
               {!error && info?.update?.status === "unavailable" && (
-                <div className="flex items-start gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-muted-foreground">
-                  <AlertCircle
-                    className="size-4 shrink-0 text-muted-foreground mt-0.5"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    {info.update.message ||
-                      "Automatic updates are unavailable for this installation format."}
-                  </span>
-                </div>
+                <Notice icon={<AlertCircle />}>
+                  {info.update.message ||
+                    "Automatic updates are unavailable for this installation format."}
+                </Notice>
               )}
 
               {!error &&
@@ -367,13 +339,9 @@ export function AboutSettings() {
                 (!info?.update ||
                   info.update.status === "not-available" ||
                   info.update.status === "idle") && (
-                  <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-muted-foreground">
-                    <CheckCircle2
-                      className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                      aria-hidden="true"
-                    />
-                    <span>Sumi is up to date (version {info?.version || "0.2.0"}).</span>
-                  </div>
+                  <Notice icon={<CheckCircle2 />}>
+                    Sumi is up to date (version {info?.version || "0.2.0"}).
+                  </Notice>
                 )}
             </div>
           )}
@@ -385,7 +353,7 @@ export function AboutSettings() {
           <CardTitle>Core open-source licenses</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[15px] text-muted-foreground">
             Original MIT copyright and permission notices for core software and design components.
             Click any section below to inspect its verbatim license text.
           </p>
@@ -394,22 +362,22 @@ export function AboutSettings() {
             {CORE_MIT_LICENSES.map((item) => (
               <details
                 key={item.id}
-                className="group rounded-xl border border-border/70 bg-card p-3.5 text-xs transition-colors open:bg-muted/20"
+                className="group rounded-xl border border-border bg-card p-4 text-[13px] transition-colors open:bg-muted"
               >
-                <summary className="flex cursor-pointer items-center justify-between gap-2 font-medium text-foreground select-none">
+                <summary className="flex cursor-pointer items-center justify-between gap-2 text-[15px] text-foreground select-none">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span>{item.name}</span>
-                    <span className="text-muted-foreground font-normal text-[11px]">
+                    <span className="text-muted-foreground font-normal text-[13px]">
                       &mdash; {item.copyright}
                     </span>
                   </div>
-                  <Badge variant="outline" className="font-mono text-[10px] uppercase shrink-0">
+                  <Badge variant="outline" className="font-mono text-[13px] uppercase shrink-0">
                     MIT
                   </Badge>
                 </summary>
-                <div className="mt-3 space-y-2.5 border-t border-border/60 pt-3">
+                <div className="mt-3 space-y-2.5 border-t border-border pt-3">
                   <p className="text-muted-foreground">{item.description}</p>
-                  <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-1 text-[13px]">
                     <span className="text-muted-foreground">Upstream:</span>
                     <a
                       href={item.upstream}
@@ -421,7 +389,7 @@ export function AboutSettings() {
                       <ExternalLink className="size-3" aria-hidden="true" />
                     </a>
                   </div>
-                  <pre className="overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground whitespace-pre-wrap select-text">
+                  <pre className="overflow-x-auto rounded-lg bg-secondary p-3 font-mono text-[13px] leading-relaxed text-muted-foreground whitespace-pre-wrap select-text">
                     {item.licenseText}
                   </pre>
                 </div>
@@ -435,15 +403,15 @@ export function AboutSettings() {
         <CardHeader>
           <CardTitle>Voice engine & model notices</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <CardContent className="space-y-3 text-[15px] text-muted-foreground">
           <p>
             Local voice dictation runs entirely on-device with no audio streams or transcription
             data transmitted over the network.
           </p>
 
-          <div className="space-y-2 rounded-lg border border-border/70 bg-muted/40 p-3.5 text-xs">
+          <div className="space-y-2 rounded-lg bg-secondary px-4 py-3.5 text-[13px]">
             <div>
-              <p className="font-medium text-foreground">Local Voice Runtime & VAD</p>
+              <p className="text-[15px] text-foreground">Local Voice Runtime & VAD</p>
               <p className="mt-0.5 leading-relaxed text-muted-foreground">
                 Software libraries (
                 <code className="font-mono text-foreground">transcribe-cpp</code> and native Apple
@@ -453,8 +421,8 @@ export function AboutSettings() {
               </p>
             </div>
 
-            <div className="border-t border-border/60 pt-2">
-              <p className="font-medium text-foreground">
+            <div className="border-t border-border pt-2">
+              <p className="text-[15px] text-foreground">
                 Model License Metadata Caveat &amp; External Storage
               </p>
               <p className="mt-0.5 leading-relaxed text-muted-foreground">
@@ -486,13 +454,13 @@ export function AboutSettings() {
         <CardHeader>
           <CardTitle>Bundled third-party notices</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <CardContent className="space-y-3 text-[15px] text-muted-foreground">
           <p>
             Sumi includes standard open-source dependencies (Next.js, React, SQLite, Radix UI,
             Tailwind CSS, and associated utilities). Each package retains its original open-source
             license.
           </p>
-          <p className="text-xs leading-relaxed">
+          <p className="text-[13px] leading-relaxed">
             The full catalog of third-party dependency licenses and notices is bundled offline with
             desktop releases at{" "}
             <code className="font-mono text-foreground">

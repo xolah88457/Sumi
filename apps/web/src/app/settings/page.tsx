@@ -110,14 +110,17 @@ function Settings() {
 
   return (
     <div>
-      <FilterBar title="Settings" />
+      <FilterBar
+        title="Settings"
+        lede="Time zones, defaults, AI and your data. Everything stays on this computer."
+      />
       <div
         ref={top}
-        className="mx-auto grid max-w-5xl scroll-mt-20 gap-6 p-4 sm:p-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8"
+        className="grid max-w-5xl scroll-mt-20 gap-6 px-4 pb-8 pt-2 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-10"
       >
         <nav
           aria-label="Settings sections"
-          className="hidden space-y-1 lg:sticky lg:top-20 lg:block lg:self-start"
+          className="hidden space-y-1 lg:sticky lg:top-24 lg:block lg:self-start"
         >
           {sections.map(({ id, label, icon: Icon }) => (
             <a
@@ -125,10 +128,10 @@ function Settings() {
               href={`#${id}`}
               aria-current={active === id ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex items-center gap-3 rounded-full px-4 py-2.5 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active === id
-                  ? "bg-muted font-medium text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
               onClick={(event) => {
                 if (
@@ -149,7 +152,10 @@ function Settings() {
           ))}
         </nav>
         <div className="space-y-2 lg:hidden">
-          <Label htmlFor="settings-section" className="text-xs text-muted-foreground">
+          <Label
+            htmlFor="settings-section"
+            className="text-[13px] font-normal text-muted-foreground"
+          >
             Settings section
           </Label>
           <OptionSelect
@@ -168,13 +174,16 @@ function Settings() {
           {sections.map(({ id, label, description }) => (
             // Keep panels mounted so changing sections preserves unsaved form drafts.
             <section key={id} hidden={active !== id} aria-labelledby={`settings-heading-${id}`}>
-              <div className="mb-5 space-y-1.5">
-                <h2 id={`settings-heading-${id}`} className="text-xl font-semibold tracking-tight">
+              <div className="mb-5 space-y-2">
+                <h2
+                  id={`settings-heading-${id}`}
+                  className="text-[26px] font-normal leading-tight tracking-[-0.02em]"
+                >
                   {label}
                 </h2>
-                <p className="text-sm text-muted-foreground">{description}</p>
+                <p className="max-w-[64ch] text-[15px] text-muted-foreground">{description}</p>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {id === "general" && <TimeZoneSettings />}
                 {id === "trading" && (
                   <>
@@ -191,7 +200,7 @@ function Settings() {
                       <CardTitle>Export your data</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-[15px] text-muted-foreground">
                         Save a full journal backup, or export your trades as a CSV.
                       </p>
                       <div className="flex flex-wrap gap-2">

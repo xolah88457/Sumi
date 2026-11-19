@@ -26,7 +26,7 @@ export function CurrencyPicker({
       value={value}
       onChange={(event) => onChange(event.target.value)}
       disabled={disabled || !ready}
-      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-[15px] shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
     >
       {codes.map((code) => (
         <option key={code} value={code}>

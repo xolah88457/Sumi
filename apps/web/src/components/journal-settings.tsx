@@ -51,7 +51,10 @@ export function TimeZoneSettings() {
       <CardContent className="space-y-4">
         <fieldset disabled={busy || !data} className="space-y-4">
           <div>
-            <Label htmlFor="display-timezone" className="mb-1 block text-xs text-muted-foreground">
+            <Label
+              htmlFor="display-timezone"
+              className="mb-1 block text-[13px] text-muted-foreground"
+            >
               Display timezone (IANA)
             </Label>
             <TimeZonePicker
@@ -64,11 +67,11 @@ export function TimeZoneSettings() {
               }}
               disabled={busy || !data}
             />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[13px] text-muted-foreground">
               Trade times, calendars, journal days, and analytics use this timezone.
             </p>
             <button
-              className="mt-1 text-xs text-muted-foreground underline"
+              className="mt-1 text-[13px] text-muted-foreground underline"
               onClick={() => {
                 setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
                 setSaved(false);
@@ -78,7 +81,10 @@ export function TimeZoneSettings() {
             </button>
           </div>
           <div>
-            <Label htmlFor="import-timezone" className="mb-1 block text-xs text-muted-foreground">
+            <Label
+              htmlFor="import-timezone"
+              className="mb-1 block text-[13px] text-muted-foreground"
+            >
               Default import timezone (IANA)
             </Label>
             <TimeZonePicker
@@ -91,7 +97,7 @@ export function TimeZoneSettings() {
               }}
               disabled={busy || !data}
             />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[13px] text-muted-foreground">
               Used for timestamps without an offset in file imports and IBKR broker sync. You can
               override it for each file. Existing trades are not changed; correcting an IBKR
               account's timezone requires a separate account for recovery.
@@ -100,12 +106,12 @@ export function TimeZoneSettings() {
           <Button onClick={save}>{busy ? "Saving…" : "Save timezones"}</Button>
         </fieldset>
         {(failure || error) && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-[15px] text-destructive">
             {failure || error}
           </p>
         )}
         {saved && (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className="text-[15px] text-muted-foreground">
             Timezones saved.
           </p>
         )}
@@ -174,7 +180,7 @@ export function ContractMultiplierSettings() {
           <div>
             <Label
               htmlFor="contract-multiplier-values"
-              className="mb-1 block text-xs text-muted-foreground"
+              className="mb-1 block text-[13px] text-muted-foreground"
             >
               Futures/options — one per line, SYMBOL=multiplier
             </Label>
@@ -186,25 +192,25 @@ export function ContractMultiplierSettings() {
                 setSaved(false);
               }}
               placeholder={"ESU6=50\nNQU6=20\nMESU6=5"}
-              className="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+              className="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-[15px] shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
             />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[13px] text-muted-foreground">
               Use the exact symbol shown on your imported trades, including the contract month when
               present.
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Saving multipliers recalculates existing trade P&L from fills and preserves annotations.
           </p>
           <Button onClick={save}>{busy ? "Saving…" : "Save multipliers"}</Button>
         </fieldset>
         {(failure || error) && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-[15px] text-destructive">
             {failure || error}
           </p>
         )}
         {saved && (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className="text-[15px] text-muted-foreground">
             Contract multipliers saved.
           </p>
         )}
