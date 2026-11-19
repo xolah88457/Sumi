@@ -1467,3 +1467,13 @@ body.dashboard-is-dragging * {
   max-width: 100%;
   border-radius: 6px;
 }
+
+/* Table density (Trades and Reports): comfortable is the default; compact trims row padding. */
+[data-density="compact"] .journal-table-cell {
+  padding-block: 6px;
+  font-size: 13px;
+  line-height: 1.3;
+}
+[data-density="compact"] .journal-table-head {
+  height: 32px;
+}

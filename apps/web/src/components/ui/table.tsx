@@ -33,7 +33,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "h-10 px-3 text-left align-middle text-[13px] font-normal text-muted-foreground whitespace-nowrap",
+        "journal-table-head h-10 px-3 text-left align-middle text-[13px] font-normal text-muted-foreground whitespace-nowrap",
         className,
       )}
       {...props}
@@ -42,7 +42,12 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
-  return <td className={cn("px-3 py-3 align-middle whitespace-nowrap", className)} {...props} />;
+  return (
+    <td
+      className={cn("journal-table-cell px-3 py-3 align-middle whitespace-nowrap", className)}
+      {...props}
+    />
+  );
 }
 
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };
