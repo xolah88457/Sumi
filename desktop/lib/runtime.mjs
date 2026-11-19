@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { win32 as winPath, basename, dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -718,6 +718,18 @@ export function augmentStandaloneDependencies(serverDir) {
 }
 
 /**
+ * Returns the tar executable used to unpack the Node archive. On Windows this is the
+ * bsdtar shipped in %SystemRoot%\\System32, addressed by absolute path: a bare `tar` on PATH
+ * can resolve to Git-for-Windows' GNU tar, which reads `D:\\...` as a remote host and cannot
+ * read .zip files.
+ */
+export function getTarCommand(platform = process.platform, env = process.env) {
+  if (platform !== "win32") return "tar";
+  const systemRoot = env.SystemRoot || env.SYSTEMROOT || env.windir || "C:\\Windows";
+  return winPath.join(systemRoot, "System32", "tar.exe");
+}
+
+/**
  * Resolves the platform-safe command and arguments for invoking pnpm.
  * On Windows, dispatches via ComSpec cmd.exe /d /s /c "pnpm build" or validated
  * Node + npm_execpath to avoid ENOENT/EINVAL and Node batch file security restrictions.
@@ -1016,7 +1028,7 @@ export async function stageBackend({
   try {
     if (platform === "win32") {
       // Windows includes bsdtar with ZIP support; no Git Bash unzip required.
-      execFileSync("tar.exe", ["-xf", nodeArchivePath, "-C", nodeTemp]);
+      execFileSync(getTarCommand("win32"), ["-xf", nodeArchivePath, "-C", nodeTemp]);
       const runtimeDir = join(nodeTemp, `node-${runtimeVersion}-win-${normArch}`);
       cpSync(join(runtimeDir, "node.exe"), join(resources, "runtime/node.exe"));
       const nodeLicense = join(runtimeDir, "LICENSE");
@@ -1024,7 +1036,7 @@ export async function stageBackend({
         cpSync(nodeLicense, join(resources, "licenses/Node-LICENSE.txt"));
       }
     } else {
-      execFileSync("tar", ["-xzf", nodeArchivePath, "-C", nodeTemp], {
+      execFileSync(getTarCommand(platform), ["-xzf", nodeArchivePath, "-C", nodeTemp], {
         cwd: root,
         stdio: "inherit",
       });

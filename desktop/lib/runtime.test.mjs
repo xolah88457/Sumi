@@ -36,6 +36,7 @@ import {
   getNodeArchiveName,
   getNodeBinaryRelativePath,
   getPnpmCommand,
+  getTarCommand,
   isPathContained,
   parseFileVersionString,
   readDllFileVersion,
@@ -1127,4 +1128,17 @@ test("bundledDependencyPackages follows production dependencies and skips dev an
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test("getTarCommand uses the absolute System32 bsdtar on Windows, never PATH", () => {
+  assert.equal(
+    getTarCommand("win32", { SystemRoot: "D:\\Windows" }),
+    "D:\\Windows\\System32\\tar.exe",
+  );
+  assert.equal(getTarCommand("win32", {}), "C:\\Windows\\System32\\tar.exe");
+  assert.equal(getTarCommand("linux", { SystemRoot: "C:\\Windows" }), "tar");
+  assert.equal(getTarCommand("darwin", {}), "tar");
+  // The staging code must route extraction through the helper rather than a bare name.
+  const src = readFileSync(join(root, "desktop/lib/runtime.mjs"), "utf8");
+  assert.doesNotMatch(src, /execFileSync\(\s*"tar(\.exe)?"/);
 });
