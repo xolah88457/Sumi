@@ -14,7 +14,7 @@ import {
 import { useApi } from "@/lib/use-api";
 import { ReportMarketEstimates } from "./report-market-estimates";
 import { MonetaryValue } from "./privacy";
-import { fmtMoney } from "@/lib/utils";
+import { fmtMoney, fmtR } from "@/lib/utils";
 import { Pnl } from "./pnl";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -82,10 +82,7 @@ export function TradeExplorer({ query }: { query: string }) {
     ) : y === "netPnl" ? (
       <Pnl value={point.y} currency={currency} />
     ) : (
-      <span className="tabular-nums">
-        {point.y > 0 ? "+" : ""}
-        {point.y.toFixed(2)}R
-      </span>
+      <span className="tabular-nums">{fmtR(point.y, 2, { sign: true })}</span>
     );
   const xValue = (point: PlottedTrade) =>
     x === "mae" || x === "mfe" ? (

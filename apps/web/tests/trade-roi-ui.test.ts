@@ -57,7 +57,7 @@ it("shows the actual MNQ and option returns instead of inflating them by their m
     { assetClass: "futures", avgEntry: 31157.25, quantity: 4, contractMultiplier: 2, netPnl: 283 },
     { assetClass: "option", avgEntry: 2.47, contractMultiplier: 100, netPnl: -1.3 },
   ]);
-  expect(roiValues()).toEqual(["0.11%", "-0.53%"]);
+  expect(roiValues()).toEqual(["0.11%", "\u22120.53%"]);
 });
 
 it("distinguishes an unknown return from a true zero and supports negative entries", async () => {
@@ -67,7 +67,7 @@ it("distinguishes an unknown return from a true zero and supports negative entri
     { avgEntry: -100, netPnl: -10 },
     { netPnl: 0 },
   ]);
-  expect(roiValues()).toEqual(["–", "–", "-10.00%", "0.00%"]);
+  expect(roiValues()).toEqual(["–", "–", "\u221210.00%", "0.00%"]);
 });
 
 it("sorts numerical returns in both directions with unavailable returns last", async () => {
@@ -82,7 +82,7 @@ it("sorts numerical returns in both directions with unavailable returns last", a
     (button) => button.textContent === "Net ROI",
   )!;
   await act(async () => sort.click());
-  expect(roiValues()).toEqual(["10.00%", "0.00%", "-10.00%", "–", "–"]);
+  expect(roiValues()).toEqual(["10.00%", "0.00%", "\u221210.00%", "–", "–"]);
   await act(async () => sort.click());
-  expect(roiValues()).toEqual(["-10.00%", "0.00%", "10.00%", "–", "–"]);
+  expect(roiValues()).toEqual(["\u221210.00%", "0.00%", "10.00%", "–", "–"]);
 });

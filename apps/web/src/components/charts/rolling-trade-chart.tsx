@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { PerformanceTrends } from "@/lib/performance-trends";
-import { fmtMoney, fmtPercent } from "@/lib/utils";
+import { fmtMoney, fmtPercent, minusSign } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { ChartFrame } from "./chart-frame";
 import { tooltipStyle, useVizTokens } from "./tokens";
@@ -33,7 +33,7 @@ export function RollingTradeChart({
   const privacy = usePrivacy();
   const rate = metric === "winRate";
   const format = (value: number) =>
-    rate ? fmtPercent(value, 0) : privacy ? "••••" : fmtMoney(value, currency);
+    rate ? fmtPercent(value, 0) : privacy ? "••••" : minusSign(fmtMoney(value, currency));
   if (!tokens) return <div className="h-60" />;
   return (
     <ChartFrame height={240}>

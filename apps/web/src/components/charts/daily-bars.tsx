@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { fmtMoney } from "@/lib/utils";
+import { fmtMoney, minusSign } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { tooltipStyle, useVizTokens } from "./tokens";
 import { ChartFrame } from "./chart-frame";
@@ -60,14 +60,14 @@ export function DailyBars({
             axisLine={false}
             width={70}
             tickFormatter={(value: number) =>
-              privateMode ? "••••" : fmtMoney(value, currency).replace(/\.00$/, "")
+              privateMode ? "••••" : minusSign(fmtMoney(value, currency).replace(/\.00$/, ""))
             }
           />
           <ReferenceLine y={0} stroke={t.baseline} />
           <Tooltip
             contentStyle={tooltipStyle(t)}
             formatter={(value) => [
-              privateMode ? "Hidden" : fmtMoney(Number(value), currency),
+              privateMode ? "Hidden" : minusSign(fmtMoney(Number(value), currency)),
               "Net P&L",
             ]}
             cursor={{ fill: t.gridline, opacity: 0.4 }}

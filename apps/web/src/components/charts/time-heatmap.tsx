@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { fmtMoney, fmtNumber } from "@/lib/utils";
+import { fmtMoney, fmtNumber, minusSign } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { tooltipStyle, useVizTokens } from "./tokens";
 import { ChartFrame } from "./chart-frame";
@@ -85,7 +85,7 @@ export function TimeHeatmap({
             <Tooltip
               contentStyle={tooltipStyle(t)}
               formatter={(value) => [
-                privateMode ? "Hidden" : fmtMoney(Number(value), currency),
+                privateMode ? "Hidden" : minusSign(fmtMoney(Number(value), currency)),
                 "Net P&L",
               ]}
               cursor={{ fill: t.gridline, opacity: 0.4 }}

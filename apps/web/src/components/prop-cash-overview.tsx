@@ -15,6 +15,7 @@ import { EmptyState } from "./ui/empty-state";
 import { KpiStrip } from "./ui/kpi-strip";
 import { useVizTokens, tooltipStyle } from "./charts/tokens";
 import { cashSummary, currencyDigits, propMoney } from "@/lib/prop-firms";
+import { fmtPercent } from "@/lib/utils";
 
 type Summary = ReturnType<typeof cashSummary>;
 export function PropCashSummary({
@@ -88,7 +89,7 @@ export function PropCashSummary({
                     ? "••••"
                     : !currency || summary.roi === null
                       ? "—"
-                      : `${(summary.roi * 100).toFixed(1)}%`}
+                      : fmtPercent(summary.roi)}
                 </span>
               </span>
             </span>
