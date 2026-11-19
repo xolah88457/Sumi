@@ -218,6 +218,7 @@ function Notebook() {
       </Dialog>
       <FilterBar
         title="Notebook"
+        compact
         actions={
           <Button size="sm" onClick={createNote}>
             <Plus />

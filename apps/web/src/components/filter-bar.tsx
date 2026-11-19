@@ -14,6 +14,9 @@ import {
 import { FilterFields } from "./filter-fields";
 import { SlidersHorizontal } from "lucide-react";
 import { AccountSelector } from "./account-selector";
+import { NAV_GROUPS } from "./nav-items";
+import { PageHead } from "./ui/page-head";
+import { cn } from "@/lib/utils";
 export const useFilters = () => {
   const params = useSearchParams();
   const { data } = useApi<{ timeZone: string }>("/api/settings");
@@ -43,7 +46,33 @@ export const useFilters = () => {
   }, [params, range, timeZone]);
 };
 export type Filters = ReturnType<typeof useFilters>;
-export function FilterBar({ title, actions }: { title: string; actions?: React.ReactNode }) {
+/** Section label shown above the page title: the sidebar group the current route lives in. */
+function sectionEyebrow(pathname: string) {
+  for (const group of NAV_GROUPS)
+    for (const item of group.items)
+      if (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)) return group.label;
+  return undefined;
+}
+
+/**
+ * Page header and sticky capsule toolbar. `title` becomes the page's single h1 (rendered in a
+ * PageHead that scrolls away); account, range, Filters and `actions` live in the capsule.
+ */
+export function FilterBar({
+  title,
+  actions,
+  eyebrow,
+  lede,
+  compact = false,
+}: {
+  title: string;
+  actions?: React.ReactNode;
+  /** Mono label above the title. Defaults to the sidebar group of the current page. */
+  eyebrow?: React.ReactNode;
+  lede?: React.ReactNode;
+  /** Smaller head for full-height workspaces such as the notebook. */
+  compact?: boolean;
+}) {
   const router = useRouter(),
     pathname = usePathname(),
     params = useSearchParams();
@@ -65,50 +94,75 @@ export function FilterBar({ title, actions }: { title: string; actions?: React.R
   };
   return (
     <>
-      <div className="journal-filter-bar sticky z-10 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
-        <h1 className="mr-auto min-w-0 text-base font-semibold tracking-tight">{title}</h1>
-        {showFilters && (
-          <>
-            <AccountSelector />
-            <div className="flex max-w-full shrink-0 items-center rounded-md border p-0.5">
-              {["7d", "30d", "90d", "ytd", "all"].map((range) => (
+      <PageHead
+        data-compact={compact || undefined}
+        className={cn("journal-page-head px-4", compact ? "pb-3 pt-5" : "pb-6 pt-8 sm:pt-10")}
+        eyebrow={eyebrow ?? sectionEyebrow(pathname)}
+        title={title}
+        lede={compact ? undefined : lede}
+      />
+      {(showFilters || actions) && (
+        <div className="journal-toolbar pointer-events-none sticky z-10 px-4 pb-4">
+          <div
+            role="toolbar"
+            aria-label="Page filters and actions"
+            className={cn(
+              "journal-filter-bar pointer-events-auto flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[26px] border border-secondary bg-card px-2.5 py-1.5",
+              !showFilters && "ml-auto w-fit max-w-full",
+            )}
+          >
+            {showFilters && (
+              <>
+                <AccountSelector />
+                <div
+                  role="group"
+                  aria-label="Date range"
+                  className="flex max-w-full shrink-0 items-center gap-0.5"
+                >
+                  {["7d", "30d", "90d", "ytd", "all"].map((range) => (
+                    <Button
+                      key={range}
+                      variant={filters.range === range ? "secondary" : "ghost"}
+                      size="sm"
+                      aria-pressed={filters.range === range}
+                      className="h-8 px-3 text-[13px] text-muted-foreground aria-pressed:text-foreground"
+                      onClick={() => {
+                        const next = new URLSearchParams(params.toString());
+                        next.set("range", range);
+                        next.delete("from");
+                        next.delete("to");
+                        router.replace(`${pathname}?${next}`);
+                      }}
+                    >
+                      {range === "all" ? "All" : range.toUpperCase()}
+                    </Button>
+                  ))}
+                </div>
                 <Button
-                  key={range}
-                  variant={filters.range === range ? "secondary" : "ghost"}
+                  variant="ghost"
                   size="sm"
-                  className="h-7 px-2 text-xs"
+                  className="h-8 px-3 text-[13px]"
+                  aria-label={`Filters${count > 0 ? `, ${count} active` : ""}`}
+                  title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
                   onClick={() => {
-                    const next = new URLSearchParams(params.toString());
-                    next.set("range", range);
-                    next.delete("from");
-                    next.delete("to");
-                    router.replace(`${pathname}?${next}`);
+                    setDraft(filters.values);
+                    setOpen(true);
                   }}
                 >
-                  {range === "all" ? "All" : range.toUpperCase()}
+                  <SlidersHorizontal className="size-3.5" strokeWidth={1.65} />
+                  <span className="max-sm:hidden">Filters</span>
+                  {count > 0 && <span className="text-muted-foreground">· {count}</span>}
                 </Button>
-              ))}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
-              onClick={() => {
-                setDraft(filters.values);
-                setOpen(true);
-              }}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filters{count > 0 ? ` · ${count}` : ""}
-            </Button>
-          </>
-        )}
-        {actions && (
-          <div className="journal-header-actions flex min-w-0 max-w-full flex-wrap items-center gap-2">
-            {actions}
+              </>
+            )}
+            {actions && (
+              <div className="journal-header-actions ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-2">
+                {actions}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="journal-filter-dialog sm:max-w-3xl"

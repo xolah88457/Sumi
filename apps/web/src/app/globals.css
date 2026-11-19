@@ -520,8 +520,17 @@ body.dashboard-is-dragging .journal-hover-card {
     transition: none !important;
   }
 }
-.journal-filter-bar {
+/* The capsule floats over a paper fade while it is stuck; the fade is invisible at rest. */
+.journal-toolbar {
   top: var(--journal-header-offset, 0px);
+  padding-top: 0.5rem;
+  background: linear-gradient(to bottom, var(--background) 62%, transparent);
+}
+.journal-page-head[data-compact] h1 {
+  font-size: 28px;
+}
+.journal-filter-bar {
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.02);
 }
 .journal-filter-dialog {
   display: flex;
@@ -722,14 +731,8 @@ body.dashboard-is-dragging .journal-hover-card {
   }
 }
 @media (max-width: 639px) {
-  .journal-filter-bar > h1 {
-    flex: 1 0 100%;
-  }
-  .journal-filter-bar:has(> .journal-header-actions):not(:has(> button)) > h1 {
-    flex: 1 1 auto;
-  }
-  .journal-header-actions {
-    margin-left: auto;
+  .journal-filter-bar {
+    border-radius: 24px;
   }
   .journal-dialog {
     max-height: calc(100dvh - 24px);
@@ -965,7 +968,8 @@ body.dashboard-is-dragging .journal-hover-card {
 .notebook-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  height: calc(100dvh - 56px - var(--journal-header-offset));
+  /* page head (~80px) + capsule toolbar (~76px) above the workspace */
+  height: calc(100dvh - 156px - var(--journal-header-offset));
   min-height: 300px;
 }
 .notebook-folders {

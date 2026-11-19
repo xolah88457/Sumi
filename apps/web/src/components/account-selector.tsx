@@ -62,26 +62,26 @@ export function AccountSelector() {
       <Select value={value} onValueChange={(value) => void select(value)} disabled={loadingDemo}>
         <SelectTrigger
           aria-label="Select account"
-          className="h-8 w-44 max-w-full rounded-lg text-xs"
+          className="h-8 w-44 max-w-full rounded-full border-transparent bg-transparent px-3 text-[13px] hover:border-transparent hover:bg-accent data-[state=open]:border-transparent data-[state=open]:bg-accent"
         >
-          <WalletCards className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <WalletCards className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.65} />
           <span className="min-w-0 flex-1 truncate text-left">
             {loadingDemo ? "Loading demo…" : label}
           </span>
         </SelectTrigger>
-        <SelectContent className="rounded-2xl border-white/10 p-1 shadow-2xl" align="end">
-          <SelectItem value="all" className="rounded-lg text-xs">
+        <SelectContent className="rounded-xl" align="end">
+          <SelectItem value="all" className="text-[13px]">
             All accounts
           </SelectItem>
           {selected.length > 1 && (
-            <SelectItem value="multiple" disabled className="text-xs">
+            <SelectItem value="multiple" disabled className="text-[13px]">
               {label}
             </SelectItem>
           )}
           {accounts
             .filter((a) => a.broker !== "demo")
             .map((account) => (
-              <SelectItem key={account.id} value={account.id} className="rounded-lg text-xs">
+              <SelectItem key={account.id} value={account.id} className="text-[13px]">
                 <span className="block max-w-64 truncate">
                   {account.name}
                   {account.archivedAt ? " (archived)" : ""}
@@ -89,14 +89,14 @@ export function AccountSelector() {
               </SelectItem>
             ))}
           <div className="my-1 border-t" />
-          <SelectItem value={demo?.id ?? "load-demo"} className="rounded-lg text-xs">
+          <SelectItem value={demo?.id ?? "load-demo"} className="text-[13px]">
             <span className="flex items-center gap-2">
               <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
               {demo?.name ?? "Load demo data"}
             </span>
           </SelectItem>
           <div className="my-1 border-t" />
-          <SelectItem value="account-settings" className="rounded-lg text-xs">
+          <SelectItem value="account-settings" className="text-[13px]">
             <span className="flex items-center gap-2">
               <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
               Account settings
