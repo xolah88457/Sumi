@@ -7,7 +7,9 @@ import { NotebookPen } from "lucide-react";
 import type { DayStats } from "@luxalgo/journal-core";
 import { FilterBar, useFilters } from "@/components/filter-bar";
 import { Pnl } from "@/components/pnl";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiStrip } from "@/components/ui/kpi-strip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadError } from "@/components/load-error";
 import { Button } from "@/components/ui/button";
@@ -45,20 +47,24 @@ function Journal() {
   const limit = visibleWindow.query === query ? visibleWindow.limit : PAGE_SIZE;
   useEffect(() => setVisibleWindow({ query, limit: PAGE_SIZE }), [query]);
 
+  const days = data?.days ?? [];
+  const tradedDays = days.filter((day) => day.stats && day.stats.trades > 0);
+  const greenDays = tradedDays.filter((day) => (day.stats?.netPnl ?? 0) > 0).length;
+
   return (
     <div>
       <FilterBar
         title="Daily journal"
+        lede="One entry for each trading day. Open a day to read your note or write one."
         actions={
-          <Link
-            href={`/journal/${dayKeyOf(new Date().toISOString(), timeZone)}?${query}`}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            View my day
-          </Link>
+          <Button asChild size="sm">
+            <Link href={`/journal/${dayKeyOf(new Date().toISOString(), timeZone)}?${query}`}>
+              View my day
+            </Link>
+          </Button>
         }
       />
-      <div className="space-y-2 p-4">
+      <div className="space-y-5 px-4 pb-8">
         {error ? (
           <LoadError message={error} onRetry={refresh} />
         ) : !data ? (
@@ -66,53 +72,86 @@ function Journal() {
             <Skeleton className="h-48" />
           </div>
         ) : null}
-        {data?.days.length === 0 && (
-          <p className="py-16 text-center text-sm text-muted-foreground">
-            No trading days yet — import trades or write your first day note.
-          </p>
+        {data && days.length > 0 && (
+          <KpiStrip
+            aria-label="Journal summary"
+            items={[
+              { id: "days", label: "Days in this view", value: days.length },
+              {
+                id: "notes",
+                label: "Days with a note",
+                value: days.filter((day) => day.hasNote).length,
+              },
+              {
+                id: "green",
+                label: "Green days",
+                value: fmtPercent(tradedDays.length ? greenDays / tradedDays.length : null, 0),
+                detail: `${greenDays} of ${tradedDays.length} trading days`,
+              },
+            ]}
+          />
         )}
-        {data?.days.slice(0, limit).map((day) => (
-          <Link key={day.date} href={`/journal/${day.date}?${query}`} className="block">
-            <Card className="transition-colors hover:border-ring">
-              <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-3 py-3">
-                <div className="w-full shrink-0 sm:w-28">
-                  <div className="text-sm font-medium">{day.date}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {weekdayFormatter.format(new Date(`${day.date}T00:00:00Z`))}
-                  </div>
-                </div>
-                {day.stats ? (
-                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                    <Pnl value={day.stats.netPnl} className="w-24 font-semibold" />
-                    <span className="text-muted-foreground">
-                      {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {fmtPercent(
-                        day.stats.trades > 0 ? day.stats.wins / day.stats.trades : null,
-                        0,
-                      )}{" "}
-                      win
-                    </span>
-                    <span className="text-muted-foreground">
-                      {day.stats.wins}W / {day.stats.losses}L
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex-1 text-sm text-muted-foreground">No trades</div>
-                )}
-                {day.hasNote && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <NotebookPen className="h-3.5 w-3.5" />
-                    note
-                  </span>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {data?.days.length === 0 && (
+          <EmptyState
+            title="No trading days yet"
+            action={
+              <Button asChild variant="outline">
+                <Link href="/import">Import trades</Link>
+              </Button>
+            }
+          >
+            Import trades, or open today and write your first day note.
+          </EmptyState>
+        )}
+        {days.length > 0 && (
+          <Card className="overflow-hidden">
+            <ul className="divide-y divide-border">
+              {days.slice(0, limit).map((day) => (
+                <li key={day.date}>
+                  <Link
+                    href={`/journal/${day.date}?${query}`}
+                    className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-4 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <div className="w-full shrink-0 sm:w-36">
+                      <div className="tnum text-[17px] leading-tight">{day.date}</div>
+                      <div className="text-[13px] text-muted-foreground">
+                        {weekdayFormatter.format(new Date(`${day.date}T00:00:00Z`))}
+                      </div>
+                    </div>
+                    {day.stats ? (
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-1 text-[15px]">
+                        <Pnl value={day.stats.netPnl} className="w-28 text-[17px]" />
+                        <span className="tnum text-muted-foreground">
+                          {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
+                        </span>
+                        <span className="tnum text-muted-foreground">
+                          {fmtPercent(
+                            day.stats.trades > 0 ? day.stats.wins / day.stats.trades : null,
+                            0,
+                          )}{" "}
+                          win
+                        </span>
+                        <span className="tnum text-muted-foreground">
+                          {day.stats.wins}W / {day.stats.losses}L
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex-1 text-[15px] text-muted-foreground">No trades</div>
+                    )}
+                    {day.hasNote && (
+                      <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                        <NotebookPen aria-hidden="true" className="size-3.5" />
+                        note
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         {data && data.days.length > PAGE_SIZE && (
-          <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-[13px] text-muted-foreground">
             <span role="status">
               Showing {Math.min(limit, data.days.length)} of {data.days.length} days
             </span>
