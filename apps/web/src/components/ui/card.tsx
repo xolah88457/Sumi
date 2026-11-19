@@ -1,11 +1,23 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Flat 14px surface with a hairline border. `variant="flat"` drops the box for a
+ * top hairline only, for strips and grouped rows that should not read as a card.
+ */
+function Card({
+  className,
+  variant = "default",
+  ...props
+}: React.ComponentProps<"div"> & { variant?: "default" | "flat" }) {
   return (
     <div
+      data-variant={variant}
       className={cn(
-        "card-sheen min-w-0 rounded-xl border border-border/70 bg-card text-card-foreground",
+        "min-w-0 text-card-foreground",
+        variant === "flat"
+          ? "border-t border-border bg-transparent"
+          : "rounded-xl border border-border bg-card",
         className,
       )}
       {...props}
@@ -17,7 +29,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-header"
-      className={cn("min-w-0 flex flex-col space-y-1 p-4 pb-2", className)}
+      className={cn("min-w-0 flex flex-col space-y-1 p-5 pb-2", className)}
       {...props}
     />
   );
@@ -27,7 +39,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "min-w-0 break-words text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground",
+        "min-w-0 break-words text-[13px] font-normal leading-snug text-muted-foreground",
         className,
       )}
       {...props}
@@ -36,7 +48,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("min-w-0 p-4 pt-2", className)} {...props} />;
+  return <div className={cn("min-w-0 p-5 pt-2", className)} {...props} />;
 }
 
 export { Card, CardHeader, CardTitle, CardContent };

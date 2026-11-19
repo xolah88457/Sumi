@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div className="relative min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
-      <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      <table className={cn("w-full caption-bottom text-sm leading-[1.35]", className)} {...props} />
     </div>
   );
 }
@@ -21,7 +21,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b border-border transition-colors hover:bg-muted data-[state=selected]:bg-muted",
         className,
       )}
       {...props}
@@ -33,7 +33,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "h-9 px-2 text-left align-middle text-xs font-medium text-muted-foreground whitespace-nowrap",
+        "h-10 px-3 text-left align-middle text-[13px] font-normal text-muted-foreground whitespace-nowrap",
         className,
       )}
       {...props}
@@ -42,7 +42,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
-  return <td className={cn("px-2 py-2 align-middle whitespace-nowrap", className)} {...props} />;
+  return <td className={cn("px-3 py-3 align-middle whitespace-nowrap", className)} {...props} />;
 }
 
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };

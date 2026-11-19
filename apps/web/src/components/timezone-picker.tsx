@@ -59,7 +59,7 @@ export function TimeZonePicker({
           id={id}
           type="button"
           variant="outline"
-          className="w-full min-w-0 justify-between font-normal"
+          className="w-full min-w-0 justify-between rounded-md bg-card px-3.5 text-[15px] font-normal"
           disabled={disabled}
           aria-label={`${label}: ${value || "Choose a timezone"}`}
           aria-describedby={describedBy}

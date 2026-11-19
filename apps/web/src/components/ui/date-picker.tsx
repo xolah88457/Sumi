@@ -80,7 +80,7 @@ export function DatePicker({
               type="button"
               disabled={disabled}
               aria-label={`Choose ${label.toLowerCase()} date`}
-              className="absolute top-0 right-0 flex size-9 items-center justify-center rounded-r-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              className="absolute top-0 right-0 flex size-10 items-center justify-center rounded-r-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               <CalendarDays aria-hidden="true" className="size-4" />
             </button>
