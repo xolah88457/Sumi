@@ -1,5 +1,14 @@
 # Sumi
 
+> [!IMPORTANT]
+> **macOS: the first launch needs one extra step.** I'm a broke college student and can't afford Apple's $99/year Developer Program yet, so the macOS app isn't signed or notarized by Apple. macOS will warn you the first time you open it. The app is open source, so you can read the code or build it yourself.
+>
+> 1. Open Sumi once. macOS says it can't verify the developer; click **Done** (or **Cancel**), not **Move to Trash**.
+> 2. Open **System Settings → Privacy & Security**, scroll to **Security** and click **Open Anyway** next to the Sumi message.
+> 3. Confirm with your password or Touch ID. Sumi opens, and you only need to do this once.
+>
+> Prefer Terminal? Run `xattr -dr com.apple.quarantine /Applications/Sumi.app` before opening it. Later updates from inside the app should not ask again. More detail is in [desktop/README.md](desktop/README.md#macos-unsigned-builds-the-default).
+
 Sumi is a local-first desktop trading journal for macOS, Windows and Linux. Your trades, notes and attachments live in a SQLite database on your own machine. Sumi imports broker statements or syncs read-only from supported brokers, rebuilds your fills into round-trip trades, and gives you analytics, a daily journal, prop firm cost tracking and optional AI reflection.
 
 Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlgo/trade-journal) (MIT). See [Attribution and license](#attribution-and-license).
