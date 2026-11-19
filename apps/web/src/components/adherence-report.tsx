@@ -34,7 +34,7 @@ export function AdherenceReport({ bookId }: { bookId: string }) {
     );
   if (!b) return null;
   return (
-    <div className="space-y-3 border-t pt-4">
+    <div className="space-y-3 pt-2">
       <div className="flex items-baseline justify-between">
         <span className="text-[13px] text-muted-foreground">Rule adherence</span>
         <strong className="tnum text-[26px] font-normal tracking-[-0.02em]">{pct(b.rate)}</strong>

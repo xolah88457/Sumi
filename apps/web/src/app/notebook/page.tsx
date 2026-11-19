@@ -6,7 +6,7 @@ import { ArrowLeft, FolderPlus, Plus, Search, Trash2 } from "lucide-react";
 import { FolderList, applyFolderOrder } from "./folder-list";
 import { FilterBar } from "@/components/filter-bar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -148,7 +148,7 @@ function Notebook() {
             The folder will be removed. Its notes will be kept in My notes.
           </DialogDescription>
           {deleteError && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-[15px] text-destructive">
               {deleteError}
             </p>
           )}
@@ -181,7 +181,7 @@ function Notebook() {
               void createFolder();
             }}
           >
-            <label className="block space-y-2 text-sm">
+            <label className="block space-y-2 text-[15px]">
               <span>Folder name</span>
               <Input
                 autoFocus
@@ -196,7 +196,7 @@ function Notebook() {
               />
             </label>
             {folderError && (
-              <p role="alert" className="text-sm text-destructive">
+              <p role="alert" className="text-[15px] text-destructive">
                 {folderError}
               </p>
             )}
@@ -218,6 +218,7 @@ function Notebook() {
       </Dialog>
       <FilterBar
         title="Notebook"
+        lede="Notes, reviews and ideas, kept in folders."
         compact
         actions={
           <Button size="sm" onClick={createNote}>
@@ -227,13 +228,13 @@ function Notebook() {
         }
       />
       <div className="notebook-workspace" data-note-open={Boolean(selected)}>
-        <div className="notebook-folders min-w-0 space-y-0.5 overflow-y-auto border-r p-2">
+        <div className="notebook-folders min-w-0 space-y-0.5 overflow-y-auto border-r p-3">
           <button
             className={cn(
-              "w-full rounded-md py-1.5 pl-3 pr-2 text-left text-sm",
+              "w-full rounded-full py-2 pl-4 pr-3 text-left text-[15px]",
               folder === "all"
-                ? "bg-accent font-medium"
-                : "text-muted-foreground hover:bg-accent/60",
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-muted",
             )}
             onClick={() => setFolder("all")}
           >
@@ -247,7 +248,7 @@ function Notebook() {
             onReorder={(order) => void reorderFolders(order)}
           />
           {orderError && (
-            <p role="alert" className="px-2.5 py-1 text-xs text-destructive">
+            <p role="alert" className="px-2.5 py-1 text-[13px] text-destructive">
               {orderError}
             </p>
           )}
@@ -266,13 +267,13 @@ function Notebook() {
         </div>
 
         <div className="notebook-list min-w-0 overflow-y-auto border-r">
-          <div className="sticky top-0 z-[1] space-y-2 border-b bg-background p-2">
+          <div className="sticky top-0 z-[1] space-y-2 border-b bg-background p-3">
             <div className="flex min-w-0 items-center gap-2 xl:hidden">
               <OptionSelect
                 aria-label="Note folder"
                 value={folder}
                 onValueChange={(next) => setFolder(next)}
-                className="h-9 min-w-0 flex-1 rounded-lg border bg-card px-2 text-sm"
+                className="min-w-0 flex-1"
               >
                 <option value="all">All notes</option>
                 {sidebarFolders.map((item) => (
@@ -307,36 +308,44 @@ function Notebook() {
               </Button>
             </div>
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
+              />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search notes"
-                className="pl-8"
+                className="pl-9"
               />
             </div>
           </div>
           {data?.notes.length === 0 && (
-            <p className="p-6 text-center text-sm text-muted-foreground">No notes here yet.</p>
+            <EmptyState
+              className="m-3 px-4 py-6"
+              title={search ? "No matching notes" : "No notes here yet"}
+            >
+              {search ? "Try a different search." : "Add a note to start this folder."}
+            </EmptyState>
           )}
           {data?.notes.map((note) => (
             <button
               key={note.id}
               className={cn(
-                "block w-full border-b px-3 py-2.5 text-left hover:bg-accent/40",
-                selectedId === note.id && "bg-accent/60",
+                "block w-full border-b px-4 py-3 text-left transition-colors hover:bg-muted",
+                selectedId === note.id && "bg-accent hover:bg-accent",
               )}
               onClick={() => setSelectedId(note.id)}
             >
-              <div className="truncate text-sm font-medium">{note.title || "Untitled"}</div>
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="truncate text-[15px]">{note.title || "Untitled"}</div>
+              <div className="truncate text-[13px] text-muted-foreground">
                 {note.updatedAt.slice(0, 10)} · {note.content.slice(0, 60) || "empty"}
               </div>
             </button>
           ))}
         </div>
 
-        <div className="notebook-editor min-w-0 overflow-y-auto p-3 sm:p-4">
+        <div className="notebook-editor min-w-0 overflow-y-auto px-4 py-5 sm:px-8 sm:py-8">
           {selected && (
             <Button
               type="button"
@@ -352,9 +361,18 @@ function Notebook() {
           {selected ? (
             <NoteEditor key={selected.id} note={selected} onChanged={refresh} />
           ) : (
-            <p className="py-24 text-center text-sm text-muted-foreground">
-              Select or create a note.
-            </p>
+            <EmptyState
+              className="mx-auto mt-6 max-w-md"
+              title="Select or create a note"
+              action={
+                <Button variant="outline" onClick={createNote}>
+                  <Plus />
+                  New note
+                </Button>
+              }
+            >
+              Pick a note from the list, or start a fresh one.
+            </EmptyState>
           )}
         </div>
       </div>
@@ -375,8 +393,8 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
   const save = (title: string, content: string) => queueSave({ title, content });
 
   return (
-    <Card className="mx-auto max-w-3xl">
-      <CardContent className="space-y-3 pt-4">
+    <div className="mx-auto max-w-[calc(66ch+3rem)] space-y-4">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             value={title}
@@ -384,7 +402,7 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
               setTitle(event.target.value);
               save(event.target.value, content);
             }}
-            className="notebook-editor-title border-0 px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
+            className="notebook-editor-title h-auto border-0 bg-transparent px-0 text-[26px] font-normal leading-tight tracking-[-0.02em] shadow-none focus-visible:ring-0"
             placeholder="Title"
           />
           <Button
@@ -421,7 +439,7 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
             save(title, value);
           }}
         />
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-[13px] text-muted-foreground">
           <span role="status">{status}</span>
           <Button variant="ghost" size="sm" onClick={() => void flush()}>
             Save now
@@ -429,7 +447,7 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
         </div>
         <ReviewExport document={{ title: title || "Journal note", lines: [content] }} />
         <Attachments type="note" id={note.id} />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

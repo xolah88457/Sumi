@@ -106,7 +106,7 @@ function JournalDay({ date }: { date: string }) {
         <div className="px-4 pt-2">
           <KpiStrip
             rowRules
-            className="grid-cols-[repeat(auto-fit,minmax(200px,1fr))]"
+            className="grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(200px,1fr))]"
             aria-label="Day stats"
             items={[
               { id: "net", label: "Net P&L", value: <Pnl value={m.netPnl} /> },

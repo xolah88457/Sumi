@@ -9,6 +9,9 @@ import { FilterBar } from "@/components/filter-bar";
 import { Field, fieldClass } from "@/components/filter-fields";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiStrip } from "@/components/ui/kpi-strip";
+import { Notice } from "@/components/ui/notice";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReviewExport } from "@/components/review-export";
 import { useApi, postJson } from "@/lib/use-api";
@@ -63,58 +66,65 @@ function Progress() {
     <div>
       <FilterBar
         title="Progress"
+        lede="Build a repeatable trading day. Routines are tracked apart from trade filters and profit."
         actions={
           <Button size="sm" onClick={() => setOpen(true)}>
             Add routine
           </Button>
         }
       />
-      <div className="space-y-4 p-4">
-        <p className="text-sm text-muted-foreground">
-          Build a repeatable trading day. Routines are tracked independently of trade filters and
-          profit.
-        </p>
-        {(error || failure) && (
-          <p role="alert" className="text-sm text-destructive">
-            {error || failure}
-          </p>
+      <div className="space-y-5 px-4 pb-8">
+        {(error || failure) && <Notice role="alert" tone="error" title={error || failure} />}
+        <KpiStrip
+          aria-label="Daily completion"
+          items={[
+            {
+              id: "completion",
+              label: "Daily completion",
+              value: score?.score == null ? "–" : `${Math.round(score.score * 100)}%`,
+              detail: "Share of scheduled routines done",
+            },
+            {
+              id: "done",
+              label: "Routines completed",
+              value: `${score?.completed ?? 0} / ${score?.total ?? 0}`,
+              detail: selected && selected === data?.today ? "Today" : selected,
+            },
+          ]}
+        />
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="w-full max-w-60">
+            <Field label="Review date">
+              <DatePicker
+                label="Progress date"
+                value={selected}
+                max={data?.today}
+                onValueChange={setDate}
+              />
+            </Field>
+          </div>
+          <ReviewExport
+            document={{
+              title: `Routine review · ${selected}`,
+              lines: [
+                `Completed: ${score?.completed ?? 0}/${score?.total ?? 0}`,
+                ...rules.map(
+                  (r) =>
+                    `${data?.checks.some((c) => c.date === selected && c.ruleId === r.id && c.done) ? "[done]" : "[ ]"} ${r.stage}: ${r.title}`,
+                ),
+              ],
+            }}
+          />
+        </div>
+        {data && data.rules.length === 0 && (
+          <EmptyState
+            title="No routines yet"
+            action={<Button onClick={() => setOpen(true)}>Add routine</Button>}
+          >
+            Add the steps you want to repeat before, during and after trading.
+          </EmptyState>
         )}
-        <Card>
-          <CardContent className="flex flex-wrap items-center justify-between gap-6 py-6">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Daily completion</p>
-                <p className="text-4xl font-semibold">
-                  {score?.score == null ? "-" : `${Math.round(score.score * 100)}%`}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {score?.completed ?? 0} of {score?.total ?? 0} scheduled routines
-                </p>
-              </div>
-              <Field label="Review date">
-                <DatePicker
-                  label="Progress date"
-                  value={selected}
-                  max={data?.today}
-                  onValueChange={setDate}
-                />
-              </Field>
-            </div>
-            <ReviewExport
-              document={{
-                title: `Routine review · ${selected}`,
-                lines: [
-                  `Completed: ${score?.completed ?? 0}/${score?.total ?? 0}`,
-                  ...rules.map(
-                    (r) =>
-                      `${data?.checks.some((c) => c.date === selected && c.ruleId === r.id && c.done) ? "[done]" : "[ ]"} ${r.stage}: ${r.title}`,
-                  ),
-                ],
-              }}
-            />
-          </CardContent>
-        </Card>
-        <div className="grid gap-4 xl:grid-cols-3">
+        <div className="grid gap-5 xl:grid-cols-3">
           {STAGES.map((s) => (
             <Card key={s}>
               <CardHeader>
@@ -124,8 +134,11 @@ function Progress() {
                 {rules
                   .filter((r) => r.stage === s)
                   .map((r) => (
-                    <div key={r.id} className="flex items-start justify-between gap-2">
-                      <label className="flex items-start gap-3 text-sm">
+                    <div
+                      key={r.id}
+                      className="flex items-start justify-between gap-2 border-t pt-3 first:border-t-0 first:pt-0"
+                    >
+                      <label className="flex items-start gap-3 text-[15px]">
                         <Checkbox
                           className="mt-1"
                           checked={
@@ -142,7 +155,7 @@ function Progress() {
                       </label>
                       {!r.archivedAt && (
                         <button
-                          className="text-xs text-muted-foreground underline"
+                          className="text-[13px] text-muted-foreground underline"
                           onClick={() => {
                             if (confirm(`Archive “${r.title}”? Previous days are preserved.`))
                               void act({ id: r.id }, "DELETE");
@@ -154,7 +167,7 @@ function Progress() {
                     </div>
                   ))}
                 {!rules.some((r) => r.stage === s) && (
-                  <p className="text-xs text-muted-foreground">No routines scheduled.</p>
+                  <p className="text-[13px] text-muted-foreground">No routines scheduled.</p>
                 )}
               </CardContent>
             </Card>
@@ -176,7 +189,7 @@ function Progress() {
                     key={d.date}
                     aria-label={`${d.date}: ${d.completed}/${d.total} complete`}
                     onClick={() => setDate(d.date)}
-                    className={`min-h-7 min-w-7 rounded border ${selected === d.date ? "border-foreground" : "border-transparent"}`}
+                    className={`min-h-7 min-w-7 rounded-md border ${selected === d.date ? "border-foreground" : "border-transparent"}`}
                     style={{
                       background:
                         d.score === null
@@ -187,7 +200,7 @@ function Progress() {
                 </HoverHint>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-3 text-[13px] text-muted-foreground">
               Brighter squares mean a higher completion rate. Grey means no scheduled routines.
               Click a day to review it. New routines start today.
             </p>
@@ -219,7 +232,7 @@ function Progress() {
             </Field>
             <div className="flex flex-wrap gap-3">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
-                <label key={day} className="flex items-center gap-1 text-xs">
+                <label key={day} className="flex items-center gap-1 text-[13px]">
                   <Checkbox
                     checked={weekdays.includes(i)}
                     onCheckedChange={(checked) =>
@@ -233,7 +246,7 @@ function Progress() {
               ))}
             </div>
             {failure && (
-              <p role="alert" className="text-xs text-destructive">
+              <p role="alert" className="text-[13px] text-destructive">
                 {failure}
               </p>
             )}
