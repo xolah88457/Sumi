@@ -13,7 +13,7 @@ try {
   electron = null;
 }
 
-const { app, BrowserWindow, ipcMain, Menu, shell, dialog, session } = electron || {};
+const { app, BrowserWindow, ipcMain, Menu, shell, dialog, session, nativeTheme } = electron || {};
 
 const { resolveDataDirectory, createPreferencesStore } = require("./preferences.cjs");
 const {
@@ -471,6 +471,20 @@ if (app && typeof app.whenReady === "function") {
 
   const preferencesStore = createPreferencesStore({ dataDir, isTestMode });
 
+  // Paint the window in the app's paper colour before the page loads, honouring a
+  // saved light/dark choice first and the OS appearance otherwise.
+  function windowIsDark() {
+    let saved;
+    try {
+      saved = preferencesStore.getPreferences()["journal-theme-v1"];
+    } catch {
+      saved = undefined;
+    }
+    if (saved === "dark") return true;
+    if (saved === "light") return false;
+    return Boolean(nativeTheme && nativeTheme.shouldUseDarkColors);
+  }
+
   let mainWindow = null;
   let expectedOrigin = null;
   let childProcess = null;
@@ -606,7 +620,7 @@ if (app && typeof app.whenReady === "function") {
       minWidth: 900,
       minHeight: 620,
       title: "Sumi",
-      backgroundColor: "#f5f4ed",
+      backgroundColor: windowIsDark() ? "#171512" : "#fbfaf6",
       webPreferences: {
         ...MAIN_WINDOW_WEB_PREFERENCES,
         preload: path.join(__dirname, "preload.cjs"),
@@ -640,9 +654,12 @@ if (app && typeof app.whenReady === "function") {
     mainWindow.loadURL(
       "data:text/html;charset=utf-8," +
         encodeURIComponent(`
-        <html><body style="background:#f5f4ed;color:#1b365d;display:grid;place-content:center;height:90vh;text-align:center;font-family:Georgia,serif">
+        <html><head><style>
+        body{margin:0;background:${windowIsDark() ? "#171512" : "#fbfaf6"};color:${windowIsDark() ? "#a3b2dd" : "#3a4b7c"};display:grid;place-content:center;height:100vh;text-align:center;font-family:Charter,Georgia,serif}
+        p{color:${windowIsDark() ? "#a8a499" : "#6b6a64"}}
+        </style></head><body>
         <h1 style="font-weight:400;font-size:40px;margin-bottom:12px">Sumi</h1>
-        <p style="color:#6b6a64">Opening your trading journal…</p></body></html>
+        <p>Opening your trading journal…</p></body></html>
       `),
     );
   }
