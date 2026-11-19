@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileUp, Landmark, PencilLine } from "lucide-react";
+import { FileUp, Landmark, PencilLine, TriangleAlert } from "lucide-react";
 import { AccountPicker } from "@/components/account-picker";
 import { ManualTradeEntry } from "@/components/manual-trade-entry";
 import { FilterBar } from "@/components/filter-bar";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
 import {
   Select,
   SelectContent,
@@ -86,30 +87,33 @@ function ImportView() {
   const router = useRouter();
   return (
     <div>
-      <FilterBar title="Import trades" />
-      <div className="mx-auto max-w-3xl p-4">
+      <FilterBar
+        title="Import trades"
+        lede="Bring trades in from a statement, a broker connection or by hand."
+      />
+      <div className="max-w-3xl px-4 pb-8">
         <Tabs defaultValue="file">
           <TabsList>
-            <TabsTrigger value="file" className="max-sm:px-2 max-sm:text-xs">
+            <TabsTrigger value="file" className="max-sm:px-2 max-sm:text-[13px]">
               <FileUp className="mr-1.5 hidden h-4 w-4 min-[420px]:block" />
               File upload
             </TabsTrigger>
-            <TabsTrigger value="sync" className="max-sm:px-2 max-sm:text-xs">
+            <TabsTrigger value="sync" className="max-sm:px-2 max-sm:text-[13px]">
               <Landmark className="mr-1.5 hidden h-4 w-4 min-[420px]:block" />
               Broker sync
             </TabsTrigger>
-            <TabsTrigger value="manual" className="max-sm:px-2 max-sm:text-xs">
+            <TabsTrigger value="manual" className="max-sm:px-2 max-sm:text-[13px]">
               <PencilLine className="mr-1.5 hidden h-4 w-4 min-[420px]:block" />
               Manual
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="file">
+          <TabsContent value="file" className="mt-5">
             <FileImport />
           </TabsContent>
-          <TabsContent value="sync">
+          <TabsContent value="sync" className="mt-5">
             <BrokerConnect />
           </TabsContent>
-          <TabsContent value="manual">
+          <TabsContent value="manual" className="mt-5">
             <Card>
               <CardHeader>
                 <CardTitle>Add executions manually</CardTitle>
@@ -334,7 +338,7 @@ function FileImport() {
   const mappingFields = ["symbol", "side", "quantity", "price", "fee", "timestamp"] as const;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
           <CardTitle>Upload a statement or export</CardTitle>
@@ -356,11 +360,11 @@ function FileImport() {
             disabled={busy}
           />
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-5">
           <div>
             <Label
               htmlFor="statement-timezone"
-              className="mb-1 block text-xs text-muted-foreground"
+              className="mb-1 block text-[13px] text-muted-foreground"
             >
               Statement timezone (IANA)
             </Label>
@@ -377,30 +381,30 @@ function FileImport() {
                 setMappingApplied(false);
               }}
             />
-            <p id="statement-timezone-help" className="mt-1 text-xs text-muted-foreground">
+            <p id="statement-timezone-help" className="mt-1 text-[13px] text-muted-foreground">
               Choose the timezone used by your broker's statement. Timestamps with an explicit
               offset keep that offset. Your journal displays times in {displayTimeZone}.
             </p>
             {timeZone && !validTimeZone && (
-              <p role="alert" className="mt-1 text-xs text-loss">
+              <p role="alert" className="mt-1 text-[13px] text-destructive">
                 Enter a valid IANA timezone, such as Europe/Helsinki.
               </p>
             )}
             {settingsError && (
-              <p role="alert" className="mt-1 text-xs text-loss">
+              <p role="alert" className="mt-1 text-[13px] text-destructive">
                 {settingsError}
               </p>
             )}
           </div>
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center hover:border-ring">
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center transition-colors hover:bg-muted focus-within:border-ring">
             <FileUp className="h-6 w-6 text-muted-foreground" />
-            <span className="text-sm">
+            <span className="text-[15px]">
               {fileName ||
                 (aiEnabled
                   ? "Choose a statement for AI parsing"
                   : "Choose a CSV / HTML / XML statement or an XTB Excel report")}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[13px] text-muted-foreground">
               {aiEnabled ? (
                 "CSV, TSV, HTML, XML, TXT or PDF. Your file stays local until you preview with AI."
               ) : (
@@ -448,14 +452,10 @@ function FileImport() {
             </Button>
           )}
 
-          {error && (
-            <p role="alert" className="text-sm text-loss">
-              {error}
-            </p>
-          )}
+          {error && <Notice role="alert" tone="error" title={error} />}
           {preview?.needsSymbol && (
             <div className="flex flex-wrap items-end gap-2">
-              <label className="min-w-0 flex-1 text-xs text-muted-foreground">
+              <label className="min-w-0 flex-1 text-[13px] text-muted-foreground">
                 Symbol
                 <Input
                   value={symbol}
@@ -475,14 +475,14 @@ function FileImport() {
             </div>
           )}
           {preview?.needsMapping && preview.headers && (
-            <div className="space-y-2 rounded-md border p-3">
-              <p className="text-sm">
+            <div className="space-y-3 rounded-xl border p-4">
+              <p className="text-[15px]">
                 Format not recognized — map your columns (nothing is guessed silently):
               </p>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                 {mappingFields.map((field) => (
                   <div key={field}>
-                    <Label className="mb-1 block text-xs capitalize text-muted-foreground">
+                    <Label className="mb-1 block text-[13px] capitalize text-muted-foreground">
                       {field}
                       {field === "fee" ? " (optional)" : ""}
                     </Label>
@@ -494,7 +494,7 @@ function FileImport() {
                   </div>
                 ))}
               </div>
-              <details className="space-y-2 text-xs">
+              <details className="space-y-2 text-[13px]">
                 <summary className="cursor-pointer text-muted-foreground">
                   Position identity and ordering (optional)
                 </summary>
@@ -506,7 +506,7 @@ function FileImport() {
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                   {(["positionId", "executionId", "sequence"] as const).map((field) => (
                     <div key={field}>
-                      <Label className="mb-1 block text-xs capitalize text-muted-foreground">
+                      <Label className="mb-1 block text-[13px] capitalize text-muted-foreground">
                         {
                           {
                             positionId: "Position ID",
@@ -542,8 +542,8 @@ function FileImport() {
           )}
 
           {preview && !preview.needsMapping && preview.totals && (
-            <div className="space-y-2 rounded-md border p-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+            <div className="space-y-3 rounded-xl border p-4">
+              <div className="flex flex-wrap items-center gap-2 text-[15px]">
                 <Badge variant="secondary">{preview.detected}</Badge>
                 <span>{preview.totals.executions} executions</span>
                 <span className="text-muted-foreground">· {preview.totals.symbols} symbols</span>
@@ -559,11 +559,11 @@ function FileImport() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 Statement timezone: {preview.timeZone}. Preview times: {displayTimeZone}.
               </p>
               {!!preview.executions?.length && (
-                <div className="space-y-1 border-t pt-2 text-xs">
+                <div className="space-y-1 border-t pt-2 text-[13px]">
                   <div
                     className={
                       preview.aiPreviewToken ? "max-h-80 space-y-2 overflow-auto" : "space-y-1"
@@ -603,21 +603,19 @@ function FileImport() {
                   )}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 {preview.detected === "ninjatrader"
                   ? "Recovering an older NinjaTrader import or correcting its timezone? Import the complete history into a new journal account, then compare totals. Keep the original account and its reviews until you have verified the recovery."
                   : "Correcting a previous import? Remove the affected trades before importing again with a different timezone to avoid duplicates. Back up your data first."}
               </p>
               {preview.warnings?.map((warning, index) => (
-                <p key={index} className="text-xs text-muted-foreground">
-                  ⚠ {warning}
-                </p>
+                <Notice key={index} icon={<TriangleAlert />}>
+                  {warning}
+                </Notice>
               ))}
               {!preview.needsSymbol &&
                 preview.errors?.map((message, index) => (
-                  <p key={index} role="alert" className="text-xs text-loss">
-                    {message}
-                  </p>
+                  <Notice key={index} role="alert" tone="error" title={message} />
                 ))}
               <fieldset disabled={busy}>
                 <AccountPicker
@@ -655,7 +653,7 @@ function FileImport() {
                 {busy ? "Importing…" : "Import"}
               </Button>
               {preview.aiPreviewToken && (
-                <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <label className="flex items-start gap-2 text-[13px] text-muted-foreground">
                   <Checkbox
                     checked={aiReviewed}
                     disabled={busy}
@@ -720,7 +718,7 @@ function BrokerConnect() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
-          <Label className="mb-1 block text-xs text-muted-foreground">Broker / exchange</Label>
+          <Label className="mb-1 block text-[13px] text-muted-foreground">Broker / exchange</Label>
           <Select
             value={brokerId}
             onValueChange={(value) => {
@@ -742,11 +740,11 @@ function BrokerConnect() {
         </div>
         {broker && (
           <>
-            <p className="rounded-md bg-muted/60 p-2.5 text-xs text-muted-foreground">
+            <p className="rounded-lg bg-secondary px-4 py-3 text-[13px] text-muted-foreground">
               {broker.readOnlySetup}
             </p>
             {broker.id === "ibkr-flex" && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 {settingsError
                   ? "Could not load the import timezone. Refresh and try again."
                   : settingsData
@@ -755,7 +753,7 @@ function BrokerConnect() {
               </p>
             )}
             <div>
-              <Label className="mb-1 block text-xs text-muted-foreground">Account name</Label>
+              <Label className="mb-1 block text-[13px] text-muted-foreground">Account name</Label>
               <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -764,7 +762,9 @@ function BrokerConnect() {
             </div>
             {broker.credentials.map((field) => (
               <div key={field.key}>
-                <Label className="mb-1 block text-xs text-muted-foreground">{field.label}</Label>
+                <Label className="mb-1 block text-[13px] text-muted-foreground">
+                  {field.label}
+                </Label>
                 <Input
                   aria-label={field.label}
                   type={field.secret ? "password" : "text"}
@@ -776,7 +776,7 @@ function BrokerConnect() {
                 />
               </div>
             ))}
-            {error && <p className="text-sm text-loss">{error}</p>}
+            {error && <Notice role="alert" tone="error" title={error} />}
             <Button
               onClick={connect}
               disabled={
@@ -808,7 +808,7 @@ function ColumnSelect({
 }) {
   return (
     <Select value={value || "none"} onValueChange={(v) => onChange(v === "none" ? "" : v)}>
-      <SelectTrigger className="h-8 text-xs">
+      <SelectTrigger className="h-8 text-[13px]">
         <SelectValue placeholder="column" />
       </SelectTrigger>
       <SelectContent>
