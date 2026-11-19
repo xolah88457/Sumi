@@ -187,3 +187,19 @@ test("signing secrets are removed from the environment handed to staging", () =>
   });
   assert.deepEqual(env, { PATH: "/usr/bin" });
 });
+
+test("Apple signing secrets are removed from the environment handed to staging", () => {
+  const apple = {
+    APPLE_CERTIFICATE: "a",
+    APPLE_CERTIFICATE_PASSWORD: "b",
+    APPLE_SIGNING_IDENTITY: "c",
+    APPLE_API_ISSUER: "d",
+    APPLE_API_KEY: "e",
+    APPLE_API_KEY_P8: "f",
+    APPLE_API_KEY_PATH: "g",
+    APPLE_ID: "h",
+    APPLE_PASSWORD: "i",
+    APPLE_TEAM_ID: "j",
+  };
+  assert.deepEqual(withoutSigningSecrets({ PATH: "/usr/bin", ...apple }), { PATH: "/usr/bin" });
+});

@@ -134,7 +134,46 @@ Repository settings the owner provides:
 | `TAURI_UPDATER_PUBKEY`               | variable | Public key (the `.pub` file contents); required when the signing key is set         |
 | `TAURI_UPDATER_ENDPOINT`             | variable | Optional feed URL override; default is the repository's `latest.json` release asset |
 
-macOS builds are ad-hoc signed and not notarized (as the Electron builds were), and Windows builds are unsigned. On first open macOS asks you to allow the app: open **System Settings > Privacy & Security > Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/Sumi.app`. Windows SmartScreen shows "Unknown publisher": choose **More info**, then **Run anyway**. To add Developer ID signing and notarization later, provide the standard Tauri secrets (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`) and wire them into `release.yml` (marked with a TODO); updater signatures are separate from Apple code signing. Never commit keys or certificates.
+Windows builds are unsigned; SmartScreen shows "Unknown publisher": choose **More info**, then **Run anyway**. Updater signatures (above) are separate from Apple code signing. Never commit keys or certificates.
+
+### macOS: unsigned builds (the default)
+
+Without the Apple secrets below, the macOS build is ad-hoc signed and not notarized, and everything works the same except the first launch. **This is needed only once, for the first install**; the release notes carry the same steps:
+
+1. Move Sumi to Applications and open it once. macOS shows a warning that it cannot verify the app; dismiss it.
+2. Open **System Settings > Privacy & Security**, scroll to **Security**, click **Open Anyway** next to Sumi, and confirm.
+
+On macOS 15 (Sequoia) and later, Control-click > Open no longer bypasses Gatekeeper; use Open Anyway as above. Terminal alternative, run before opening the app: `xattr -dr com.apple.quarantine /Applications/Sumi.app`.
+
+Later in-app updates do not trigger Gatekeeper again. `tauri-plugin-updater` verifies the download against Sumi's own update signature, then unpacks it and replaces the app in place from the running app. It neither sets nor strips the quarantine attribute (the plugin contains no quarantine handling); a file written by a running, already-trusted app is never quarantined, and Gatekeeper only assesses quarantined files. This is read from the plugin source and not yet exercised on a real Mac.
+
+### macOS: Developer ID signing and notarization (optional)
+
+When the secrets below are present, `release.yml` imports the certificate into a temporary keychain (deleted in an `always()` step), signs every Mach-O file in the bundled Node runtime and native modules with the hardened runtime and a secure timestamp (`desktop/tauri/macos-signing.mjs`; Tauri does not reliably sign files inside resources, and notarization rejects any that are unsigned), then lets Tauri sign and notarize the app. It then runs `codesign --verify --deep --strict`, `spctl --assess` and `xcrun stapler validate`, and the release notes omit the Gatekeeper workaround. With the secrets absent the build is the unsigned one above. A partly configured set of secrets fails the build rather than silently downgrading it.
+
+Setup:
+
+1. Join the [Apple Developer Program](https://developer.apple.com/programs/) (paid, annual). Only the Account Holder can create Developer ID certificates.
+2. Create a **Developer ID Application** certificate: in the Apple Developer portal, Certificates, add a certificate of that type, upload a certificate signing request (Keychain Access > Certificate Assistant > Request a Certificate From a Certificate Authority, saved to disk), then download and double-click the `.cer`.
+3. In Keychain Access, find "Developer ID Application: Your Name (TEAMID)" under My Certificates, right-click > Export, and save as a `.p12` with a strong password. Encode it for the secret: `base64 -i certificate.p12 | pbcopy`. The exact certificate name is the signing identity.
+4. For notarization, create an App Store Connect API key (recommended): App Store Connect > Users and Access > Integrations > App Store Connect API > Team Keys, generate a key with the **Developer** role, and note the Issuer ID and Key ID. Download the `.p8` once (Apple will not show it again).
+5. Add the repository secrets (Settings > Secrets and variables > Actions):
+
+| Secret                       | Value                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| `APPLE_CERTIFICATE`          | Base64 of the `.p12`                                                             |
+| `APPLE_CERTIFICATE_PASSWORD` | The `.p12` password                                                              |
+| `APPLE_SIGNING_IDENTITY`     | For example `Developer ID Application: Your Name (TEAMID)`                       |
+| `APPLE_API_ISSUER`           | App Store Connect Issuer ID                                                      |
+| `APPLE_API_KEY`              | The Key ID                                                                       |
+| `APPLE_API_KEY_P8`           | The full text of the `.p8` file (written to a temp file as `APPLE_API_KEY_PATH`) |
+| `APPLE_ID`                   | Fallback to the API key: Apple ID email                                          |
+| `APPLE_PASSWORD`             | Fallback: an [app-specific password](https://support.apple.com/102654)           |
+| `APPLE_TEAM_ID`              | Fallback: the 10-character Team ID                                               |
+
+The API key is used when all three of `APPLE_API_ISSUER`, `APPLE_API_KEY` and `APPLE_API_KEY_P8` are set; otherwise the Apple ID trio is used. Signing without any notarization credentials produces a signed but not notarized app, and the release notes keep the workaround.
+
+The Node runtime is signed with `desktop/tauri/src-tauri/Entitlements.runtime.plist` (`allow-jit` for V8, `allow-unsigned-executable-memory` for koffi and V8 executable pages, `disable-library-validation` as a safety net for native addons; each is explained in the file). The app itself uses `Entitlements.plist` (microphone only) with Tauri's default hardened runtime.
 
 ## Parity checklist
 

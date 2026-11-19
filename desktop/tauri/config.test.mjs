@@ -48,6 +48,48 @@ test("release workflow is tag-driven, never auto-releases, and drafts", () => {
   assert.doesNotMatch(ci, /tauri-platform-verification/);
 });
 
+test("release workflow signs and notarizes macOS only when the Apple secrets are present", () => {
+  const workflow = read(".github/workflows/release.yml");
+  assert.doesNotMatch(workflow, /TODO\(macOS signing\)/);
+  // Secret-gated plan, temporary keychain, always-run cleanup.
+  assert.match(workflow, /node desktop\/tauri\/macos-signing\.mjs plan/);
+  assert.match(workflow, /security create-keychain/);
+  assert.match(workflow, /security import /);
+  assert.match(workflow, /if: always\(\) && matrix\.target\.platform == 'darwin'/);
+  assert.match(workflow, /security delete-keychain/);
+  assert.match(workflow, /APPLE_API_KEY_PATH/);
+  // Verification of the signed and notarized app.
+  assert.match(workflow, /codesign --verify --deep --strict --verbose=2/);
+  assert.match(workflow, /spctl --assess --type execute -vv/);
+  assert.match(workflow, /xcrun stapler validate/);
+  // The certificate itself never reaches the build step (it is already in the keychain).
+  const build = workflow.slice(workflow.indexOf("- name: Stage native backend and build packages"));
+  const buildEnv = build.slice(0, build.indexOf("run: pnpm tauri:build"));
+  assert.doesNotMatch(buildEnv, /APPLE_CERTIFICATE/);
+  assert.doesNotMatch(buildEnv, /APPLE_API_KEY_P8/);
+  // Apple secrets reach only the steps that need them: not install, tests, staging or web build.
+  const steps = workflow.split(/\n {6}- /).filter((step) => /secrets\.APPLE_/.test(step));
+  assert.deepEqual(
+    steps.map((step) => /name: (.*)/.exec(step)[1]),
+    [
+      "Decide macOS signing and notarization",
+      "Import Apple signing certificate into a temporary keychain",
+      "Write App Store Connect API key",
+      "Stage native backend and build packages",
+      "Detect whether the macOS builds were notarized",
+    ],
+  );
+  // The Gatekeeper workaround is only for builds that were not notarized.
+  assert.match(workflow, /NOTARIZED/);
+  assert.match(workflow, /Open Anyway/);
+  assert.match(read("desktop/README.md"), /APPLE_API_KEY_P8/);
+  // Unsigned-build instructions fit macOS 15+: Open Anyway, never right-click > Open.
+  assert.match(workflow, /Open Anyway/);
+  assert.match(workflow, /xattr -dr com\.apple\.quarantine/);
+  assert.doesNotMatch(workflow, /right-click/i);
+  assert.match(read("desktop/README.md"), /no longer bypasses Gatekeeper/);
+});
+
 test("THIRD-PARTY-NOTICES.md retains the notices for what the app still ships", () => {
   const notices = read("desktop/THIRD-PARTY-NOTICES.md");
   for (const [pattern, label] of [

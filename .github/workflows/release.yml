@@ -150,11 +150,67 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # TODO(macOS signing): builds are ad-hoc signed and not notarized (as the Electron
-      # builds were). To sign and notarize, add the standard Tauri secrets
-      # APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY, APPLE_ID,
-      # APPLE_PASSWORD, APPLE_TEAM_ID, import the certificate into a temporary keychain
-      # here, and drop `--no-sign` from desktop/tauri/run.mjs for macOS release builds.
+      # macOS Developer ID signing and notarization, gated on repository secrets. Without
+      # them the macOS build is ad-hoc signed and not notarized exactly as before, so forks
+      # and unkeyed builds keep working. A half-configured set of secrets fails the build
+      # instead of silently downgrading it. See desktop/README.md for the setup.
+      - name: Decide macOS signing and notarization
+        id: mac
+        if: matrix.target.platform == 'darwin'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node desktop/tauri/macos-signing.mjs plan | tee -a "$GITHUB_OUTPUT"
+          if ! grep -q '^sign=true$' "$GITHUB_OUTPUT"; then
+            echo "::notice::No Apple signing secrets: building an ad-hoc signed, not notarized macOS app."
+          elif grep -q '^notarize=none$' "$GITHUB_OUTPUT"; then
+            echo "::warning::Developer ID signing without notarization credentials: the macOS app will be signed but not notarized."
+          fi
+
+      - name: Import Apple signing certificate into a temporary keychain
+        if: steps.mac.outputs.sign == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          keychain="$RUNNER_TEMP/sumi-signing.keychain-db"
+          keychain_password=$(openssl rand -hex 24)
+          echo "::add-mask::$keychain_password"
+          certificate="$RUNNER_TEMP/sumi-signing-certificate.p12"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          rm -f "$certificate"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -d user -s "$keychain"
+          if ! security find-identity -v -p codesigning "$keychain" | grep -qF "$APPLE_SIGNING_IDENTITY"; then
+            echo "::error::APPLE_SIGNING_IDENTITY was not found in the imported certificate."
+            exit 1
+          fi
+
+      - name: Write App Store Connect API key
+        if: steps.mac.outputs.notarize == 'api'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/sumi-notary"
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/sumi-notary/AuthKey_${APPLE_API_KEY}.p8"
+
       - name: Stage native backend and build packages
         env:
           # Only the Tauri CLI sees the signing key (run.mjs strips it from staging).
@@ -162,7 +218,33 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ steps.updater.outputs.enabled == 'true' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
           SUMI_TAURI_UPDATER_PUBKEY: ${{ steps.updater.outputs.enabled == 'true' && vars.TAURI_UPDATER_PUBKEY || '' }}
           SUMI_TAURI_UPDATER_ENDPOINT: ${{ steps.updater.outputs.enabled == 'true' && env.UPDATER_ENDPOINT || '' }}
+          # Apple credentials, only when signing is on and only the notarization method in
+          # use. run.mjs strips them from staging and the web build and signs the bundled
+          # runtime itself; the certificate is already in the keychain, so it is not passed.
+          APPLE_SIGNING_IDENTITY: ${{ steps.mac.outputs.sign == 'true' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          APPLE_API_ISSUER: ${{ steps.mac.outputs.notarize == 'api' && secrets.APPLE_API_ISSUER || '' }}
+          APPLE_API_KEY: ${{ steps.mac.outputs.notarize == 'api' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_KEY_PATH: ${{ steps.mac.outputs.notarize == 'api' && format('{0}/sumi-notary/AuthKey_{1}.p8', runner.temp, secrets.APPLE_API_KEY) || '' }}
+          APPLE_ID: ${{ steps.mac.outputs.notarize == 'apple-id' && secrets.APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ steps.mac.outputs.notarize == 'apple-id' && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ steps.mac.outputs.notarize == 'apple-id' && secrets.APPLE_TEAM_ID || '' }}
         run: pnpm tauri:build
+
+      - name: Verify macOS signature and notarization
+        if: steps.mac.outputs.sign == 'true'
+        env:
+          NOTARIZED: ${{ steps.mac.outputs.notarized }}
+        run: |
+          app=desktop/tauri/src-tauri/target/release/bundle/macos/Sumi.app
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv --verbose=4 "$app" 2>&1 | grep -E '^(Identifier|TeamIdentifier|Timestamp|Runtime Version)' || true
+          codesign -dv --verbose=4 "$app" 2>&1 | grep -Eq '^CodeDirectory .*flags=0x[0-9a-f]+\(.*runtime.*\)' || { echo "::error::Hardened runtime flag missing on the app"; exit 1; }
+          if [ "$NOTARIZED" = "true" ]; then
+            spctl --assess --type execute -vv "$app"
+            xcrun stapler validate "$app"
+          else
+            echo "::notice::Not notarized: skipping spctl and stapler validation."
+          fi
 
       - name: Smoke packaged app
         if: matrix.target.platform != 'linux'
@@ -219,6 +301,12 @@ jobs:
           path: release-assets/*
           if-no-files-found: error
 
+      - name: Remove temporary signing keychain and API key
+        if: always() && matrix.target.platform == 'darwin'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/sumi-signing.keychain-db" || true
+          rm -rf "$RUNNER_TEMP/sumi-notary" "$RUNNER_TEMP/sumi-signing-certificate.p12"
+
   draft-release:
     name: Draft GitHub release
     needs: build
@@ -238,6 +326,22 @@ jobs:
           pattern: assets-*
           path: release-assets
           merge-multiple: true
+
+      - name: Detect whether the macOS builds were notarized
+        id: mac
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        # The build job only succeeds when it applied this same plan, so a successful
+        # build with these secrets means the macOS apps were notarized and stapled.
+        run: node desktop/tauri/macos-signing.mjs plan >> "$GITHUB_OUTPUT"
 
       - name: Generate checksums and updater manifest
         env:
@@ -260,7 +364,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.build.outputs.version }}
           TAG: ${{ github.ref_name }}
+          NOTARIZED: ${{ steps.mac.outputs.notarized }}
         run: |
+          if [ "$NOTARIZED" = "true" ]; then
+            MAC_NOTE='**macOS:** signed with an Apple Developer ID and notarized by Apple; it opens without extra steps.'
+          else
+            MAC_NOTE='**macOS:** this build is not signed by an Apple Developer ID or notarized, so Gatekeeper blocks the first launch. Needed once, on first install only: open Sumi once (macOS shows a warning), then go to System Settings > Privacy & Security, scroll to Security and click Open Anyway, and confirm. On macOS 15 and later, Control-click > Open no longer bypasses this. Alternatively, run `xattr -dr com.apple.quarantine /Applications/Sumi.app` in Terminal before opening. Later in-app updates are verified by Sumi'"'"'s own update signature and do not ask again.'
+          fi
           cat > release-notes.md <<EOF
           ## Sumi v${VERSION}
 
@@ -268,7 +378,7 @@ jobs:
 
           **Upgrading from the Electron app (0.3.x):** install this build once; it will not update itself from the old app. Your journal is found automatically (same data folder). Quit the old app first.
 
-          **macOS:** this build is ad-hoc signed and not notarized. On first open, use System Settings > Privacy & Security > Open Anyway, or run \`xattr -dr com.apple.quarantine /Applications/Sumi.app\`.
+          ${MAC_NOTE}
 
           **Windows:** unsigned; SmartScreen may show "Unknown publisher". Choose More info, then Run anyway.
           EOF

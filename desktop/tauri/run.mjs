@@ -4,6 +4,13 @@ import { mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  appleSecretNames,
+  codesignEnv,
+  signRuntime,
+  signingPlan,
+  tauriAppleEnv,
+} from "./macos-signing.mjs";
 
 const tauriDir = fileURLToPath(new URL(".", import.meta.url));
 const targetDir = join(tauriDir, "src-tauri", "target");
@@ -61,6 +68,7 @@ export function withoutSigningSecrets(env) {
     "TAURI_SIGNING_PRIVATE_KEY",
     "TAURI_SIGNING_PRIVATE_KEY_PATH",
     "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+    ...appleSecretNames,
   ]) {
     delete clean[name];
   }
@@ -267,7 +275,13 @@ async function run(command, packagePath) {
     );
   if (command === "build") {
     await withScratchProfile(async (profile) => {
-      const env = { ...process.env, ...profile, CARGO_TARGET_DIR: targetDir };
+      // Developer ID signing applies to macOS only; everywhere else, and on macOS without
+      // APPLE_SIGNING_IDENTITY, the build is the unchanged ad-hoc/unsigned one.
+      const plan =
+        platform === "darwin" && process.env.APPLE_SIGNING_IDENTITY
+          ? signingPlan(process.env)
+          : { sign: false, notarize: "none" };
+      const env = tauriAppleEnv({ ...process.env, ...profile, CARGO_TARGET_DIR: targetDir }, plan);
       // Keep Cargo on its native default target and the release layout above.
       delete env.CARGO_BUILD_TARGET;
       execFileSync(process.execPath, [join(tauriDir, "stage-runtime.mjs")], {
@@ -275,6 +289,15 @@ async function run(command, packagePath) {
         env: withoutSigningSecrets(env),
         stdio: "inherit",
       });
+      if (plan.sign) {
+        // Tauri does not reliably sign arbitrary Mach-O files inside resources, and
+        // notarization rejects any that lack the hardened runtime and a timestamp.
+        signRuntime({
+          dir: join(tauriDir, "runtime"),
+          identity: process.env.APPLE_SIGNING_IDENTITY,
+          env: codesignEnv(process.env),
+        });
+      }
       if (platform === "win32") {
         // Cargo copies resource files but does not prune files removed from the stage.
         await rm(join(releaseDir, "runtime"), { recursive: true, force: true });
@@ -287,7 +310,7 @@ async function run(command, packagePath) {
           "--bundles",
           bundles,
           "--ci",
-          "--no-sign",
+          ...(plan.sign ? [] : ["--no-sign"]),
           ...updaterBuildArgs(env),
           "--",
           "--locked",
