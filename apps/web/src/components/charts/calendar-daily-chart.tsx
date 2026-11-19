@@ -13,7 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import type { CalendarInsights } from "@/lib/calendar-insights";
-import { fmtMoney } from "@/lib/utils";
+import { fmtMoney, minusSign } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { ChartFrame } from "./chart-frame";
 import { tooltipStyle, useVizTokens } from "./tokens";
@@ -60,7 +60,7 @@ export function CalendarDailyChart({
             tickLine={false}
             axisLine={false}
             tickFormatter={(value: number) =>
-              privacy ? "••••" : fmtMoney(value, currency).replace(/\.00$/, "")
+              privacy ? "••••" : minusSign(fmtMoney(value, currency).replace(/\.00$/, ""))
             }
           />
           <ReferenceLine y={0} stroke={tokens.baseline} />
@@ -68,7 +68,7 @@ export function CalendarDailyChart({
             contentStyle={tooltipStyle(tokens)}
             cursor={{ fill: tokens.gridline, opacity: 0.35 }}
             formatter={(value, name) => [
-              privacy ? "Hidden" : fmtMoney(Number(value), currency),
+              privacy ? "Hidden" : minusSign(fmtMoney(Number(value), currency)),
               name === "average" ? "5-trading-day average" : "Daily net P&L",
             ]}
           />

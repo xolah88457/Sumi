@@ -12,7 +12,6 @@ import { CommandPalette, ShortcutHint } from "./command-palette";
 import { NAV_GROUPS } from "./nav-items";
 import { PrivacyToggle } from "./privacy";
 import { ThemeToggle } from "./theme";
-import { ElectronMigrationBanner } from "./electron-migration-notice";
 import { PageTransition } from "./page-transition";
 import { Button } from "./ui/button";
 import { HoverHint } from "./ui/tooltip";
@@ -288,10 +287,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {navigation(sidebarCollapsed)}
         {sidebarActions(sidebarCollapsed)}
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ElectronMigrationBanner />
-        <PageTransition>{children}</PageTransition>
-      </div>
+      <PageTransition>{children}</PageTransition>
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}

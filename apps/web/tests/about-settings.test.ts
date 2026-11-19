@@ -180,10 +180,16 @@ describe("AboutSettings update functionality", () => {
     delete (window as any).sumiDesktop;
   });
 
-  it("shows desktop version, electron version, platform, arch when bridge available", async () => {
+  it("shows desktop version, Tauri version, platform, arch when bridge available", async () => {
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
-      vi.fn().mockResolvedValue({ status: "idle", nativeUI: true, provider: "sparkle" }),
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
+      vi.fn().mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" }),
     );
 
     await act(async () => root.render(createElement(AboutSettings)));
@@ -193,12 +199,12 @@ describe("AboutSettings update functionality", () => {
 
     const text = container.textContent ?? "";
     expect(text).toContain("v0.2.0");
-    expect(text).toContain("Electron 45.2.3");
+    expect(text).toContain("Tauri 2.12.5");
     expect(text).toContain("darwin (arm64)");
     expect(text).not.toContain("Web browser mode");
   });
 
-  it("shows the Tauri runtime without an Electron label", async () => {
+  it("shows the Tauri runtime and no other shell label", async () => {
     setupDesktopBridge(
       {
         version: "0.3.7",
@@ -229,10 +235,10 @@ describe("AboutSettings update functionality", () => {
     expect(text).not.toContain("Sumi Desktop");
   });
 
-  it("shows unknown electron version when not provided", async () => {
+  it("shows unknown Tauri version when not provided", async () => {
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "", platform: "darwin", arch: "arm64" },
-      vi.fn().mockResolvedValue({ status: "idle", nativeUI: true, provider: "sparkle" }),
+      { version: "0.2.0", runtime: "tauri", platform: "darwin", arch: "arm64" },
+      vi.fn().mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" }),
     );
 
     await act(async () => root.render(createElement(AboutSettings)));
@@ -241,20 +247,26 @@ describe("AboutSettings update functionality", () => {
     });
 
     const text = container.textContent ?? "";
-    expect(text).toContain("Electron unknown");
+    expect(text).toContain("Tauri unknown");
   });
 
-  it("check for updates button triggers native Sparkle check", async () => {
+  it("check for updates button triggers the native update check", async () => {
     const checkMock = vi.fn().mockResolvedValue({
       status: "available",
       currentVersion: "0.2.0",
       availableVersion: "0.2.1",
       message: "Update 0.2.1 available",
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     });
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
       checkMock,
     );
 
@@ -280,7 +292,13 @@ describe("AboutSettings update functionality", () => {
   it("shows error state with retry button when check fails", async () => {
     const checkMock = vi.fn().mockRejectedValue(new Error("Network error"));
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
       checkMock,
     );
 
@@ -307,7 +325,13 @@ describe("AboutSettings update functionality", () => {
     });
     const checkMock = vi.fn().mockReturnValue(checkPromise);
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
       checkMock,
     );
 
@@ -338,7 +362,7 @@ describe("AboutSettings update functionality", () => {
 
     // Resolve check
     await act(async () => {
-      resolveCheck!({ status: "not-available", nativeUI: true, provider: "sparkle" });
+      resolveCheck!({ status: "not-available", nativeUI: true, provider: "tauri-updater" });
       await vi.runAllTimersAsync();
     });
 
@@ -354,10 +378,16 @@ describe("AboutSettings update functionality", () => {
       availableVersion: "0.2.1",
       message: "Update available",
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     });
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
       checkMock,
     );
 
@@ -392,10 +422,16 @@ describe("AboutSettings update functionality", () => {
     const checkMock = vi.fn().mockResolvedValue({
       status: "not-available",
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     });
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
       checkMock,
     );
 
@@ -422,10 +458,16 @@ describe("AboutSettings update functionality", () => {
       availableVersion: "0.2.1",
       message: "Update available",
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     });
     setupDesktopBridge(
-      { version: "0.2.0", electronVersion: "45.2.3", platform: "darwin", arch: "arm64" },
+      {
+        version: "0.2.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "darwin",
+        arch: "arm64",
+      },
       checkMock,
     );
 
@@ -440,8 +482,6 @@ describe("AboutSettings update functionality", () => {
       await vi.runAllTimersAsync();
     });
 
-    // The Electron migration notice links to the new app's download; it is not the updater UI.
-    container.querySelector('[data-testid="electron-migration-notice"]')?.remove();
     const text = container.textContent ?? "";
     // Should NOT show false "installed verified" message
     expect(text).not.toContain("installed verified");
@@ -449,16 +489,22 @@ describe("AboutSettings update functionality", () => {
     // Should NOT show programmatic download button (only Check for updates which opens native UI)
     expect(text).not.toContain("Download");
     expect(text).not.toContain("Install");
-    // Should show native UI message (Sparkle owns download/install/restart)
+    // Should show native UI message (the shell owns download/install/restart)
     expect(text).toContain(
-      "Opens the update window to download, install, and restart Sumi. Save your work first.",
+      "Checks for updates and prompts to download, install, and restart Sumi. Save your work first.",
     );
   });
 
   it("shows cross-platform update description on Windows and Linux", async () => {
     setupDesktopBridge(
-      { version: "0.3.0", electronVersion: "45.2.3", platform: "win32", arch: "x64" },
-      vi.fn().mockResolvedValue({ status: "idle", nativeUI: true, provider: "electron-updater" }),
+      {
+        version: "0.3.0",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
+        platform: "win32",
+        arch: "x64",
+      },
+      vi.fn().mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" }),
     );
 
     await act(async () => root.render(createElement(AboutSettings)));
@@ -479,12 +525,13 @@ describe("AboutSettings update functionality", () => {
       message:
         "Automatic updates are not supported for portable or tarball installations. Please update manually or install via AppImage or .deb.",
       nativeUI: true,
-      provider: "electron-updater",
+      provider: "tauri-updater",
     });
     setupDesktopBridge(
       {
         version: "0.3.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "linux",
         arch: "x64",
         update: {
@@ -492,7 +539,7 @@ describe("AboutSettings update functionality", () => {
           message:
             "Automatic updates are not supported for portable or tarball installations. Please update manually or install via AppImage or .deb.",
           nativeUI: true,
-          provider: "electron-updater",
+          provider: "tauri-updater",
         },
       },
       checkMock,
@@ -516,14 +563,15 @@ describe("AboutSettings update functionality", () => {
     setupDesktopBridge(
       {
         version: "0.3.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "win32",
         arch: "x64",
         update: {
           status: "downloading",
           message: "Downloading update… (42%)",
           nativeUI: true,
-          provider: "electron-updater",
+          provider: "tauri-updater",
         },
       },
       vi.fn(),
@@ -542,14 +590,15 @@ describe("AboutSettings update functionality", () => {
     setupDesktopBridge(
       {
         version: "0.3.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "win32",
         arch: "x64",
         update: {
           status: "downloaded",
           message: "Update 0.4.0 downloaded; ready to install.",
           nativeUI: true,
-          provider: "electron-updater",
+          provider: "tauri-updater",
         },
       },
       vi.fn(),

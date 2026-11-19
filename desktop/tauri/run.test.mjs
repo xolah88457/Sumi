@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { checkApp, nativePackages } from "./run.mjs";
+import { checkApp, nativePackages, updaterBuildArgs, withoutSigningSecrets } from "./run.mjs";
 
 async function fixture(t, body) {
   const dir = await mkdtemp(join(tmpdir(), "sumi-tauri-run-test-"));
@@ -117,22 +117,22 @@ test("times out and cleans up when the app reports but hangs instead of exiting"
 });
 
 test("selects package formats and paths for supported host tuples only", () => {
-  const config = { productName: "Sumi Rust", mainBinaryName: "sumi-tauri", version: "1.2.3" };
+  const config = { productName: "Sumi", mainBinaryName: "sumi", version: "1.2.3" };
   for (const arch of ["arm64", "x64"]) {
     assert.deepEqual(nativePackages("release", config, "darwin", arch), {
       bundles: "app",
-      app: join("release", "bundle", "macos", "Sumi Rust.app"),
+      app: join("release", "bundle", "macos", "Sumi.app"),
     });
   }
   assert.deepEqual(nativePackages("release", config, "win32", "x64"), {
     bundles: "nsis",
-    app: join("release", "sumi-tauri.exe"),
-    installer: join("release", "bundle", "nsis", "Sumi Rust_1.2.3_x64-setup.exe"),
+    app: join("release", "sumi.exe"),
+    installer: join("release", "bundle", "nsis", "Sumi_1.2.3_x64-setup.exe"),
   });
   assert.deepEqual(nativePackages("release", config, "linux", "x64"), {
     bundles: "deb,appimage",
-    app: join("release", "bundle", "appimage", "Sumi Rust_1.2.3_amd64.AppImage"),
-    installer: join("release", "bundle", "deb", "Sumi Rust_1.2.3_amd64.deb"),
+    app: join("release", "bundle", "appimage", "Sumi_1.2.3_amd64.AppImage"),
+    installer: join("release", "bundle", "deb", "Sumi_1.2.3_amd64.deb"),
   });
   for (const [platform, arch] of [
     ["linux", "arm64"],
@@ -163,4 +163,43 @@ test("CLI fails on missing package and does not accept extra launch arguments", 
       },
     );
   }
+});
+
+test("updater artifacts are requested only when the signing key is configured", () => {
+  assert.deepEqual(updaterBuildArgs({}), []);
+  assert.deepEqual(updaterBuildArgs({ TAURI_SIGNING_PRIVATE_KEY: "" }), []);
+  for (const env of [
+    { TAURI_SIGNING_PRIVATE_KEY: "synthetic" },
+    { TAURI_SIGNING_PRIVATE_KEY_PATH: "/tmp/synthetic.key" },
+  ]) {
+    const [flag, json] = updaterBuildArgs(env);
+    assert.equal(flag, "--config");
+    assert.deepEqual(JSON.parse(json), { bundle: { createUpdaterArtifacts: true } });
+  }
+});
+
+test("signing secrets are removed from the environment handed to staging", () => {
+  const env = withoutSigningSecrets({
+    PATH: "/usr/bin",
+    TAURI_SIGNING_PRIVATE_KEY: "a",
+    TAURI_SIGNING_PRIVATE_KEY_PATH: "b",
+    TAURI_SIGNING_PRIVATE_KEY_PASSWORD: "c",
+  });
+  assert.deepEqual(env, { PATH: "/usr/bin" });
+});
+
+test("Apple signing secrets are removed from the environment handed to staging", () => {
+  const apple = {
+    APPLE_CERTIFICATE: "a",
+    APPLE_CERTIFICATE_PASSWORD: "b",
+    APPLE_SIGNING_IDENTITY: "c",
+    APPLE_API_ISSUER: "d",
+    APPLE_API_KEY: "e",
+    APPLE_API_KEY_P8: "f",
+    APPLE_API_KEY_PATH: "g",
+    APPLE_ID: "h",
+    APPLE_PASSWORD: "i",
+    APPLE_TEAM_ID: "j",
+  };
+  assert.deepEqual(withoutSigningSecrets({ PATH: "/usr/bin", ...apple }), { PATH: "/usr/bin" });
 });

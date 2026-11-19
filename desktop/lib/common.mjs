@@ -243,7 +243,7 @@ export function parseShaSums(sumsText, filename) {
  * @param {string} spec.sumsCacheName cache file name for the downloaded SHASUMS256.txt
  * @param {string} spec.label         human name used in download errors ("official Node v22.1.0")
  * @param {string} spec.sumsLabel     human name of the sums file used in errors
- * @param {string} spec.archiveKind   "Electron" | "Node", used in the mismatch error
+ * @param {string} spec.archiveKind   "Node", used in the mismatch error
  * @param {number} spec.archiveTimeoutMs
  * @param {string} [spec.pinnedSha]   checksum compiled into this repo; must match the official one
  * @param {Function} [spec.fetchFn]   injectable fetch for tests

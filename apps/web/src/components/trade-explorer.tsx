@@ -14,11 +14,12 @@ import {
 import { useApi } from "@/lib/use-api";
 import { ReportMarketEstimates } from "./report-market-estimates";
 import { MonetaryValue } from "./privacy";
-import { fmtMoney } from "@/lib/utils";
+import { fmtMoney, fmtR } from "@/lib/utils";
 import { Pnl } from "./pnl";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { OptionSelect } from "./ui/option-select";
+import { SignedText } from "./ui/signed-text";
 import { Skeleton } from "./ui/skeleton";
 import { LoadError } from "./load-error";
 import { mediumShortDateTime } from "@/lib/date-format";
@@ -83,8 +84,7 @@ export function TradeExplorer({ query }: { query: string }) {
       <Pnl value={point.y} currency={currency} />
     ) : (
       <span className="tabular-nums">
-        {point.y > 0 ? "+" : ""}
-        {point.y.toFixed(2)}R
+        <SignedText>{fmtR(point.y, 2, { sign: true })}</SignedText>
       </span>
     );
   const xValue = (point: PlottedTrade) =>

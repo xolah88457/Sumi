@@ -10,6 +10,7 @@ Everything about the updaters below was read from the source in this repository 
 - Tauri 0.4.0 installs read `releases/latest/download/latest.json`, so they also depend on the Latest flag, in the opposite direction.
 - One release can be Latest at a time. So `electron-v0.3.8` holds Latest for a transition window, `v0.4.0` is published **without** taking Latest, and a later Tauri release takes Latest to end the window.
 - Publish `v0.4.0` first so the link in the notice works, then `electron-v0.3.8`.
+- `electron-v0.3.8` is tagged on commit `865e0d7` explicitly, **not** on the tip of `electron`. The tip is now Tauri-only 0.4.0 and has no Electron code. `v0.4.0` is tagged on the tip of `electron`.
 
 ## How the Electron updaters pick a release
 
@@ -42,7 +43,8 @@ The release workflow already publishes with `gh release create ... --latest` (la
 Notes:
 
 - The Electron apps reference the repository as `xolah88457/trade-journal`, while the link in the notice and the release page use `xolah88457/Sumi`. Updates work only while GitHub keeps redirecting the old name to the new one. Check this in step 5 below rather than assuming it.
-- The tag-triggered job refuses a tag whose commit is not an ancestor of `origin/electron` and whose version differs from the root `package.json` (the "Validate Tag, Root Version, and Branch Ancestry" step). Merge this branch into `electron` before tagging.
+- The `electron-v*` tag job (`electron-release.yml`, "Validate Tag, Root Version, and Branch Ancestry") refuses a tag whose commit is not an ancestor of `origin/electron`, or whose version differs from the root `package.json` at that commit. `865e0d7` satisfies both: its root `package.json` is `0.3.8`, and merging PR #5 into `electron` makes it an ancestor. The merge deliberately keeps `electron`'s Tauri-only 0.4.0 tree; `865e0d7` stays in history unchanged. A tag-push workflow runs the workflow file from the tagged commit's own tree, so the `electron-release.yml` in `865e0d7` runs even though `electron`'s tip no longer has it.
+- The Tauri release workflow (`.github/workflows/release.yml`, on `electron`) has its own guard for `v*` tags: the tag must be `v<semver>`, equal the root `package.json`, `tauri.conf.json` and `Cargo.toml` versions (all 0.4.0 on the tip), and the commit must be an ancestor of `origin/electron`. Tag `v0.4.0` on the tip of `electron`. It creates a **draft** release and never passes `--latest`, so nothing there conflicts with keeping Latest on the Electron release; you publish the draft by hand.
 
 ## Order of operations
 
@@ -50,19 +52,22 @@ Notes:
 
 1. GitHub Actions has not run on this repository since Nov 9. Re-enable it or fix it first (repository Settings, Actions), and confirm with a trivial run (for example a push to a scratch branch, or re-running the latest `ci.yml` run). Nothing below can be released until a workflow runs.
 2. Confirm the repository secret `SPARKLE_PRIVATE_KEY` exists. The macOS release jobs fail without it.
-3. Merge this branch (`claude/electron-final-release`) into `electron`. Pushes to `electron` run the full build and smoke matrix without publishing, which is your dry run. Wait for it to be green.
-4. Merge PR #4 (Tauri only) and make sure the Tauri release workflow for `v0.4.0` does **not** mark the release as Latest (see step 1). If the workflow cannot be told that, publish `v0.4.0` as a draft and flip it by hand.
+3. PR #4 (Tauri only, version 0.4.0) is already merged into `electron`. Merge PR #5 (`claude/electron-final-release`) too. Its merge commit keeps `electron`'s Tauri-only tree and adds only this runbook and the `[0.3.8]` changelog entry. Its purpose is to make `865e0d7` (the Electron code at 0.3.8) an ancestor of `electron`. Confirm with `git fetch origin electron && git merge-base --is-ancestor 865e0d7 origin/electron`.
+4. `v0.4.0`'s release workflow creates a draft and never sets Latest, so publish the draft with **Set as the latest release** unchecked (see step 1). Do not pass `--latest`.
+5. The old Electron build and smoke matrix no longer runs on pushes to `electron` (it is gone from the tip), so there is no dry run for `electron-v0.3.8`. Its checks run when the tag is pushed. Review the draft assets of `v0.4.0` carefully, and watch the `electron-v0.3.8` run.
 
 ### 1. Publish Tauri `v0.4.0` without taking Latest
 
-- Tag `v0.4.0` and let the Tauri release run. Review the draft, check the installers and `latest.json` and signatures are attached, then publish with **Set as the latest release unchecked** (or `gh release edit v0.4.0 --latest=false` right after publishing).
+- From the tip of `electron`: `git tag v0.4.0 && git push origin v0.4.0`. Let the Tauri release run (`release.yml`). Review the draft, check the installers and `latest.json` and signatures are attached, then publish with **Set as the latest release unchecked** (or `gh release edit v0.4.0 --latest=false` right after publishing).
 - Why before the Electron release: the notice links to `https://github.com/xolah88457/Sumi/releases/tag/v0.4.0`, and Electron users who update to 0.3.8 click it immediately.
 - Why not Latest: while `electron-v0.3.7` is still Latest, installed Electron apps keep working. If v0.4.0 were Latest, they would break before 0.3.8 exists.
 - Confirm: `gh release list --repo xolah88457/Sumi` shows `electron-v0.3.7` as Latest and `v0.4.0` without the Latest label.
 
 ### 2. Tag and publish `electron-v0.3.8`
 
-- From the updated `electron` branch (root `package.json` is `0.3.8`): `git tag electron-v0.3.8 && git push origin electron-v0.3.8`.
+- Tag the Electron commit explicitly, not the tip of `electron` (the tip is Tauri 0.4.0 and would fail the version guard): `git tag electron-v0.3.8 865e0d7 && git push origin electron-v0.3.8`.
+- Before pushing, check: `git show 865e0d7:package.json | grep '"version"'` prints `0.3.8`, and `git merge-base --is-ancestor 865e0d7 origin/electron` succeeds (it does once PR #5 is merged). Verify the tag points at the right commit with `git rev-parse electron-v0.3.8^{commit}`.
+- Pushing the tag runs `electron-release.yml` as it exists in `865e0d7`'s tree.
 - The workflow builds macOS arm64 and x64, Windows x64 and Linux x64, runs the smoke checks, requires all feed files, and publishes with `--latest`.
 - Do steps 1 and 2 close together (the same day). Between them nothing is broken for anyone, since 0.3.7 stays Latest, but the less time users spend on 0.3.7 the better.
 
@@ -102,6 +107,7 @@ On at least one machine per platform, install 0.3.7, then use Settings, About, C
 - Publish the next Tauri release (for example `v0.4.1`) with **Set as the latest release** checked, or run `gh release edit v0.4.1 --latest`. It must carry `latest.json` and signatures.
 - From then on `releases/latest/download/latest.json` works for Tauri users, and every Tauri release after that takes Latest normally.
 - Electron installs that did not update by then get a failed update check (404 on their feed file). They still run, and they still show the banner if they are on 0.3.8. Anyone still on 0.3.7 has to download the new app manually from the v0.4.0 page.
+- Do not tag `electron-v*` from `electron`'s tip, now or later: the Electron code lives only in `865e0d7` and earlier history. A further Electron release (for example `electron-v0.3.9`) would need a branch from `865e0d7`, and that tag's commit must also be an ancestor of `origin/electron` to pass the guard.
 - Optionally edit the `electron-v0.3.8` release notes afterwards to say the Electron line is closed.
 
 ## Rollback
@@ -109,11 +115,13 @@ On at least one machine per platform, install 0.3.7, then use Settings, About, C
 - 0.3.8 turns out broken: `gh release edit electron-v0.3.8 --latest=false` and `gh release edit electron-v0.3.7 --latest`, then fix forward with `electron-v0.3.9`. Installs that already took 0.3.8 stay on it until a newer Latest Electron feed appears.
 - `v0.4.0` turns out broken: edit the release notes or pull the assets. The notice link keeps pointing at the same page, so fix the page rather than the link.
 
-## What is in the final Electron release
+## What is in the final Electron release (commit `865e0d7`)
+
+This content exists only at `865e0d7` and in the `electron-v0.3.8` release. The notice component, its tests, the Electron shell and `electron-release.yml` are not in `electron`'s current tree.
 
 - A dismissible banner at the top of the app, shown only under Electron (not in a browser and not in Tauri). "Not now" hides it until the next launch.
 - A permanent notice in Settings, About, with the same message and link.
-- Version `0.3.8` in the root `package.json`, which is what the release workflow's version guard checks. The Tauri version files (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock`) are unchanged on this branch; the guard does not read them.
+- Version `0.3.8` in the root `package.json`, which is what the release workflow's version guard checks. The Tauri version files (`tauri.conf.json`, `Cargo.toml`, `Cargo.lock`) are unchanged at that commit; the guard does not read them.
 - The external link opens in the system browser through the existing preload and `sumi:open-external` path. The allowlist in `desktop/security.cjs` is protocol-based (`https`, `http`, `mailto`, no credentials), so it needed no change; `desktop/security.test.mjs` now pins the exact link.
 - Release notes in `electron-release.yml` open with the final-release message and the link.
 - The new app needs the old app to be quit first because the two use different single-instance locks. The notice says so.

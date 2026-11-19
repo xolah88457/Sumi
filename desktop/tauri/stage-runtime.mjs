@@ -23,7 +23,7 @@ import {
   getNativeLibName,
   getPnpmCommand,
   stageBackend,
-} from "../build.mjs";
+} from "../lib/runtime.mjs";
 import {
   ALLOWED_BUNDLED_MODEL,
   checkNoPrivateFiles,

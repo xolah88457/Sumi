@@ -96,10 +96,11 @@ describe("getDesktopInfo", () => {
   it("returns parsed AppInfo when bridge returns valid data", async () => {
     const mockInfo = {
       version: "0.2.0",
-      electronVersion: "45.2.3",
+      runtime: "tauri",
+      tauriVersion: "2.12.5",
       platform: "darwin",
       arch: "arm64",
-      update: { status: "idle", nativeUI: true, provider: "sparkle" },
+      update: { status: "idle", nativeUI: true, provider: "tauri-updater" },
     };
     (window as any).sumiDesktop = {
       preferences: {},
@@ -110,20 +111,22 @@ describe("getDesktopInfo", () => {
     const result = await getDesktopInfo();
     expect(result).toEqual({
       version: "0.2.0",
-      electronVersion: "45.2.3",
+      runtime: "tauri",
+      tauriVersion: "2.12.5",
       platform: "darwin",
       arch: "arm64",
-      update: { status: "idle", nativeUI: true, provider: "sparkle" },
+      update: { status: "idle", nativeUI: true, provider: "tauri-updater" },
     });
   });
 
-  it("returns parsed AppInfo with electron-updater provider on Windows/Linux", async () => {
+  it("returns parsed AppInfo on Windows and Linux", async () => {
     const mockInfo = {
       version: "0.3.0",
-      electronVersion: "45.2.3",
+      runtime: "tauri",
+      tauriVersion: "2.12.5",
       platform: "win32",
       arch: "x64",
-      update: { status: "idle", nativeUI: true, provider: "electron-updater" },
+      update: { status: "idle", nativeUI: true, provider: "tauri-updater" },
     };
     (window as any).sumiDesktop = {
       preferences: {},
@@ -134,10 +137,11 @@ describe("getDesktopInfo", () => {
     const result = await getDesktopInfo();
     expect(result).toEqual({
       version: "0.3.0",
-      electronVersion: "45.2.3",
+      runtime: "tauri",
+      tauriVersion: "2.12.5",
       platform: "win32",
       arch: "x64",
-      update: { status: "idle", nativeUI: true, provider: "electron-updater" },
+      update: { status: "idle", nativeUI: true, provider: "tauri-updater" },
     });
   });
 
@@ -165,7 +169,7 @@ describe("getDesktopInfo", () => {
     (window as any).sumiDesktop = {
       preferences: {},
       savePreferences: () => {},
-      getInfo: vi.fn().mockResolvedValue({ electronVersion: "45.2.3" }),
+      getInfo: vi.fn().mockResolvedValue({ runtime: "tauri", tauriVersion: "2.12.5" }),
     };
     const result = await getDesktopInfo();
     expect(result).toBeNull();
@@ -200,7 +204,7 @@ describe("checkForDesktopUpdates", () => {
       message: "Update 0.2.1 is available",
       error: undefined,
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     };
     (window as any).sumiDesktop = {
       preferences: {},
@@ -222,7 +226,7 @@ describe("checkForDesktopUpdates", () => {
     };
 
     const result = await checkForDesktopUpdates();
-    expect(result).toEqual({ status: "idle", nativeUI: true, provider: "sparkle" });
+    expect(result).toEqual({ status: "idle", nativeUI: true, provider: "tauri-updater" });
   });
 });
 
@@ -254,13 +258,14 @@ describe("useDesktopInfo hook", () => {
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
       checkForUpdates: vi
         .fn()
-        .mockResolvedValue({ status: "idle", nativeUI: true, provider: "sparkle" }),
+        .mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" }),
     };
     const hook = renderHook();
     expect(hook.current.isDesktop).toBe(true);
@@ -269,7 +274,8 @@ describe("useDesktopInfo hook", () => {
   it("loads info on mount when bridge present", async () => {
     const mockInfo: AppInfo = {
       version: "0.2.0",
-      electronVersion: "45.2.3",
+      runtime: "tauri",
+      tauriVersion: "2.12.5",
       platform: "darwin",
       arch: "arm64",
     };
@@ -279,7 +285,7 @@ describe("useDesktopInfo hook", () => {
       getInfo: vi.fn().mockResolvedValue(mockInfo),
       checkForUpdates: vi
         .fn()
-        .mockResolvedValue({ status: "idle", nativeUI: true, provider: "sparkle" }),
+        .mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" }),
     };
 
     const hook = renderHook();
@@ -296,13 +302,14 @@ describe("useDesktopInfo hook", () => {
   it("does not auto-check updates on mount", async () => {
     const checkForUpdatesMock = vi
       .fn()
-      .mockResolvedValue({ status: "idle", nativeUI: true, provider: "sparkle" });
+      .mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" });
     (window as any).sumiDesktop = {
       preferences: {},
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
@@ -325,7 +332,7 @@ describe("useDesktopInfo hook", () => {
       message: "Update available",
       error: undefined,
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     };
     const checkForUpdatesMock = vi.fn().mockResolvedValue(mockUpdate);
     (window as any).sumiDesktop = {
@@ -333,7 +340,8 @@ describe("useDesktopInfo hook", () => {
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
@@ -362,14 +370,15 @@ describe("useDesktopInfo hook", () => {
       error: "Network error",
       message: "Failed",
       nativeUI: true,
-      provider: "sparkle",
+      provider: "tauri-updater",
     });
     (window as any).sumiDesktop = {
       preferences: {},
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
@@ -395,7 +404,8 @@ describe("useDesktopInfo hook", () => {
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
@@ -424,7 +434,8 @@ describe("useDesktopInfo hook", () => {
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
@@ -446,7 +457,7 @@ describe("useDesktopInfo hook", () => {
     expect(checkForUpdatesMock).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      resolveCheck!({ status: "idle", nativeUI: true, provider: "sparkle" });
+      resolveCheck!({ status: "idle", nativeUI: true, provider: "tauri-updater" });
       await first!;
       await second!;
     });
@@ -456,14 +467,19 @@ describe("useDesktopInfo hook", () => {
   it("increments checkCompletionKey on each check", async () => {
     const checkForUpdatesMock = vi
       .fn()
-      .mockResolvedValueOnce({ status: "not-available", nativeUI: true, provider: "sparkle" })
-      .mockResolvedValueOnce({ status: "not-available", nativeUI: true, provider: "sparkle" });
+      .mockResolvedValueOnce({ status: "not-available", nativeUI: true, provider: "tauri-updater" })
+      .mockResolvedValueOnce({
+        status: "not-available",
+        nativeUI: true,
+        provider: "tauri-updater",
+      });
     (window as any).sumiDesktop = {
       preferences: {},
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
@@ -492,13 +508,14 @@ describe("useDesktopInfo hook", () => {
       savePreferences: () => {},
       getInfo: vi.fn().mockResolvedValue({
         version: "0.2.0",
-        electronVersion: "45.2.3",
+        runtime: "tauri",
+        tauriVersion: "2.12.5",
         platform: "darwin",
         arch: "arm64",
       }),
       checkForUpdates: vi
         .fn()
-        .mockResolvedValue({ status: "idle", nativeUI: true, provider: "sparkle" }),
+        .mockResolvedValue({ status: "idle", nativeUI: true, provider: "tauri-updater" }),
     };
 
     const hook = renderHook();

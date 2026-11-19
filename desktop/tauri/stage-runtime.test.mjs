@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { copyStandaloneForWindows } from "../build.mjs";
+import { copyStandaloneForWindows } from "../lib/runtime.mjs";
 import {
   includeServerFile,
   isolatedRuntimeEnv,

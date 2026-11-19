@@ -11,7 +11,6 @@ export interface SumiDesktopBridge {
   savePreferences: (dict: Record<string, string>) => void;
   getInfo: () => Promise<{
     version: string;
-    electronVersion?: string;
     runtime?: "tauri";
     tauriVersion?: string;
     platform: string;

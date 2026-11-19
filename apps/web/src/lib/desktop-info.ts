@@ -16,8 +16,8 @@ export type UpdateStatus =
   | string;
 
 /**
- * Update state contract — matches electron-sparkle native binding contract.
- * Source of truth: desktop/update-service.cjs createUpdateService.getState()
+ * Update state contract of the Tauri shell.
+ * Source of truth: desktop/tauri/src-tauri/src/updater.rs (`state`).
  */
 export interface DesktopUpdateState {
   status: UpdateStatus;
@@ -26,18 +26,15 @@ export interface DesktopUpdateState {
   message?: string;
   error?: string;
   nativeUI: boolean;
-  provider: "sparkle" | "electron-updater" | string;
+  provider: "tauri-updater" | string;
 }
 
 /**
- * App runtime info contract — matches desktop/main.cjs sumi:get-info response.
- * Source of truth: desktop/main.cjs registerIpcHandlers -> sumi:get-info
- * The Tauri bridge supplies runtime and tauriVersion instead of electronVersion.
+ * App runtime info contract of the Tauri shell (desktop/tauri/bridge.js, `runtime_info`).
  */
 export interface AppInfo {
   version: string;
-  electronVersion?: string;
-  runtime?: "tauri";
+  runtime: "tauri";
   tauriVersion?: string;
   platform: string;
   arch: string;
@@ -87,14 +84,6 @@ export function redactUpdateError(raw: unknown): string {
 }
 
 /**
- * True when the bridge info describes the Electron shell. Both shells expose
- * window.sumiDesktop; only the Tauri bridge reports runtime "tauri".
- */
-export function isElectronInfo(info: AppInfo | null | undefined): boolean {
-  return !!info && info.runtime !== "tauri";
-}
-
-/**
  * Reads local runtime info from the desktop bridge.
  * Purely local IPC on mount — does not call background update servers.
  */
@@ -110,12 +99,8 @@ export async function getDesktopInfo(): Promise<AppInfo | null> {
     }
     return {
       version: String(raw.version),
-      ...(raw.runtime === "tauri"
-        ? {
-            runtime: "tauri",
-            ...(typeof raw.tauriVersion === "string" ? { tauriVersion: raw.tauriVersion } : {}),
-          }
-        : { electronVersion: typeof raw.electronVersion === "string" ? raw.electronVersion : "" }),
+      runtime: "tauri",
+      ...(typeof raw.tauriVersion === "string" ? { tauriVersion: raw.tauriVersion } : {}),
       platform: typeof raw.platform === "string" ? raw.platform : "",
       arch: typeof raw.arch === "string" ? raw.arch : "",
       update:
@@ -131,7 +116,7 @@ export async function getDesktopInfo(): Promise<AppInfo | null> {
 
 /**
  * Invokes the desktop update check via window.sumiDesktop.checkForUpdates().
- * Handled natively by Sparkle inside Electron which manages checking, downloading,
+ * Handled natively by the Tauri shell, which manages checking, downloading,
  * installing, and restarting without requiring unsupported web download APIs.
  * No automatic background checks — only user-initiated.
  */
@@ -144,7 +129,7 @@ export async function checkForDesktopUpdates(): Promise<DesktopUpdateState> {
   if (result && typeof result === "object") {
     return result as DesktopUpdateState;
   }
-  return { status: "idle", nativeUI: true, provider: "sparkle" };
+  return { status: "idle", nativeUI: true, provider: "tauri-updater" };
 }
 
 /**
@@ -239,20 +224,4 @@ export function useDesktopInfo(): UseDesktopInfoResult {
     lastChecked,
     checkForUpdates,
   };
-}
-
-/** True only after the bridge confirms the app is running inside Electron. */
-export function useElectronRuntime(): boolean {
-  const [isElectron, setIsElectron] = useState(false);
-  useEffect(() => {
-    if (!isSumiDesktop()) return;
-    let cancelled = false;
-    void getDesktopInfo().then((info) => {
-      if (!cancelled) setIsElectron(isElectronInfo(info));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return isElectron;
 }

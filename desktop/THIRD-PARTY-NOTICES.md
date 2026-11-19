@@ -6,12 +6,11 @@ Sumi is an independent local desktop adaptation, not an official product of LuxA
 - Theme influences: [Kami](https://github.com/tw93/Kami), copyright 2026 Tw93, MIT. See `Kami-MIT.txt`. Sumi adapts Kami's parchment/ivory/navy palette and editorial typography. No Kami logo or remotely hosted fonts are used.
 - Typeface: [Charis SIL](https://software.sil.org/charis/) (latin subset, regular, italic, bold and bold italic woff2, via `@fontsource/charis-sil`), Copyright (c) 1997-2022 SIL International, licensed under the SIL Open Font License 1.1. Self-hosted in the app bundle, never fetched at runtime. See `licenses/CharisSIL-OFL.txt`.
 - Runtime: Node.js and its bundled dependencies. See `Node-LICENSE.txt`.
-- Desktop framework: [Electron](https://github.com/electron/electron), Copyright (c) Electron contributors, Copyright (c) GitHub Inc., MIT License. See `Electron-LICENSE.txt`.
-- Software update framework (macOS): [Sparkle](https://sparkle-project.org/), Copyright (c) 2006-2013 Andy Matuschak, Copyright (c) 2009-2013 Elgato Systems GmbH, Copyright (c) 2011-2014 Kornel Lesiński. MIT License. See `Sparkle-LICENSE.txt`.
-- Software update framework (Windows & Linux): [electron-updater](https://github.com/electron-userland/electron-builder), version 6.8.11, Copyright (c) electron-userland, MIT License. Coordinates update discovery, manual user consent prompts, checksum verification, and graceful restart.
-- Web rendering and browser engine: Chromium and underlying components. Governed by BSD, MIT, LGPL, and other open-source licenses. Full notices are bundled in `LICENSES.chromium.html`.
+- Desktop framework: [Tauri](https://tauri.app/) 2 with its windowing and WebView crates (`tao`, `wry`) and [`tauri-plugin-updater`](https://github.com/tauri-apps/plugins-workspace), dual-licensed MIT or Apache-2.0 (Copyright (c) Tauri Programme within The Commons Conservancy and contributors). Rust crate licences are those of the individual crates in `Cargo.lock`.
+- Software updates: signed updates are verified by `tauri-plugin-updater` against a minisign public key built into the app.
+- Web rendering: the operating system's WebView (WKWebView on macOS, Microsoft Edge WebView2 on Windows, WebKitGTK on Linux). Sumi does not redistribute a browser engine.
 - Data compression: [fflate](https://github.com/101arrowz/fflate), Copyright (c) 2020 Arjun Barrett, MIT License. High-performance compression library used in data handling.
-- Linux package runtimes: [AppImage](https://appimage.org/) runtime (MIT License) and standard Debian packaging tools (`dpkg`).
+- Linux package runtimes: [AppImage](https://appimage.org/) runtime (MIT License, via the Tauri bundler) and standard Debian packaging tools (`dpkg`).
 - Web framework and other dependencies retain their original licenses. Dependency license files are collected in `licenses/dependencies/` in the app bundle.
 - Apple Cocoa and WebKit are system frameworks supplied by macOS.
 
@@ -20,7 +19,7 @@ Sumi is an independent local desktop adaptation, not an official product of LuxA
 Microsoft Visual C++ Runtime (MSVCP140.dll, VCRUNTIME140.dll, VCRUNTIME140_1.dll)
 Redistributed under Visual Studio 2015-2022 Redistributable License Terms for local application runtime.
 
-- **Provenance**: The Microsoft Visual C++ x64 CRT DLLs (`msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) are resolved from official Microsoft Visual Studio Build Tools / VC Tools Redistributable directories during the Windows desktop build (`desktop/build.mjs`) and packaged app-local into `resources/runtime/` and native module directories.
+- **Provenance**: The Microsoft Visual C++ x64 CRT DLLs (`msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) are resolved from official Microsoft Visual Studio Build Tools / VC Tools Redistributable directories during the Windows desktop build (`desktop/lib/runtime.mjs`) and packaged app-local into `resources/runtime/` and native module directories.
 - **Purpose**: App-local bundling ensures native C++ modules (such as `transcribe.dll` and `ggml`) execute reliably on fresh Windows installations without requiring users to separately install the system-wide Microsoft Visual C++ Redistributable.
 - **Code Signing**: Sumi desktop binaries for Windows are distributed independently without a commercial Authenticode digital signature.
 

@@ -4,6 +4,13 @@ import { mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  appleSecretNames,
+  codesignEnv,
+  signRuntime,
+  signingPlan,
+  tauriAppleEnv,
+} from "./macos-signing.mjs";
 
 const tauriDir = fileURLToPath(new URL(".", import.meta.url));
 const targetDir = join(tauriDir, "src-tauri", "target");
@@ -43,6 +50,29 @@ export function nativePackages(
     };
   }
   throw new Error(`Unsupported native Tauri target: ${platform}-${arch}`);
+}
+
+// Updater artifacts (.sig files, updater archives) are produced only when the release
+// signing key is present. Without it the build is identical to a local one and the app
+// reports "updates unavailable". The key is never read or logged here.
+export function updaterBuildArgs(env = process.env) {
+  return env.TAURI_SIGNING_PRIVATE_KEY || env.TAURI_SIGNING_PRIVATE_KEY_PATH
+    ? ["--config", JSON.stringify({ bundle: { createUpdaterArtifacts: true } })]
+    : [];
+}
+
+// Secrets that only the Tauri CLI needs; keep them out of the web build and the stager.
+export function withoutSigningSecrets(env) {
+  const clean = { ...env };
+  for (const name of [
+    "TAURI_SIGNING_PRIVATE_KEY",
+    "TAURI_SIGNING_PRIVATE_KEY_PATH",
+    "TAURI_SIGNING_PRIVATE_KEY_PASSWORD",
+    ...appleSecretNames,
+  ]) {
+    delete clean[name];
+  }
+  return clean;
 }
 
 function systemTempRoot() {
@@ -245,14 +275,29 @@ async function run(command, packagePath) {
     );
   if (command === "build") {
     await withScratchProfile(async (profile) => {
-      const env = { ...process.env, ...profile, CARGO_TARGET_DIR: targetDir };
+      // Developer ID signing applies to macOS only; everywhere else, and on macOS without
+      // APPLE_SIGNING_IDENTITY, the build is the unchanged ad-hoc/unsigned one.
+      const plan =
+        platform === "darwin" && process.env.APPLE_SIGNING_IDENTITY
+          ? signingPlan(process.env)
+          : { sign: false, notarize: "none" };
+      const env = tauriAppleEnv({ ...process.env, ...profile, CARGO_TARGET_DIR: targetDir }, plan);
       // Keep Cargo on its native default target and the release layout above.
       delete env.CARGO_BUILD_TARGET;
       execFileSync(process.execPath, [join(tauriDir, "stage-runtime.mjs")], {
         cwd: tauriDir,
-        env,
+        env: withoutSigningSecrets(env),
         stdio: "inherit",
       });
+      if (plan.sign) {
+        // Tauri does not reliably sign arbitrary Mach-O files inside resources, and
+        // notarization rejects any that lack the hardened runtime and a timestamp.
+        signRuntime({
+          dir: join(tauriDir, "runtime"),
+          identity: process.env.APPLE_SIGNING_IDENTITY,
+          env: codesignEnv(process.env),
+        });
+      }
       if (platform === "win32") {
         // Cargo copies resource files but does not prune files removed from the stage.
         await rm(join(releaseDir, "runtime"), { recursive: true, force: true });
@@ -265,7 +310,8 @@ async function run(command, packagePath) {
           "--bundles",
           bundles,
           "--ci",
-          "--no-sign",
+          ...(plan.sign ? [] : ["--no-sign"]),
+          ...updaterBuildArgs(env),
           "--",
           "--locked",
         ],

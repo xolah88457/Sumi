@@ -15,7 +15,11 @@ pnpm format       # prettier
 ## The gates
 
 CI runs `pnpm format:check`, `pnpm typecheck`, `pnpm test`, the dependency license
-gate, and builds the app. Run them locally before pushing.
+gate, and builds the app. Run them locally before pushing. Desktop shell changes
+(`desktop/`) are additionally built and smoke-tested by `tauri-ci.yml` on macOS, Windows
+and Linux; see [desktop/README.md](desktop/README.md) for `pnpm tauri:build`,
+`cargo fmt --check`, `cargo clippy --locked` and `cargo test --locked`
+(in `desktop/tauri/src-tauri`).
 
 ## Ground rules
 

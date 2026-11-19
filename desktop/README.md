@@ -1,343 +1,196 @@
-# Sumi Desktop (Electron: macOS, Windows & Linux)
+# Sumi desktop (Tauri: macOS, Windows and Linux)
 
-Sumi is an independent, local-first desktop trading journal with broker sync, statement importers, analytics, SQLite persistence and on-device voice dictation, styled with Tw93's Kami-inspired aesthetic. It is based on [LuxAlgo's MIT-licensed trade-journal](https://github.com/LuxAlgo/trade-journal); see the [root README](../README.md) for the product overview.
+Sumi is an independent, local-first desktop trading journal. See the [root README](../README.md) for the product overview. This document covers the desktop shell: how it is built, where your data lives, how it updates and how it is released.
 
-The desktop app is an Electron shell (Electron v45.2.3) hosting the Next.js standalone application, backed by an isolated, official Node.js runtime. Sumi is desktop-only; there is no Docker or hosted web distribution. Developers can still run the web app alone with `pnpm dev`.
+The desktop app is a [Tauri 2](https://tauri.app) shell. It hosts the Next.js standalone server (`apps/web`) on loopback, run by a bundled official Node.js runtime with the native addons (`better-sqlite3`, `koffi`, `transcribe-cpp`), and shows it in the operating system WebView (WKWebView, WebView2, WebKitGTK) instead of shipping Chromium. End users do not need Node.js or a browser. Sumi is desktop-only; there is no hosted distribution. Developers can run the web app alone with `pnpm dev`.
 
-- **Final Electron release**: 0.3.8 is the last Electron release. Its only purpose is to point existing users at the Tauri-based Sumi 0.4 (<https://github.com/xolah88457/Sumi/releases/tag/v0.4.0>). See [the transition runbook](../docs/electron-to-tauri-release-runbook.md).
-- **Target Platforms**:
-  - macOS 14.0+ (Sonoma or newer) on Apple Silicon (`arm64`) & Intel (`x64`).
-  - 64-bit Windows 10/11 (`x64`).
-  - 64-bit Linux (`x64`, Ubuntu 22.04+ baseline / glibc 2.35+).
-- **Version Truth**: Single source of truth is root `package.json` (`v0.3.8`), stable tag `electron-v0.3.8`, fixed public fork `xolah88457/trade-journal` (no app store wrappers).
-- **Bundled Runtimes**: Electron 45.2.3, official separate Node.js 26.13.0 bundled automatically; end users require neither Node.js nor an external browser.
-- **In-App Updates**:
-  - macOS: Native Sparkle 2.9.6 updater with independent Ed25519 signature verification.
-  - Windows & Linux: `electron-updater` 6.8.11 with explicit user consent dialogs (Check → Download consent → Install & Restart consent).
-- **Code Signing Disclosures**: Distributed ad-hoc / unsigned for open-source independence without paid Apple Developer ID notarization or Windows Authenticode certificates.
+Sumi used to ship as an Electron app (0.3.x). Electron has been removed; see [Moving from the Electron app](#moving-from-the-electron-app).
 
----
+## Layout
 
-## Architecture Scope & Boundaries
+| Path                                 | Purpose                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `desktop/tauri/src-tauri/`           | Rust shell: window, menus, profile and preferences, backend process, security policy, updater         |
+| `desktop/tauri/run.mjs`              | `build`, `open` and `check` for the packaged app                                                      |
+| `desktop/tauri/stage-runtime.mjs`    | Stages the standalone server, bundled Node and licences into `desktop/tauri/runtime/`                 |
+| `desktop/tauri/bridge.js`            | Preload bridge exposing `window.sumiDesktop` (preferences, runtime info, update check)                |
+| `desktop/tauri/release-manifest.mjs` | Builds the updater `latest.json` from signed release artifacts                                        |
+| `desktop/launch.cjs`                 | Entry point run by the bundled Node: starts the Next.js server, prints the readiness line, shuts down |
+| `desktop/lib/`                       | Build-time helpers shared by staging (`runtime.mjs`, `common.mjs`); never copied into the app         |
 
-To ensure stability and predictable native execution, Sumi defines explicit architectural boundaries:
+All desktop tests run with `node --test desktop/launch.test.mjs desktop/lib/*.test.mjs desktop/tauri/*.test.mjs`; the Rust tests with `cargo test --locked` in `desktop/tauri/src-tauri`.
 
-- **64-bit Architecture**: Support is strictly limited to 64-bit platforms (`arm64` and `x64` on macOS; `x64` on Windows and Linux). 32-bit platforms (x86/arm32) and ARM Windows/Linux are not supported in this release.
-- **CPU Compatibility**: CPU compatibility follows standard requirements for the bundled Electron 45, Node.js 26, and native runtime components. The published native transcribe-cpp ASR artifacts provide a standard `cpu-x64` fallback alongside SSE4.2 and AVX acceleration paths; neither a dedicated GPU nor AVX/AVX2 is generally required. However, vintage or legacy 64-bit processors remain untested.
-- **Linux Distribution Baseline**: Minimum glibc 2.35 (Ubuntu 22.04 LTS baseline or newer). Older distributions (e.g. Ubuntu 18.04/20.04, CentOS/RHEL 7) are unsupported due to Electron 45 and Node 26 C runtime dependencies.
-- **Hardware & Environment Testing Limits**:
-  - Full native Parakeet speech recognition inference (~700 MB model download) is not CI-run on Windows and Linux; automated testing verifies native backend viability (Koffi FFI, native DLL/SO loading, and tensor computation) via bundled Silero VAD (1.2 MB) loading, silence detection, and clean disposal without running full ASR inference.
-  - Physical microphone hardware across varying Linux sound servers (PulseAudio, PipeWire, ALSA) and Windows audio devices remains untested.
-  - Live broker sync connections across all OS/architecture combinations and the first real production in-place upgrade transition across varied platforms remain to be established upon live release.
+## Platforms and packages
 
----
+| Target      | Native CI host         | WebView               | Package and smoke target                                                             |
+| ----------- | ---------------------- | --------------------- | ------------------------------------------------------------------------------------ |
+| macOS arm64 | macOS 15 Apple Silicon | WKWebView             | `Sumi.app` (macOS 13+)                                                               |
+| macOS x64   | macOS 15 Intel         | WKWebView             | `Sumi.app` (macOS 13+)                                                               |
+| Windows x64 | Windows Server 2025    | Edge WebView2         | `Sumi_<version>_x64-setup.exe` (NSIS); standalone `sumi.exe` with sibling `runtime/` |
+| Linux x64   | Ubuntu 22.04 LTS       | WebKitGTK 4.1 / GTK 3 | `Sumi_<version>_amd64.deb` and `.AppImage`                                           |
 
-## Quickstart: Build, Check, and Open
+The Linux baseline is Ubuntu 22.04 x64 (glibc 2.35) with `libwebkit2gtk-4.1-dev`. Building on a newer distribution can raise the glibc baseline, and AppArmor can restrict unprivileged namespaces; do not disable the WebKit sandbox to make a smoke test pass. 32-bit and Arm Windows/Linux are not supported. Native ASR inference (the ~700 MB Parakeet model) is not run in CI; staging probes the bundled SQLite addon and Silero VAD instead.
 
-### Requirements
+## Build and try it safely
 
-- **Operating System**: macOS 14.0+ (Apple Silicon `arm64` or Intel `x64`), 64-bit Windows 10/11 (`x64`), or Linux x64 (Ubuntu 22.04+ baseline).
-- **Node.js**: Pinned to official Node **v26.13.0** (matches bundled runtime ABI).
-- **Package Manager**: Pinned **pnpm 11.0.8** (`packageManager` in `package.json`).
-- **Platform Build Tools**:
-  - macOS: Apple Command Line Tools (`xcode-select --install`) for `codesign`, `iconutil`, and `sips`.
-  - Windows: Visual Studio 2019/2022 C++ Build Tools (or official VC++ Redistributable directory for CRT DLL bundling).
-  - Linux: `build-essential`, `python3`, `dpkg` / `fakeroot` (for `.deb` generation).
-- **Internet Access**: Required during initial build to download verified official Electron and Node archives.
+Use native Node **26.13.1** (the bundled runtime ABI), the pnpm version pinned in the root `package.json`, and stable Rust on the architecture you plan to run. Do not cross-compile this runtime. Prerequisites:
+
+- macOS: Xcode Command Line Tools and a logged-in desktop session for `open` and `check`.
+- Windows: Visual Studio C++ Build Tools with the Windows SDK and MSVC x64 tools, the Evergreen WebView2 Runtime and a desktop session. Keep the executable next to `runtime/` when testing the standalone payload. The build bundles the app-local Visual C++ 14.x CRT DLLs (`msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) found through `vswhere` or `VCToolsRedistDir`, so users need no Redistributable.
+- Linux (Ubuntu 22.04): use a graphical session for manual checks or Xvfb for headless smoke.
+
+```sh
+sudo apt-get install -y build-essential pkg-config libssl-dev libgtk-3-dev \
+  libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+  patchelf libfuse2 dbus-x11 xvfb xauth
+```
 
 From the repository root:
 
 ```sh
-# 1. Install dependencies with exact lockfile
 pnpm install --frozen-lockfile
-
-# 2. Build the production web backend and package desktop application
-pnpm desktop:build
-
-# 3. Run automated verification suite (bundle integrity, signing, routes, ASR doctor, SQLite persistence)
-pnpm desktop:check
-
-# 4. Open the built application
-pnpm desktop:open
+pnpm tauri:build   # alias: pnpm desktop:build
+pnpm tauri:check   # alias: pnpm desktop:check
+pnpm tauri:open    # alias: pnpm desktop:open
 ```
 
-To package downloadable release distributions:
+- `tauri:build` builds the web app, stages `desktop/tauri/runtime/` with the bundled runtime and invokes the pinned Tauri CLI. Output is under `desktop/tauri/src-tauri/target/release/`: `bundle/macos/`, `bundle/nsis/` plus `sumi.exe` with `runtime/`, or `bundle/deb/` and `bundle/appimage/`.
+- `tauri:check` runs the runner tests and launches the built `.app`, Windows standalone payload or Linux AppImage. Missing packages, failed checks, timeouts and nonzero exits fail the command. Test an installed executable with `node desktop/tauri/run.mjs check <packaged-executable>`; do not pass an installer.
+- `tauri:open` launches the same package interactively with a disposable journal.
+
+For headless Linux, including after installing the local `.deb` on a test machine:
 
 ```sh
-# Package release artifacts for your current platform
-pnpm desktop:package
-
-# Inspect built artifact status and checksums
-node desktop/release.mjs
+WEBKIT_DISABLE_DMABUF_RENDERER=1 dbus-run-session -- xvfb-run -a pnpm tauri:check
+WEBKIT_DISABLE_DMABUF_RENDERER=1 dbus-run-session -- xvfb-run -a \
+  node desktop/tauri/run.mjs check /usr/bin/sumi
 ```
 
-The resulting application is self-contained:
+Each runner launch uses a new canonical temp directory with `SUMI_TEST_MODE=1` and an explicit `JOURNAL_DATA_DIR`, ignores inherited journal and backend overrides, and removes its scratch directory afterwards. Use synthetic records, CSVs, audio and attachments only, and never live broker, AI or other third-party credentials. Launching from Finder, Start or the desktop menu bypasses the runner and opens your real journal.
 
-- macOS: `dist/Sumi.app`
-- Windows: `dist/sumi-win32-x64/Sumi.exe`
-- Linux: `dist/sumi-linux-x64/sumi`
+## Where your data lives
 
-Once built or installed, Sumi requires neither an active terminal, nor a separately installed Node, pnpm, or external browser.
+All user databases, encrypted credentials, preferences and downloaded voice weights live in one per-user folder, the same one the Electron app used:
 
----
-
-## Architecture & Runtime Design
-
-### Platform Bundle Structures
-
-#### macOS (`dist/Sumi.app`)
+| OS      | Journal data directory                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------ |
+| macOS   | `~/Library/Application Support/Sumi`                                                                         |
+| Windows | `%APPDATA%\Sumi` (`C:\Users\<user>\AppData\Roaming\Sumi`)                                                    |
+| Linux   | `$XDG_CONFIG_HOME/Sumi`, or `~/.config/Sumi` if unset (a relative `XDG_CONFIG_HOME` or `APPDATA` is ignored) |
 
 ```text
-dist/Sumi.app/
-  Contents/
-    MacOS/Sumi                    # Official Electron 45.2.3 launcher binary
-    Frameworks/
-      Electron Framework.framework # Electron engine with hardened entitlements
-      Sparkle.framework           # Native Sparkle 2.9.6 framework for atomic updates
-      Electron Helper*.app        # Sandboxed GPU, Plugin, and Renderer helpers
-    Resources/
-      Sumi.icns                   # Native app icon generated from desktop/Icon.swift
-      app/                        # Electron main entrypoint, preload, security, preferences
-      server/                     # Next.js standalone production server bundle
-      runtime/node                # Standalone official Node 26.13.0 binary (ABI preserved)
-      launch.cjs                  # Ephemeral loopback port launcher & lifecycle supervisor
-      licenses/                   # Upstream MIT, Node, Electron, Chromium, Sparkle licenses
-                                  # licenses/dependencies/: only packages that ship in the app
-```
-
-#### Windows (`dist/sumi-win32-x64/`)
-
-```text
-dist/sumi-win32-x64/
-  Sumi.exe                        # Windows Electron 45.2.3 launcher binary
-  resources/
-    app/                          # Electron main, preload, security, preferences
-    server/                       # Next.js standalone production server bundle
-    runtime/
-      node.exe                    # Standalone official Node 26.13.0 Windows binary
-      msvcp140.dll                # App-local Microsoft Visual C++ CRT runtime DLL
-      vcruntime140.dll            # App-local Microsoft Visual C++ CRT runtime DLL
-      vcruntime140_1.dll          # App-local Microsoft Visual C++ CRT runtime DLL
-    launch.cjs                    # Ephemeral loopback launcher
-    licenses/                     # Upstream licenses & Microsoft CRT redistributable notice
-```
-
-#### Linux (`dist/sumi-linux-x64/`)
-
-```text
-dist/sumi-linux-x64/
-  sumi                            # Linux Electron 45.2.3 binary
-  chrome-sandbox                  # Hardened Chromium setuid sandbox helper
-  resources/
-    app/                          # Electron main, preload, security, preferences
-    server/                       # Next.js standalone production server bundle
-    runtime/node                  # Standalone official Node 26.13.0 Linux binary
-    launch.cjs                    # Ephemeral loopback launcher
-    licenses/                     # Upstream licenses & third-party notices
-```
-
-### 1. Pinned Runtimes & ABI Stability
-
-- **Electron 45.2.3**: Downloaded and verified against pinned official Electron SHA-256 checksums across darwin-arm64, darwin-x64, win32-x64, and linux-x64.
-- **Bundled Node.js 26.13.0 Runtime**: The Next.js backend runs under an official, standalone Node.js 26.13.0 binary packaged into the application's runtime folder.
-- **Zero Electron Rebuild for Native Modules**: `better-sqlite3`, `koffi`, and `transcribe-cpp` execute entirely within the bundled Node runtime. Because the bundled Node version matches the development build host (`v26.13.0`), native C++/Metal modules preserve exact Node ABI compatibility without needing `electron-rebuild`.
-
-### 2. Process & Network Security Isolation
-
-- **Ephemeral Loopback Binding**: The backend server binds strictly to an OS-assigned ephemeral port on `127.0.0.1`.
-- **Environment Whitelisting**: The child backend process is spawned with an explicit whitelist: `PATH`, `HOME` / `USERPROFILE`, `TMPDIR`, `LANG`, and `JOURNAL_DATA_DIR`. It strictly **does not inherit** terminal environment variables, `NODE_OPTIONS`, or API keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`). All API credentials must be entered securely in **Settings → AI**.
-- **MainFrame IPC Validation**: Electron IPC handlers (`main.cjs`) strictly enforce origin checks and sender frame validation against the active loopback origin.
-- **External Navigation Safeguard**: Any non-loopback URLs or external markdown links open in the user's default external web browser, never inside the Electron window.
-
----
-
-## Linux Sandboxing & AppImage Constraints
-
-Sumi enforces strict Chromium sandboxing on Linux:
-
-- **Security Integrity**: Never launch or recommend running Sumi with `--no-sandbox` or disabled web security (`webPreferences.webSecurity`). Doing so exposes local desktop files and loopback interfaces to severe vulnerabilities.
-- **AppImage Prerequisites**: Standalone `.AppImage` packages require system FUSE (`libfuse2` on Debian/Ubuntu) and unprivileged user namespace support. On distributions with restrictive AppArmor profiles for unprivileged user namespaces (such as default Ubuntu 24.04 installations), AppImages may require explicit user namespace permissions.
-- **Recommended Linux Package**: For Debian, Ubuntu, and derivative distributions, the `.deb` package is the **primary recommended format**. It installs system sandbox helpers (`chrome-sandbox`) with correct permissions and integrates seamlessly with desktop menus and system package management.
-- **Portable Tarballs**: Portable unpacked directory builds (`dist/sumi-linux-x64/`) do not support in-app self-updating; use `.deb` or `.AppImage` for update support.
-
----
-
-## Where Your Data Lives & Backups
-
-### Canonical User Data Paths
-
-All user databases, encrypted credentials, preferences, and downloaded voice weights live in standard per-user application storage:
-
-- **macOS**: `~/Library/Application Support/Sumi` (EXACT)
-- **Windows**: `%APPDATA%\Sumi` (e.g. `C:\Users\<user>\AppData\Roaming\Sumi`)
-- **Linux**: `$XDG_CONFIG_HOME/Sumi` (or `~/.config/Sumi` if `$XDG_CONFIG_HOME` is unset)
-
-Directory layout:
-
-```text
-<User Data Directory>/
-  journal.db          # Primary SQLite database (trades, accounts, notes, playbooks)
+<data directory>/
+  journal.db          # primary SQLite database (trades, accounts, notes, playbooks)
   journal.db-wal      # SQLite write-ahead log
-  .secret             # Generated cryptographic key for encrypted credentials at rest
-  desktop.log         # Backend startup, route, and diagnostic log (rotated per launch)
-  preferences.json    # Desktop window, theme, and sidebar preferences (mode 0o600)
-  electron/           # Chromium profile, cache, and Local Storage (mode 0o700)
-  voice/              # On-device Parakeet ASR model weights (downloaded on demand)
+  .secret             # generated key for credentials encrypted at rest
+  preferences.json    # desktop theme, layout and sidebar preferences (mode 0600)
+  tauri-desktop.log   # backend startup and diagnostic log
+  tauri-window.json   # window size and position
+  tauri.lock          # single-instance lock
+  tauri-webview/      # WebView storage (Linux and Windows)
+  voice/              # on-device Parakeet model weights (downloaded on demand)
+  electron/           # left behind by the old Electron app; safe to delete once you no longer need it
 ```
 
-To open this directory directly on macOS, choose **Sumi → Show Journal Data** from the native application menu bar.
+Choose **Sumi > Show Journal Data** in the menu to open the folder.
 
-### Manual Backups & Data Preservation
+- **Backups**: quit Sumi and copy the entire folder, including the hidden `.secret` file. Never delete, overwrite or merge an existing journal folder.
+- **Preferences**: `preferences.json` keeps only `journal-*` string keys, written atomically with mode `0600` under a 64 KiB bound. A corrupt file is preserved as `preferences.json.corrupt-*` and never silently overwritten. On macOS, if no `preferences.json` exists yet, preferences are imported once from `defaults` (`local.sumi.journal`, `journalPreferences`).
+- **Bundle identifier**: `local.sumi.journal` (the former Electron `appId`). It does not affect where the journal lives: that path is fixed above and does not use Tauri's per-identifier app directories. The identifier only names macOS WebView storage and the Windows installer's registry entry. The NSIS uninstaller's optional "delete application data" removes `%APPDATA%\local.sumi.journal`, never `%APPDATA%\Sumi`.
+- **Never run two shells on one journal**: the app takes an exclusive lock (`tauri.lock`), but the old Electron app uses a different lock. Quit any remaining Electron copy before opening the Tauri app.
 
-- **Safe Backups**: To back up your trading journal, quit Sumi completely and copy the **entire data folder**, including the hidden `.secret` file. Never delete, overwrite, or merge an existing journal directory.
-- **Preservation Across Upgrades**: The `journal.db` SQLite database, attachments, and `.secret` key are preserved directly across versions. Existing v0.2.0 installations and data remain untouched until you explicitly install and open the new version.
-- **Preferences Migration**: On initial launch, if `preferences.json` is not present, Sumi imports existing desktop appearance and sidebar preferences prefixed with `journal-*` from macOS `UserDefaults` (`local.sumi.journal` `journalPreferences`). Preferences are written atomically with mode `0o600` under a 64KB aggregate bound.
-- **Isolated Chromium Storage**: Chromium session data and local storage reside in `<data>/electron/` to ensure full isolation from system-wide browser sessions.
+## Moving from the Electron app
 
----
+The Electron app does not update itself into this one. Install the new build once (the macOS `Sumi.app` replaces the old one in `/Applications`; on Windows run the new installer; on Linux install the `.deb` or run the AppImage). Open it and your journal is there: it reads the same data directory, including `journal.db`, `.secret`, attachments, voice weights and `preferences.json`. Nothing is copied, moved or deleted. Not carried over: WebView-only state the old Chromium profile kept in `electron/` (all app preferences use the `journal-*` keys stored in `preferences.json`, so the visible settings survive). Back up the data folder before the first launch if you want a safety copy.
 
-## Private Offline Voice Dictation
+## Process and network isolation
 
-Sumi includes private, on-device voice dictation powered by `@transcribe-cpp` 0.4.1 across all target platforms:
+- The backend binds an OS-assigned ephemeral port on `127.0.0.1` and prints exactly one `SUMI_READY http://127.0.0.1:<port>` line; the shell accepts nothing else as readiness.
+- The backend child gets an explicit environment (`PATH`, `HOME`/`USERPROFILE`, `TMPDIR`, `LANG`, `JOURNAL_DATA_DIR` and a few Windows system variables). It does not inherit `NODE_OPTIONS`, API keys or shell variables. Enter API credentials in **Settings > AI**.
+- On Unix the backend runs in its own process group and shutdown signals the whole group (SIGTERM, then SIGKILL after 3 s); on Windows it runs in a job object. A second launch is refused by the profile lock.
+- IPC is limited to a fixed command set, validated by sender origin. Navigation stays on the loopback origin; other links open in the default browser (`http`, `https`, `mailto` without credentials only). Downloads accept same-origin, same-origin `blob:` and a few `data:` types.
 
-- **macOS Apple Silicon (`arm64`)**: Native Metal GPU + CPU acceleration (`@transcribe-cpp/darwin-arm64-metal`).
-- **macOS Intel (`x64`)**: Native CPU acceleration (`@transcribe-cpp/darwin-x64-cpu`).
-- **Windows (`x64`)**: Native CPU + optional Vulkan acceleration (`@transcribe-cpp/win32-x64-cpu-vulkan`). Dedicated GPU is **NOT required**; CPU inference works out of the box.
-- **Linux (`x64`)**: Native CPU + optional Vulkan acceleration (`@transcribe-cpp/linux-x64-cpu-vulkan`). Dedicated GPU is **NOT required**; CPU inference works out of the box.
+## Updates
 
-### Model Weights Architecture
+Updates use [`tauri-plugin-updater`](https://v2.tauri.app/plugin/updater/) against a `latest.json` published on GitHub Releases, verified with an independent Tauri (minisign) key pair. The feed URL and public key are compiled in from `SUMI_TAURI_UPDATER_ENDPOINT` and `SUMI_TAURI_UPDATER_PUBKEY`; neither can be changed at runtime. **A build without both reports "updates unavailable" in Settings > About**, which is the state of every local and unsigned CI build. **Check for updates** is user-initiated, asks before installing, and restarts the app.
 
-- **Bundled Voice Activity Detection (VAD)**: The lightweight Silero VAD model (`silero-vad-v6.2-F32.gguf`, ~1.2 MB) is bundled self-contained inside the application bundle at `models/silero-vad-v6.2-F32.gguf`.
-- **External Speech Recognition (ASR) Weights**: Heavy Parakeet Unified EN 0.6B weights (~697 MiB / 731 MB GGUF Q8_0) are **never bundled** inside distribution packages. They are downloaded on demand or reused read-only from your existing local HuggingFace cache into user storage (`<User Data>/voice/`) only upon explicit user request in Settings.
-- **Native ASR Doctor & CI Verification**: Verification tests (`pnpm desktop:check` via `desktop/check-support.mjs`) boot the bundled official Node runtime, load the packaged `transcribe-cpp` native library, run Silero VAD silence inference (512 float32 samples), and cleanly dispose of resources. This proves DLL/SO loading, FFI bindings, and runtime tensor calculation without requiring the full ~700MB Parakeet model download or full speech-to-text inference in Windows/Linux CI.
+Updater artifacts and signatures are produced only when `TAURI_SIGNING_PRIVATE_KEY` is set during `pnpm tauri:build` (the key is stripped from the staging and web build steps). Generate a key pair with `pnpm tauri signer generate` and keep the private key out of the repository.
 
----
+## Releases
 
-## Windows Packaging, Visual C++ CRT & Code Signing
+`.github/workflows/release.yml` runs when a tag `v<semver>` (for example `v0.4.0`) is pushed. It requires that:
 
-### App-Local Visual C++ CRT DLLs
+1. the tag matches `package.json`, `desktop/tauri/src-tauri/tauri.conf.json` and `Cargo.toml` versions, and
+2. the tagged commit is on the default branch (named `electron` for historical reasons).
 
-To ensure native modules (such as `transcribe.dll` and `ggml`) execute reliably on fresh Windows installations without requiring users to install the system-wide Microsoft Visual C++ Redistributable:
+It runs typecheck and tests, builds the macOS arm64, macOS x64, Windows x64 and Linux x64 packages natively (the same matrix as `tauri-ci.yml`), smoke-tests each, and attaches them to a **draft** GitHub Release with `SHA256SUMS.txt` (and `latest.json` when signing is configured). Merging to the default branch never releases. Review the draft, then publish it; the updater feed (`releases/latest/download/latest.json`) only becomes live once the release is published.
 
-- The build script (`desktop/build.mjs`) automatically locates official Microsoft Visual C++ 14.x x64 CRT DLLs (`msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`) via `vswhere` or `VCToolsRedistDir`.
-- These DLLs are bundled directly into `resources/runtime/` and `@transcribe-cpp/win32-x64-cpu-vulkan/`.
-- Required redistribution terms and provenance notices are preserved in `licenses/` and `THIRD-PARTY-NOTICES.md`.
+Repository settings the owner provides:
 
-### Code Signing & First-Launch Security Notices
+| Name                                 | Kind     | Purpose                                                                             |
+| ------------------------------------ | -------- | ----------------------------------------------------------------------------------- |
+| `TAURI_SIGNING_PRIVATE_KEY`          | secret   | Signs updater artifacts. Without it, no updater artifacts and no `latest.json`      |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | secret   | Password of that key, if it has one                                                 |
+| `TAURI_UPDATER_PUBKEY`               | variable | Public key (the `.pub` file contents); required when the signing key is set         |
+| `TAURI_UPDATER_ENDPOINT`             | variable | Optional feed URL override; default is the repository's `latest.json` release asset |
 
-Sumi is distributed independently without paid code-signing certificates:
+Windows builds are unsigned; SmartScreen shows "Unknown publisher": choose **More info**, then **Run anyway**. Updater signatures (above) are separate from Apple code signing. Never commit keys or certificates.
 
-- **macOS**: Ad-hoc signed (`codesign --sign -`) with Apple Hardened Runtime entitlements (JIT, unsigned executable memory, and microphone capture), without an Apple Developer ID or notarization. The first time you open a downloaded copy, Gatekeeper reports that Apple could not verify `Sumi.app`. Allow it once:
-  - **macOS 15 (Sequoia) and later**:
-    1. Open `Sumi.app`. When the "Sumi.app Not Opened" dialog appears, click **Done** (not **Move to Trash**).
-    2. Open **System Settings → Privacy & Security**, scroll to **Security**, and click **Open Anyway** next to the Sumi message.
-    3. Confirm with your password or Touch ID, then click **Open**.
-  - **macOS 14 (Sonoma)**: in Finder, **Right-Click (Control-Click)** `Sumi.app`, choose **Open**, then click **Open** in the confirmation dialog. **System Settings → Privacy & Security → Open Anyway** also works.
-  - **Terminal alternative** (any version): `xattr -dr com.apple.quarantine /Applications/Sumi.app`
+### macOS: unsigned builds (the default)
 
-  You only need to do this once per downloaded copy; later launches open normally. Installing a newer version from a fresh download asks again.
+Without the Apple secrets below, the macOS build is ad-hoc signed and not notarized, and everything works the same except the first launch. **This is needed only once, for the first install**; the release notes carry the same steps:
 
-- **Windows**: Unsigned (no Authenticode certificate). Windows Defender SmartScreen may display an "Unrecognized app" prompt on first launch:
-  1. Click **More info**.
-  2. Click **Run anyway**.
-- **Linux**: Install via `.deb` using standard system package tools (`sudo apt install ./Sumi-0.3.8-linux-x64.deb`).
+1. Move Sumi to Applications and open it once. macOS shows a warning that it cannot verify the app; dismiss it.
+2. Open **System Settings > Privacy & Security**, scroll to **Security**, click **Open Anyway** next to Sumi, and confirm.
 
-_(Note: Managed enterprise workstations governed by strict corporate MDM profiles requiring commercial code signing may restrict ad-hoc binaries.)_
+On macOS 15 (Sequoia) and later, Control-click > Open no longer bypasses Gatekeeper; use Open Anyway as above. Terminal alternative, run before opening the app: `xattr -dr com.apple.quarantine /Applications/Sumi.app`.
 
----
+Later in-app updates do not trigger Gatekeeper again. `tauri-plugin-updater` verifies the download against Sumi's own update signature, then unpacks it and replaces the app in place from the running app. It neither sets nor strips the quarantine attribute (the plugin contains no quarantine handling); a file written by a running, already-trusted app is never quarantined, and Gatekeeper only assesses quarantined files. This is read from the plugin source and not yet exercised on a real Mac.
 
-## In-App Updates
+### macOS: Developer ID signing and notarization (optional)
 
-Sumi coordinates updates using platform-native update mechanisms:
+When the secrets below are present, `release.yml` imports the certificate into a temporary keychain (deleted in an `always()` step), signs every Mach-O file in the bundled Node runtime and native modules with the hardened runtime and a secure timestamp (`desktop/tauri/macos-signing.mjs`; Tauri does not reliably sign files inside resources, and notarization rejects any that are unsigned), then lets Tauri sign and notarize the app. It then runs `codesign --verify --deep --strict`, `spctl --assess` and `xcrun stapler validate`, and the release notes omit the Gatekeeper workaround. With the secrets absent the build is the unsigned one above. A partly configured set of secrets fails the build rather than silently downgrading it.
 
-### macOS: Native Sparkle 2.9.6
+Setup:
 
-- **Framework**: Sparkle 2.9.6 via `electron-sparkle` (0.2.0).
-- **Cryptographic Signatures**: Update archives are signed using Ed25519 keys. The public key (`SUPublicEDKey`) is bundled in `Info.plist`. The private signing key (`SPARKLE_PRIVATE_KEY`) resides strictly in GitHub Actions secrets and is never included in the repository.
-- **Update Feeds**:
-  - Apple Silicon (`arm64`): `https://github.com/xolah88457/trade-journal/releases/latest/download/appcast.xml`
-  - Intel (`x64`): `https://github.com/xolah88457/trade-journal/releases/latest/download/appcast-x64.xml`
-- **Flow**: Check for updates in **Settings → About & licenses**. Sparkle downloads the update, verifies the Ed25519 signature, shuts down the backend cleanly, and applies an atomic update.
+1. Join the [Apple Developer Program](https://developer.apple.com/programs/) (paid, annual). Only the Account Holder can create Developer ID certificates.
+2. Create a **Developer ID Application** certificate: in the Apple Developer portal, Certificates, add a certificate of that type, upload a certificate signing request (Keychain Access > Certificate Assistant > Request a Certificate From a Certificate Authority, saved to disk), then download and double-click the `.cer`.
+3. In Keychain Access, find "Developer ID Application: Your Name (TEAMID)" under My Certificates, right-click > Export, and save as a `.p12` with a strong password. Encode it for the secret: `base64 -i certificate.p12 | pbcopy`. The exact certificate name is the signing identity.
+4. For notarization, create an App Store Connect API key (recommended): App Store Connect > Users and Access > Integrations > App Store Connect API > Team Keys, generate a key with the **Developer** role, and note the Issuer ID and Key ID. Download the `.p8` once (Apple will not show it again).
+5. Add the repository secrets (Settings > Secrets and variables > Actions):
 
-### Windows & Linux: `electron-updater` 6.8.11
+| Secret                       | Value                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| `APPLE_CERTIFICATE`          | Base64 of the `.p12`                                                             |
+| `APPLE_CERTIFICATE_PASSWORD` | The `.p12` password                                                              |
+| `APPLE_SIGNING_IDENTITY`     | For example `Developer ID Application: Your Name (TEAMID)`                       |
+| `APPLE_API_ISSUER`           | App Store Connect Issuer ID                                                      |
+| `APPLE_API_KEY`              | The Key ID                                                                       |
+| `APPLE_API_KEY_P8`           | The full text of the `.p8` file (written to a temp file as `APPLE_API_KEY_PATH`) |
+| `APPLE_ID`                   | Fallback to the API key: Apple ID email                                          |
+| `APPLE_PASSWORD`             | Fallback: an [app-specific password](https://support.apple.com/102654)           |
+| `APPLE_TEAM_ID`              | Fallback: the 10-character Team ID                                               |
 
-- **Framework**: `electron-updater` 6.8.11 coordinating native dialogs.
-- **Manual Consent Policy**: Updates are never downloaded automatically in the background on startup.
-- **Two-Stage User Consent**:
-  1. **Download Consent**: Clicking "Check for updates" displays a native dialog when a newer version is found, prompting the user to download.
-  2. **Install & Restart Consent**: Once downloaded and verified, a prompt asks whether to restart and apply the update now or later.
-- **Safe Backend Shutdown**: The supervisor gracefully terminates the backend Node server before invoking `quitAndInstall()`.
-- **Package Integration**:
-  - Linux `.deb` installs utilize standard Debian polkit authorization for package updates.
-  - Linux `.AppImage` installs replace the running AppImage file.
-  - Portable tarballs / unpacked installs do not self-update and honestly display manual update guidance.
+The API key is used when all three of `APPLE_API_ISSUER`, `APPLE_API_KEY` and `APPLE_API_KEY_P8` are set; otherwise the Apple ID trio is used. Signing without any notarization credentials produces a signed but not notarized app, and the release notes keep the workaround.
 
-_Update Testing Notice_: Feed generation, updater contracts, and shutdown hooks are verified via automated unit and packaging tests; first real in-place upgrade transitions across all production platforms will be confirmed upon subsequent version releases.
+The Node runtime is signed with `desktop/tauri/src-tauri/Entitlements.runtime.plist` (`allow-jit` for V8, `allow-unsigned-executable-memory` for koffi and V8 executable pages, `disable-library-validation` as a safety net for native addons; each is explained in the file). The app itself uses `Entitlements.plist` (microphone only) with Tauri's default hardened runtime.
 
----
+## Parity checklist
 
-## Packaging & Releases
+CI requires a clean exit and a report from the packaged WebView, not a server readiness log. A green native job does not imply physical desktop or release parity.
 
-Packaging for distribution produces platform-specific installers, standalone archives, and cryptographic checksums:
+| Area                    | Automated smoke                                                                      | Manual verification on each target                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Startup and preferences | Loopback health, Tauri runtime bridge, seeded preference restoration, secure context | Create and edit a synthetic trade; resize and zoom. Change a preference, reload and check it persisted before quitting.                                                   |
+| Microphone and voice    | `getUserMedia` availability; staged VAD silence probe                                | Allow and deny microphone permission; record with a test mic. Verify the prompt, playback and local transcription.                                                        |
+| Save dialog             | Native Blob download of known bytes to scratch                                       | Verify save and cancel, default filename and overwrite behaviour with temporary destinations only.                                                                        |
+| Import and export       | Not covered by the WebView smoke                                                     | Import a synthetic CSV through the picker; export CSV and full JSON and inspect them. Do not restore into or export from a real journal.                                  |
+| Updates                 | No real update installed                                                             | In an unconfigured build verify the unavailable state. Before the first release, verify check, cancel, signature rejection and a real upgrade with an isolated test feed. |
 
-```sh
-# Package release artifacts
-pnpm desktop:package
-```
+## Private offline voice dictation
 
-### Generated Artifacts in `dist/`
+On-device dictation uses `@transcribe-cpp` on every platform: Metal on Apple Silicon, CPU on Intel macOS, and CPU with optional Vulkan on Windows and Linux (no GPU required). The Silero VAD model (`silero-vad-v6.2-F32.gguf`, about 1.2 MB, MIT) is bundled and checksum-verified; the Parakeet weights (about 697 MiB) are never bundled and are downloaded on demand into `<data>/voice/`. Physical microphone behaviour across Linux sound servers and Windows devices is untested in CI.
 
-- **macOS**:
-  - `dist/Sumi-0.3.8-macos-arm64.dmg` & `dist/Sumi-0.3.8-macos-arm64.zip`
-  - `dist/Sumi-0.3.8-macos-x64.dmg` & `dist/Sumi-0.3.8-macos-x64.zip`
-  - `dist/appcast.xml` (Apple Silicon feed) & `dist/appcast-x64.xml` (Intel feed)
-- **Windows**:
-  - `dist/Sumi-0.3.8-win32-x64-setup.exe` (NSIS installer)
-  - `dist/Sumi-0.3.8-win32-x64.zip` (Portable standalone zip)
-- **Linux**:
-  - `dist/Sumi-0.3.8-linux-x64.deb` (Debian/Ubuntu package, primary)
-  - `dist/Sumi-0.3.8-linux-x64.AppImage` (Standalone AppImage, secondary)
-- **Checksums**:
-  - `dist/SHA256SUMS.txt` (SHA-256 hashes of all release artifacts)
+## Licences
 
-### GitHub Release Workflow
-
-Automated via `.github/workflows/electron-release.yml`:
-
-- **Triggers**: Pushes to the `electron` branch run build, verification, and smoke checks only; publishing runs strictly on tags matching `electron-v*` (e.g. `electron-v0.3.8`). There is no manual `workflow_dispatch` trigger.
-- **Ancestry & Version Verification**: Enforces that the release commit is an ancestor of `origin/electron` and verifies tag version parity with root `package.json`.
-- **Artifact Isolation**: Publishes strictly verified binaries, installers, feeds, and checksums. Development caches, `.env` files, databases, and heavy model weights are strictly blocked from release assets.
-- **CI Publishing Policy**: The main branch and official releases publish only after all native platform build and verification jobs pass.
-
----
-
-## Automated Verification & Checks
-
-Run the complete test suite before cutting releases or committing changes:
-
-```sh
-# Run core unit and integration tests
-pnpm test
-
-# Run TypeScript checks across all workspaces
-pnpm typecheck
-
-# Run Electron desktop check (verifies signing, symlinks, routes, ASR doctor, and SQLite persistence)
-pnpm desktop:check
-```
-
-The desktop verification suite launches an isolated backend on an ephemeral port in a clean temporary directory, validates license compliance, tests account creation and SQLite restarts, verifies native ASR silence detection, and ensures no private files, databases, or heavy weights are packaged.
-
-### Build tooling layout
-
-`build.mjs`, `package.mjs`, `release.mjs`, `open.mjs`, `check-support.mjs` and `cross-platform-smoke.mjs` are build-time scripts and are never copied into the app. Helpers they share (architecture normalisation, root version, SHA-256, private-file and symlink-confinement checks, verified archive download, DLL version probing) live in `desktop/lib/common.mjs`. `node desktop/check-support.mjs` runs the verifier unit tests in `desktop/check-support.test.mjs`; all desktop tests run with `node --test desktop/*.test.mjs` (four `check.test.mjs` integration tests additionally need a built `dist/`).
-
----
-
-## Features & Local Operations
-
-- **Local-First Trading Journal**: Manual trade entries, plan targets, screenshot galleries, and daily reports are persisted directly to `journal.db`.
-- **Private On-Device Voice Dictation**: Speech is captured via microphone and transcribed locally on Metal GPU / CPU using Parakeet Unified EN 0.6B and Silero VAD (transcribe-cpp bindings). Heavy weights (~697 MiB) reside outside the app in user storage, while lightweight Silero VAD (1.2 MB) is bundled self-contained.
-- **Daily Review Exports**: Generates paginated daily review PDFs and PNG archives rendered 100% locally on-device.
-- **AI Reflection**: Optional remote AI reflection (Ask Journal, Daily Recap, Trade Critique) with context preview dialogs. Configurable in **Settings → AI**.
-- **Offline Attribution & Licenses**: View upstream MIT licenses, Node, Electron, Chromium, and dependency licenses anytime in **Settings → About & licenses**.
+Upstream licences (Node.js, Kami, Silero VAD, transcribe.cpp, Visual C++ runtime notice and every shipped dependency) are collected into the bundle by staging and listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and in **Settings > About**.

@@ -25,7 +25,8 @@ import { useTableDensity } from "@/lib/table-density";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
-import { cn, fmtDuration } from "@/lib/utils";
+import { SignedText } from "@/components/ui/signed-text";
+import { cn, fmtDuration, minusSign } from "@/lib/utils";
 const TradeExplorer = dynamic(
   () => import("@/components/trade-explorer").then((module) => module.TradeExplorer),
   {
@@ -62,20 +63,25 @@ const number = (n: number | null) =>
   n === null ? "-" : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 const percent = (n: number | null) => (n === null ? "-" : `${(n * 100).toFixed(1)}%`);
 const money = (n: number, currency: string) => `${number(n)} ${currency}`;
+// Display-only twins of number/percent/money: true minus sign. The plain versions above feed
+// the PDF/text exports, whose bundled font may lack U+2212.
+const shownNumber = (n: number | null) => minusSign(number(n));
+const shownPercent = (n: number | null) => minusSign(percent(n));
+const shownMoney = (n: number, currency: string) => `${shownNumber(n)} ${currency}`;
 function Summary({ data, strip = false }: { data: Analysis; strip?: boolean }) {
   const s = data.summary;
   const rows: [string, string][] = [
     ["Closed trades", String(s.trades)],
-    ["Net P&L", money(s.netPnl, data.currencies[0] ?? "USD")],
-    ["Win rate", percent(s.winRate)],
-    ["Profit factor", s.noLosses ? "∞" : number(s.profitFactor)],
-    ["Entry volume", number(s.volume)],
+    ["Net P&L", shownMoney(s.netPnl, data.currencies[0] ?? "USD")],
+    ["Win rate", shownPercent(s.winRate)],
+    ["Profit factor", s.noLosses ? "∞" : shownNumber(s.profitFactor)],
+    ["Entry volume", shownNumber(s.volume)],
     ["Avg holding time", fmtDuration(s.avgDurationMs)],
-    ["Avg planned R", number(s.avgPlannedR)],
-    ["Avg realized R", number(s.avgRealizedR)],
+    ["Avg planned R", shownNumber(s.avgPlannedR)],
+    ["Avg realized R", shownNumber(s.avgRealizedR)],
   ];
   const value = (label: string, text: string) =>
-    label === "Net P&L" ? <MonetaryValue>{text}</MonetaryValue> : text;
+    label === "Net P&L" ? <MonetaryValue>{text}</MonetaryValue> : <SignedText>{text}</SignedText>;
   return (
     <div className="report-summary">
       {strip ? (
@@ -200,7 +206,9 @@ function Breakdown({
                       <HoverHint
                         key={c}
                         content={
-                          g ? `${g.trades} trades · Win rate ${percent(g.winRate)}` : "No trades"
+                          g
+                            ? `${g.trades} trades · Win rate ${shownPercent(g.winRate)}`
+                            : "No trades"
                         }
                       >
                         <td
@@ -269,7 +277,9 @@ function Breakdown({
                   </td>
                 )}
                 <td className={cell}>{g.trades}</td>
-                <td className={cell}>{percent(g.winRate)}</td>
+                <td className={cell}>
+                  <SignedText>{shownPercent(g.winRate)}</SignedText>
+                </td>
                 <td
                   className={cn(
                     cell,
@@ -277,11 +287,17 @@ function Breakdown({
                     g.netPnl >= 0 ? "text-profit" : "text-loss",
                   )}
                 >
-                  <MonetaryValue>{money(g.netPnl, data.currencies[0] ?? "USD")}</MonetaryValue>
+                  <MonetaryValue>{shownMoney(g.netPnl, data.currencies[0] ?? "USD")}</MonetaryValue>
                 </td>
-                <td className={cell}>{number(g.volume)}</td>
-                <td className={cell}>{number(g.avgPlannedR)}</td>
-                <td className={cell}>{number(g.avgRealizedR)}</td>
+                <td className={cell}>
+                  <SignedText>{shownNumber(g.volume)}</SignedText>
+                </td>
+                <td className={cell}>
+                  <SignedText>{shownNumber(g.avgPlannedR)}</SignedText>
+                </td>
+                <td className={cell}>
+                  <SignedText>{shownNumber(g.avgRealizedR)}</SignedText>
+                </td>
                 <td className={cn(cell, "whitespace-nowrap")}>{fmtDuration(g.avgDurationMs)}</td>
               </tr>
             ))}
@@ -530,13 +546,13 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
               {nameB} minus {nameA}:{" "}
               <strong>
                 <MonetaryValue>
-                  {money(
+                  {shownMoney(
                     bb.data.summary.netPnl - aa.data.summary.netPnl,
                     [...currencies][0] ?? "USD",
                   )}
                 </MonetaryValue>
               </strong>{" "}
-              net P&L · {number(bb.data.summary.trades - aa.data.summary.trades)} trades
+              net P&L · {shownNumber(bb.data.summary.trades - aa.data.summary.trades)} trades
             </p>
             <ReviewExport
               containsFinancialData

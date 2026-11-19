@@ -212,6 +212,8 @@ impl Drop for Backend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
+    use std::fs;
     #[test]
     fn readiness_is_one_exact_loopback_line() {
         assert_eq!(
@@ -240,5 +242,98 @@ mod tests {
         let (tx, rx) = mpsc::sync_channel(1);
         read_ready(input.as_bytes(), tx).unwrap();
         assert!(rx.try_recv().is_err());
+    }
+
+    #[cfg(unix)]
+    fn fake_runtime(dir: &Path, script: &str) {
+        fs::create_dir_all(dir.join("runtime")).unwrap();
+        fs::create_dir_all(dir.join("server/apps/web")).unwrap();
+        fs::write(dir.join("launch.cjs"), b"").unwrap();
+        fs::write(dir.join("server/apps/web/server.js"), b"").unwrap();
+        let node = dir.join("runtime/node");
+        fs::write(&node, script).unwrap();
+        fs::set_permissions(&node, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+
+    #[cfg(unix)]
+    fn wait_for(path: &Path) -> String {
+        for _ in 0..200 {
+            if let Ok(text) = fs::read_to_string(path) {
+                if text.ends_with('\n') {
+                    return text;
+                }
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+        panic!("timed out waiting for {}", path.display());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn child_environment_is_a_whitelist_and_readiness_is_reported() {
+        let temp = tempfile::tempdir().unwrap();
+        let runtime = temp.path().join("rt");
+        let dir = temp.path().join("journal");
+        fs::create_dir(&dir).unwrap();
+        fake_runtime(
+            &runtime,
+            "#!/bin/sh\nenv > \"$JOURNAL_DATA_DIR/env.txt\"\necho 'SUMI_READY http://127.0.0.1:4242'\nexec sleep 30\n",
+        );
+        std::env::set_var("SUMI_TEST_SECRET_TOKEN", "must-not-leak");
+        std::env::set_var("NODE_OPTIONS", "--inspect");
+        let profile = Profile::at(dir.clone(), false, false).unwrap();
+        let (backend, ready) = Backend::spawn(&runtime, &profile, temp.path()).unwrap();
+        assert_eq!(
+            ready
+                .recv_timeout(Duration::from_secs(10))
+                .unwrap()
+                .as_str(),
+            "http://127.0.0.1:4242/"
+        );
+        let env = wait_for(&dir.join("env.txt"));
+        let names: Vec<&str> = env.lines().filter_map(|l| l.split('=').next()).collect();
+        for allowed in ["HOME", "TMPDIR", "LANG", "JOURNAL_DATA_DIR", "PATH"] {
+            assert!(names.contains(&allowed), "{allowed} missing");
+        }
+        assert!(!env.contains("must-not-leak") && !names.contains(&"NODE_OPTIONS"));
+        assert!(env.contains(&format!("JOURNAL_DATA_DIR={}", dir.display())));
+        backend.stop();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stop_terminates_the_whole_process_group_even_if_a_child_ignores_sigterm() {
+        let temp = tempfile::tempdir().unwrap();
+        let runtime = temp.path().join("rt");
+        let dir = temp.path().join("journal");
+        fs::create_dir(&dir).unwrap();
+        fake_runtime(
+            &runtime,
+            "#!/bin/sh\n(trap '' TERM; exec sleep 300) &\necho $! > \"$JOURNAL_DATA_DIR/grandchild.pid\"\necho 'SUMI_READY http://127.0.0.1:4243'\nexec sleep 300\n",
+        );
+        let profile = Profile::at(dir.clone(), false, false).unwrap();
+        let (backend, ready) = Backend::spawn(&runtime, &profile, temp.path()).unwrap();
+        ready.recv_timeout(Duration::from_secs(10)).unwrap();
+        let pid: libc::pid_t = wait_for(&dir.join("grandchild.pid"))
+            .trim()
+            .parse()
+            .unwrap();
+        assert_eq!(
+            unsafe { libc::kill(pid, 0) },
+            0,
+            "grandchild should be running"
+        );
+        assert!(!backend.stopping());
+        backend.stop();
+        assert!(backend.stopping());
+        // Idempotent.
+        backend.stop();
+        for _ in 0..100 {
+            if unsafe { libc::kill(pid, 0) } != 0 {
+                return;
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+        panic!("grandchild survived shutdown");
     }
 }

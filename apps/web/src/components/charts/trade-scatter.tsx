@@ -19,7 +19,7 @@ import {
   type TradeXAxis,
   type TradeYAxis,
 } from "@/lib/trade-explorer";
-import { fmtMoney } from "@/lib/utils";
+import { fmtMoney, fmtR, minusSign } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { ChartFrame } from "./chart-frame";
 import { tooltipStyle, useVizTokens } from "./tokens";
@@ -51,14 +51,14 @@ export function TradeScatter({
   );
   const date = mediumShortDateTime(timeZone);
   const yLabel = (n: number) =>
-    y === "realizedR" ? `${n.toFixed(2)}R` : privateMode ? "••••" : fmtMoney(n, currency);
+    y === "realizedR" ? fmtR(n) : privateMode ? "••••" : minusSign(fmtMoney(n, currency));
   const xLabel = (n: number) =>
     x === "entryMinute"
       ? clockLabel(n)
       : x === "mae" || x === "mfe"
         ? privateMode
           ? "••••"
-          : fmtMoney(n, currency)
+          : minusSign(fmtMoney(n, currency))
         : n.toLocaleString(undefined, { maximumFractionDigits: 1, notation: "compact" });
   if (!tokens) return <div className="h-80" />;
   return (

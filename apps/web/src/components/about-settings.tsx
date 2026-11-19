@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/ui/notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { isElectronInfo, useDesktopInfo } from "@/lib/desktop-info";
-import { ElectronMigrationNotice } from "./electron-migration-notice";
+import { useDesktopInfo } from "@/lib/desktop-info";
 
 export const SOURCE_REPO_URL = "https://github.com/xolah88457/trade-journal";
 
@@ -129,8 +128,6 @@ SOFTWARE.`,
 export function AboutSettings() {
   const { isDesktop, info, isLoading, isChecking, error, checkCompletionKey, checkForUpdates } =
     useDesktopInfo();
-  const isTauri = info?.runtime === "tauri";
-  const isElectron = isElectronInfo(info);
 
   return (
     <div className="space-y-6">
@@ -224,7 +221,6 @@ export function AboutSettings() {
           <CardTitle>Application updates</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isElectron && <ElectronMigrationNotice />}
           {!isDesktop ? (
             <Notice title="Web browser mode">
               Running in a web browser. Native desktop features, local shell integration, and
@@ -244,8 +240,7 @@ export function AboutSettings() {
                   </div>
                   {info && (
                     <p className="font-mono text-[13px] text-muted-foreground">
-                      Version {info.version} &bull; {isTauri ? "Tauri" : "Electron"}{" "}
-                      {(isTauri ? info.tauriVersion : info.electronVersion) || "unknown"} &bull;{" "}
+                      Version {info.version} &bull; Tauri {info.tauriVersion || "unknown"} &bull;{" "}
                       {info.platform} ({info.arch})
                     </p>
                   )}
@@ -281,9 +276,8 @@ export function AboutSettings() {
               </div>
 
               <p className="text-[13px] text-muted-foreground leading-relaxed">
-                {isTauri || info?.platform === "win32" || info?.platform === "linux"
-                  ? "Checks for updates and prompts to download, install, and restart Sumi. Save your work first."
-                  : "Opens the update window to download, install, and restart Sumi. Save your work first."}
+                Checks for updates and prompts to download, install, and restart Sumi. Save your
+                work first.
               </p>
 
               {error && (

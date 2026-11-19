@@ -121,8 +121,8 @@ pub fn confirm_update(version: &str) -> bool {
     };
     let dialog = alert(
         mtm,
-        "Update Sumi Rust?",
-        &format!("Install version {version} and restart Sumi Rust?"),
+        "Update Sumi?",
+        &format!("Install version {version} and restart Sumi?"),
     );
     dialog.addButtonWithTitle(ns_string!("Install and Restart"));
     dialog.addButtonWithTitle(ns_string!("Not Now"));
@@ -522,7 +522,7 @@ define_class!(
             done: &Block<dyn Fn()>,
         ) {
             if trusted_frame(frame, &self.ivars().origin).is_some() {
-                alert(self.mtm(), "Sumi Rust", &message.to_string()).runModal();
+                alert(self.mtm(), "Sumi", &message.to_string()).runModal();
             }
             done.call(());
         }
@@ -536,7 +536,7 @@ define_class!(
             done: &Block<dyn Fn(objc2::runtime::Bool)>,
         ) {
             let answer = trusted_frame(frame, &self.ivars().origin).is_some() && {
-                let ask = alert(self.mtm(), "Sumi Rust", &message.to_string());
+                let ask = alert(self.mtm(), "Sumi", &message.to_string());
                 ask.addButtonWithTitle(ns_string!("OK"));
                 ask.addButtonWithTitle(ns_string!("Cancel"));
                 ask.runModal() == NSAlertFirstButtonReturn
@@ -554,7 +554,7 @@ define_class!(
             done: &Block<dyn Fn(*mut NSString)>,
         ) {
             let answer = if trusted_frame(frame, &self.ivars().origin).is_some() {
-                let ask = alert(self.mtm(), "Sumi Rust", &prompt.to_string());
+                let ask = alert(self.mtm(), "Sumi", &prompt.to_string());
                 let field = NSTextField::initWithFrame(
                     self.mtm().alloc(),
                     NSRect::new(NSPoint::ZERO, NSSize::new(300., 24.)),

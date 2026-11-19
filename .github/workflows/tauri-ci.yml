@@ -3,7 +3,8 @@ name: Tauri native build and smoke
 "on":
   pull_request:
   push:
-    branches: [main, electron, tauri-platform-verification]
+    # `electron` is the repository's default branch (historical name).
+    branches: [electron]
   workflow_dispatch:
 
 permissions:
@@ -82,11 +83,11 @@ jobs:
 
       - name: Test runner and WebView bridge
         if: matrix.target.platform != 'darwin'
-        run: node --test desktop/tauri/run.test.mjs desktop/tauri/bridge.test.mjs
+        run: node --test desktop/tauri/run.test.mjs desktop/tauri/bridge.test.mjs desktop/tauri/release-manifest.test.mjs
 
       - name: Check owned files and workflow formatting
         if: matrix.target.platform == 'linux'
-        run: pnpm exec prettier --check .github/workflows/tauri-ci.yml desktop/tauri/{README.md,run.mjs,run.test.mjs}
+        run: pnpm exec prettier --check .github/workflows/tauri-ci.yml .github/workflows/release.yml desktop/tauri/{run.mjs,run.test.mjs,release-manifest.mjs}
 
       - name: Stage native backend and build packages
         run: pnpm tauri:build
@@ -129,6 +130,6 @@ jobs:
           test "${#packages[@]}" -eq 1
           test -s "${packages[0]}"
           sudo apt-get install -y "./${packages[0]}"
-          test -x /usr/bin/sumi-tauri
-          dbus-run-session -- xvfb-run -a -s '-screen 0 1440x960x24' node desktop/tauri/run.mjs check /usr/bin/sumi-tauri
+          test -x /usr/bin/sumi
+          dbus-run-session -- xvfb-run -a -s '-screen 0 1440x960x24' node desktop/tauri/run.mjs check /usr/bin/sumi
           dbus-run-session -- xvfb-run -a -s '-screen 0 1440x960x24' node desktop/tauri/run.mjs check
