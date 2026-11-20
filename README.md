@@ -13,7 +13,9 @@ Sumi is a local-first desktop trading journal for macOS, Windows and Linux. Your
 
 Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlgo/trade-journal) (MIT). See [Attribution and license](#attribution-and-license).
 
-<img src=".github/assets/screenshot-dashboard.png" alt="Sumi dashboard with demo trades: net P&L, win rate, Edge Score radar, cumulative and daily P&L charts" width="100%" />
+[![Sumi in 50 seconds: the dashboard, P&L calendar, trade review, Ask your journal and dark mode, rendered from the real app](.github/assets/sumi-ad-poster.jpg)](.github/assets/sumi-ad.mp4)
+
+<sub>Click to watch a 50-second tour, rendered from the real app on demo data. How it is made: [docs/ad](docs/ad/README.md).</sub>
 
 ## Features
 
@@ -184,6 +186,11 @@ Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlg
 ## Screenshots
 
 Captured from the app with generated demo data and fictional prop firm records.
+
+<details open>
+<summary><strong>Dashboard</strong></summary>
+<img src=".github/assets/screenshot-dashboard.png" alt="Sumi dashboard with demo trades: net P&L, win rate, Edge Score radar, cumulative and daily P&L charts" width="100%" />
+</details>
 
 <details>
 <summary><strong>Calendar</strong></summary>
