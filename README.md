@@ -183,40 +183,6 @@ Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlg
 - **Show Journal Data** menu item opens the data folder.
 - Window, theme and sidebar preferences are remembered.
 
-## Screenshots
-
-Captured from the app with generated demo data and fictional prop firm records.
-
-<details open>
-<summary><strong>Dashboard</strong></summary>
-<img src=".github/assets/screenshot-dashboard.png" alt="Sumi dashboard with demo trades: net P&L, win rate, Edge Score radar, cumulative and daily P&L charts" width="100%" />
-</details>
-
-<details>
-<summary><strong>Calendar</strong></summary>
-<img src=".github/assets/screenshot-calendar.png" alt="P&L calendar with daily results, weekly totals and performance insights" width="100%" />
-</details>
-
-<details>
-<summary><strong>Trade detail</strong></summary>
-<img src=".github/assets/screenshot-trade.png" alt="Trade detail with P&L summary, executions, running P&L and trade review controls" width="100%" />
-</details>
-
-<details>
-<summary><strong>Daily journal</strong></summary>
-<img src=".github/assets/screenshot-journal.png" alt="Daily journal with day stats, intraday P&L, the day's trades and a notes editor" width="100%" />
-</details>
-
-<details>
-<summary><strong>Reports</strong></summary>
-<img src=".github/assets/screenshot-reports.png" alt="Reports overview with trade time performance and breakdowns by symbol and direction" width="100%" />
-</details>
-
-<details>
-<summary><strong>Prop firms</strong></summary>
-<img src=".github/assets/screenshot-prop-firms.png" alt="Prop firm demo preview with money spent, payouts received and monthly cash flow" width="100%" />
-</details>
-
 ## Install
 
 Sumi ships as a desktop app:
