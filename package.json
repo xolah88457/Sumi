@@ -28,8 +28,7 @@
     "test:watch": "vitest",
     "typecheck": "pnpm -r --parallel typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "demo:record": "node scripts/record-demo.mjs"
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.5",
