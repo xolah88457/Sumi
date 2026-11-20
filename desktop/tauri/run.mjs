@@ -12,6 +12,7 @@ import {
   signingPlan,
   tauriAppleEnv,
 } from "./macos-signing.mjs";
+import { codesignDmg, createMacDmg } from "./macos-dmg.mjs";
 
 const tauriDir = fileURLToPath(new URL(".", import.meta.url));
 const targetDir = join(tauriDir, "src-tauri", "target");
@@ -34,10 +35,11 @@ export function nativePackages(
 ) {
   const bundle = join(releaseDir, "bundle");
   if (platform === "darwin" && ["arm64", "x64"].includes(arch)) {
-    // Tauri's dmg target also needs the app bundle. Its file name is
-    // <productName>_<version>_<aarch64|x64>.dmg; the build fails loudly if it is absent.
+    // Tauri only builds the app; createMacDmg (macos-dmg.mjs) makes the dmg afterwards,
+    // with retries, at the path Tauri's own dmg target would use:
+    // <productName>_<version>_<aarch64|x64>.dmg.
     return {
-      bundles: "app,dmg",
+      bundles: "app",
       app: join(bundle, "macos", `${productName}.app`),
       installer: join(
         bundle,
@@ -431,6 +433,14 @@ async function run(command, packagePath) {
         if (!plan.sign) signUpdaterArtifacts(artifacts, config.version, process.env);
         verifyUpdaterSignatures(artifacts, process.env.SUMI_TAURI_UPDATER_PUBKEY);
         console.log(`Verified updater signatures: ${artifacts.map((f) => basename(f)).join(", ")}`);
+      }
+      if (platform === "darwin") {
+        await createMacDmg({ app, output: installer });
+        // The .app inside is already signed and notarized by Tauri (that is what Gatekeeper
+        // checks), so the dmg is only signed, not notarized separately.
+        if (plan.sign) {
+          codesignDmg(installer, process.env.APPLE_SIGNING_IDENTITY, codesignEnv(process.env));
+        }
       }
     });
     executable();

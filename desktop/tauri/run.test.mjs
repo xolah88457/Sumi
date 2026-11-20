@@ -133,7 +133,7 @@ test("selects package formats and paths for supported host tuples only", () => {
     ["x64", "x64"],
   ]) {
     assert.deepEqual(nativePackages("release", config, "darwin", arch), {
-      bundles: "app,dmg",
+      bundles: "app",
       app: join("release", "bundle", "macos", "Sumi.app"),
       installer: join("release", "bundle", "dmg", `Sumi_1.2.3_${dmgArch}.dmg`),
     });
