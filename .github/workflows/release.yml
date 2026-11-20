@@ -252,6 +252,8 @@ jobs:
 
       - name: Verify macOS disk image
         if: matrix.target.platform == 'darwin'
+        env:
+          SUMI_EXPECT_SIGNED: ${{ steps.mac.outputs.sign }}
         run: bash desktop/tauri/verify-macos-dmg.sh
 
       - name: Smoke installed Debian package and AppImage

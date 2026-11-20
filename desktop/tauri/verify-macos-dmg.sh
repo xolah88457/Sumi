@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Verifies the macOS .dmg produced by `pnpm tauri:build`: it must mount, hold Sumi.app and an
 # Applications symlink, and the app copied out of it must be intact and pass the packaged smoke.
+# Set SUMI_EXPECT_SIGNED=true to also require a valid code signature on the copied app.
 # Usage: bash desktop/tauri/verify-macos-dmg.sh [path-to.dmg]
 set -euo pipefail
 
@@ -39,7 +40,13 @@ hdiutil detach "$mnt" >/dev/null || fail "could not detach $mnt"
 attached=0
 
 app="$work/copy/Sumi.app"
-codesign --verify --deep --strict --verbose=2 "$app" || fail "codesign --verify failed for the app copied from the disk image"
+# Unsigned builds (no Apple secrets, `--no-sign`) have no sealed bundle, so only verify when
+# signing is expected (release.yml sets SUMI_EXPECT_SIGNED from the signing plan).
+if [ "${SUMI_EXPECT_SIGNED:-}" = "true" ]; then
+  codesign --verify --deep --strict --verbose=2 "$app" || fail "codesign --verify failed for the app copied from the disk image"
+else
+  echo "SUMI_EXPECT_SIGNED is not true: skipping codesign verification (unsigned build)."
+fi
 exe="$(/usr/bin/plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist")"
 [ -x "$app/Contents/MacOS/$exe" ] || fail "Contents/MacOS/$exe is not executable"
 
