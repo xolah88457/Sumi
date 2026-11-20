@@ -128,10 +128,14 @@ test("times out and cleans up when the app reports but hangs instead of exiting"
 
 test("selects package formats and paths for supported host tuples only", () => {
   const config = { productName: "Sumi", mainBinaryName: "sumi", version: "1.2.3" };
-  for (const arch of ["arm64", "x64"]) {
+  for (const [arch, dmgArch] of [
+    ["arm64", "aarch64"],
+    ["x64", "x64"],
+  ]) {
     assert.deepEqual(nativePackages("release", config, "darwin", arch), {
-      bundles: "app",
+      bundles: "app,dmg",
       app: join("release", "bundle", "macos", "Sumi.app"),
+      installer: join("release", "bundle", "dmg", `Sumi_1.2.3_${dmgArch}.dmg`),
     });
   }
   assert.deepEqual(nativePackages("release", config, "win32", "x64"), {

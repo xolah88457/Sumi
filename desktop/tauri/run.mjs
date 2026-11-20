@@ -34,7 +34,17 @@ export function nativePackages(
 ) {
   const bundle = join(releaseDir, "bundle");
   if (platform === "darwin" && ["arm64", "x64"].includes(arch)) {
-    return { bundles: "app", app: join(bundle, "macos", `${productName}.app`) };
+    // Tauri's dmg target also needs the app bundle. Its file name is
+    // <productName>_<version>_<aarch64|x64>.dmg; the build fails loudly if it is absent.
+    return {
+      bundles: "app,dmg",
+      app: join(bundle, "macos", `${productName}.app`),
+      installer: join(
+        bundle,
+        "dmg",
+        `${productName}_${version}_${arch === "arm64" ? "aarch64" : "x64"}.dmg`,
+      ),
+    };
   }
   if (platform === "win32" && arch === "x64") {
     return {

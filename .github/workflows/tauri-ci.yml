@@ -98,6 +98,10 @@ jobs:
           node --test desktop/tauri/bridge.test.mjs
           pnpm tauri:check
 
+      - name: Verify and smoke macOS disk image
+        if: matrix.target.platform == 'darwin'
+        run: bash desktop/tauri/verify-macos-dmg.sh
+
       - name: Smoke Windows standalone and NSIS-installed application
         if: matrix.target.platform == 'win32'
         shell: pwsh
