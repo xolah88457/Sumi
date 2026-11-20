@@ -197,7 +197,7 @@ function JournalDay({ date }: { date: string }) {
                           {trade.status.toUpperCase()}
                         </Badge>
                         <span className="text-[17px]">{trade.symbol}</span>
-                        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                        <span className="text-[13px] tracking-[0.08em] text-muted-foreground">
                           {trade.direction}
                         </span>
                       </span>

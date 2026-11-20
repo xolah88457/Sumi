@@ -1,0 +1,891 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Charis SIL";
+        src: url("/__stage/font/charis-sil-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Charis SIL";
+        src: url("/__stage/font/charis-sil-latin-400-italic.woff2") format("woff2");
+        font-weight: 400;
+        font-style: italic;
+      }
+      @font-face {
+        font-family: "Charis SIL";
+        src: url("/__stage/font/charis-sil-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+      }
+      :root {
+        /* Sumi's accent from the owner's site, lifted for a dark ground the way the site does it. */
+        --accent: oklch(from #2e6b4e max(l, 0.7) c h);
+        --paper: #fbfaf6;
+        --ink: #ebe7dc;
+        --muted: #a8a499;
+        --bg: #0e0d0b;
+        --line: #36322b;
+        --profit: #73bd00;
+        --loss: #e07a6c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      body {
+        font-family: "Charis SIL", Charter, Georgia, serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      #bg {
+        pointer-events: none;
+        position: absolute;
+        inset: -80px;
+      }
+      #bg .glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(40px);
+      }
+      #g1 {
+        width: 1300px;
+        height: 900px;
+        background: radial-gradient(closest-side, oklch(from #2e6b4e 0.62 c h / 0.2), transparent);
+      }
+      #g2 {
+        width: 1100px;
+        height: 800px;
+        background: radial-gradient(closest-side, rgba(235, 220, 190, 0.07), transparent);
+      }
+      #grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(235, 231, 220, 0.026) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(235, 231, 220, 0.026) 1px, transparent 1px);
+        background-size: 48px 48px;
+        -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 30%, transparent 100%);
+      }
+      #noise {
+        position: absolute;
+        inset: 0;
+        opacity: 0.07;
+        mix-blend-mode: overlay;
+        pointer-events: none;
+        z-index: 50;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+      #vignette {
+        position: absolute;
+        inset: 0;
+        z-index: 40;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 85% 80% at 50% 50%,
+          transparent 55%,
+          rgba(0, 0, 0, 0.55) 100%
+        );
+      }
+
+      #persp {
+        position: absolute;
+        inset: 0;
+        perspective: 2400px;
+        perspective-origin: 960px 540px;
+      }
+      #win {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1440px;
+        height: 928px;
+        transform-origin: 0 0;
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--paper);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.15),
+          0 50px 100px rgba(0, 0, 0, 0.55),
+          0 20px 40px rgba(0, 0, 0, 0.35),
+          0 0 180px oklch(from #2e6b4e 0.6 c h / 0.2);
+      }
+      #titlebar {
+        height: 28px;
+        display: flex;
+        align-items: center;
+        position: relative;
+        background: linear-gradient(#efede6, #e6e3db);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      #titlebar.dark {
+        background: linear-gradient(#24211c, #1c1a16);
+        border-bottom-color: rgba(255, 255, 255, 0.06);
+      }
+      #titlebar .lights {
+        display: flex;
+        gap: 8px;
+        margin-left: 13px;
+      }
+      #titlebar .lights i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: block;
+      }
+      #titlebar .lights i:nth-child(1) {
+        background: #ff5f57;
+      }
+      #titlebar .lights i:nth-child(2) {
+        background: #febc2e;
+      }
+      #titlebar .lights i:nth-child(3) {
+        background: #28c840;
+      }
+      #titlebar span {
+        position: absolute;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font: 400 14px "Charis SIL";
+        color: rgba(0, 0, 0, 0.5);
+      }
+      #titlebar.dark span {
+        color: rgba(255, 255, 255, 0.45);
+      }
+      #app {
+        display: block;
+        width: 1440px;
+        height: 900px;
+        border: 0;
+      }
+      #sheen {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(
+          115deg,
+          rgba(255, 255, 255, 0.06) 0%,
+          rgba(255, 255, 255, 0) 35%
+        );
+      }
+
+      .scrim {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+      }
+      #scrimL {
+        background: linear-gradient(
+          90deg,
+          var(--bg) 0%,
+          var(--bg) 38%,
+          rgba(14, 13, 11, 0.86) 44%,
+          rgba(14, 13, 11, 0.35) 50%,
+          rgba(14, 13, 11, 0) 55%
+        );
+      }
+      #scrimT {
+        background: linear-gradient(
+          180deg,
+          var(--bg) 0%,
+          rgba(14, 13, 11, 0.95) 28%,
+          rgba(14, 13, 11, 0.5) 40%,
+          rgba(14, 13, 11, 0) 52%
+        );
+      }
+      #scrimR {
+        background: linear-gradient(
+          270deg,
+          var(--bg) 0%,
+          var(--bg) 40%,
+          rgba(14, 13, 11, 0.85) 46%,
+          rgba(14, 13, 11, 0) 60%
+        );
+      }
+
+      .t {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        will-change: transform, opacity, filter;
+      }
+      /* Eyebrows follow the site: sentence case, letter-spaced, quiet. */
+      .eyebrow {
+        font: 400 22px "Charis SIL";
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .eyebrow svg {
+        width: 26px;
+        height: 26px;
+      }
+      .h {
+        font: 400 92px/1.02 "Charis SIL";
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+      }
+      .h em {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .sub {
+        font: 400 27px/1.5 "Charis SIL";
+        color: var(--muted);
+      }
+      .left {
+        left: 150px;
+      }
+      .center {
+        left: 0;
+        width: 1920px;
+        text-align: center;
+        justify-content: center;
+      }
+
+      #cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        z-index: 30;
+        opacity: 0;
+        pointer-events: none;
+        filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.45));
+        transform-origin: 3px 3px;
+      }
+      .ring {
+        position: absolute;
+        z-index: 29;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border-radius: 50%;
+        border: 2.5px solid var(--accent);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #intro,
+      #end {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        pointer-events: none;
+      }
+      #end .t {
+        position: relative;
+      }
+      /* The intro grid is a P&L calendar: one cell per trading day, tinted by result. */
+      #introGrid {
+        display: grid;
+        grid-template-columns: repeat(18, 26px);
+        grid-auto-flow: column;
+        grid-template-rows: repeat(5, 26px);
+        gap: 9px;
+      }
+      #introGrid i {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: rgba(235, 231, 220, 0.07);
+        display: block;
+      }
+      #introHead {
+        margin-top: 64px;
+        font: 400 136px/1 "Charis SIL";
+        letter-spacing: -0.045em;
+      }
+      #introHead em {
+        font-style: italic;
+        color: var(--accent);
+      }
+      #logo {
+        width: 128px;
+        height: 128px;
+        color: var(--accent);
+      }
+      #word {
+        margin-top: 30px;
+        font: 400 176px/1 "Charis SIL";
+        letter-spacing: -0.05em;
+      }
+      #tag {
+        margin-top: 26px;
+        font: 400 38px "Charis SIL";
+        color: rgba(235, 231, 220, 0.72);
+        letter-spacing: -0.01em;
+      }
+      #tag em {
+        color: var(--accent);
+        font-style: italic;
+      }
+      #foot {
+        margin-top: 60px;
+        font: 400 21px "Charis SIL";
+        letter-spacing: 0.08em;
+        color: rgba(235, 231, 220, 0.5);
+      }
+      .chips {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        font: 400 21px "Charis SIL";
+        letter-spacing: 0.02em;
+      }
+      .chips span {
+        padding: 10px 20px;
+        border-radius: 999px;
+        background: rgba(235, 231, 220, 0.05);
+        box-shadow: inset 0 0 0 1px rgba(235, 231, 220, 0.16);
+        color: rgba(235, 231, 220, 0.88);
+      }
+      .chips b {
+        color: var(--accent);
+        font-weight: 400;
+        font-size: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bg">
+      <div id="g1" class="glow"></div>
+      <div id="g2" class="glow"></div>
+      <div id="grid"></div>
+    </div>
+
+    <div id="persp">
+      <div id="win">
+        <div id="titlebar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <span>Sumi</span>
+        </div>
+        <iframe id="app" src="/"></iframe>
+        <div id="sheen"></div>
+      </div>
+    </div>
+
+    <div id="scrimL" class="scrim"></div>
+    <div id="scrimT" class="scrim"></div>
+    <div id="scrimR" class="scrim"></div>
+
+    <!-- intro -->
+    <div id="intro">
+      <div id="introGrid"></div>
+      <div id="introHead">
+        <span class="t" data-in="1.05" style="position: relative; display: inline-block"
+          >Know your</span
+        >
+        <em class="t" data-in="1.35" style="position: relative; display: inline-block">edge.</em>
+      </div>
+    </div>
+
+    <!-- scene: reveal -->
+    <div class="t eyebrow center" style="top: 112px" data-in="4.5" data-out="8.3">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path
+          d="M17.9 6.3A8.4 8.4 0 1 0 20.4 12.6"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+        />
+      </svg>
+      Sumi, a trading journal
+    </div>
+    <div class="t h center" style="top: 156px; font-size: 76px" data-in="4.65" data-out="8.3">
+      Every trade. <em>One calm journal.</em>
+    </div>
+
+    <!-- scene: dashboard -->
+    <div class="t eyebrow left" style="top: 360px" data-in="9.0" data-out="13.9">Dashboard</div>
+    <div class="t h left" style="top: 404px" data-in="9.12" data-out="13.9">See your edge</div>
+    <div class="t h left" style="top: 498px" data-in="9.24" data-out="13.9">
+      <em>at a glance.</em>
+    </div>
+    <div class="t sub left" style="top: 620px; width: 580px" data-in="9.45" data-out="13.9">
+      Net P&amp;L, win rate, profit factor and an Edge Score that sums up how you trade.
+    </div>
+
+    <!-- scene: calendar -->
+    <div class="t eyebrow" style="left: 1130px; top: 360px" data-in="16.9" data-out="20.6">
+      Calendar
+    </div>
+    <div class="t h" style="left: 1130px; top: 404px" data-in="17.02" data-out="20.6">
+      Every day,
+    </div>
+    <div class="t h" style="left: 1130px; top: 498px" data-in="17.14" data-out="20.6">
+      <em>accounted for.</em>
+    </div>
+    <div
+      class="t sub"
+      style="left: 1130px; top: 620px; width: 620px"
+      data-in="17.35"
+      data-out="20.6"
+    >
+      A P&amp;L calendar with weekly totals. Hover a day to see how it played out.
+    </div>
+
+    <!-- scene: trade review -->
+    <div class="t eyebrow left" style="top: 360px" data-in="23.9" data-out="28.5">Trade review</div>
+    <div class="t h left" style="top: 404px" data-in="24.02" data-out="28.5">Relive</div>
+    <div class="t h left" style="top: 498px" data-in="24.14" data-out="28.5">
+      <em>every trade.</em>
+    </div>
+    <div class="t sub left" style="top: 620px; width: 580px" data-in="24.35" data-out="28.5">
+      Rate it, tag the setup, name the mistake, write the note. Then mark it reviewed.
+    </div>
+
+    <!-- scene: ask your journal -->
+    <div class="t eyebrow center" style="top: 100px" data-in="30.2" data-out="35.2">
+      Ask your journal
+    </div>
+    <div class="t h center" style="top: 144px; font-size: 78px" data-in="30.32" data-out="35.2">
+      Questions in. <em>Answers out.</em>
+    </div>
+    <div class="t sub center" style="top: 246px" data-in="30.5" data-out="35.2">
+      Optional AI reflection with your own key. You see what is sent before it leaves.
+    </div>
+
+    <!-- scene: day / night -->
+    <div class="t eyebrow center" style="top: 58px" data-in="36.6" data-out="41.6">Appearance</div>
+    <div class="t h center" style="top: 96px; font-size: 72px" data-in="36.7" data-out="41.6">
+      Night or day.
+      <em class="t" data-in="38.4" data-out="41.6" style="position: relative; display: inline-block"
+        >Your call.</em
+      >
+    </div>
+
+    <!-- scene: local first -->
+    <div class="t eyebrow left" style="top: 318px" data-in="42.6" data-out="46.7">Local first</div>
+    <div class="t h left" style="top: 362px; font-size: 84px" data-in="42.72" data-out="46.7">
+      Your trades,
+    </div>
+    <div class="t h left" style="top: 448px; font-size: 84px" data-in="42.84" data-out="46.7">
+      <em>on your computer.</em>
+    </div>
+    <div class="t sub left" style="top: 562px; width: 720px" data-in="43.05" data-out="46.7">
+      Sync read-only from 22 brokers or import a statement. Trades, notes and screenshots stay in a
+      SQLite database on your machine.
+    </div>
+    <div class="t chips left" style="top: 712px" data-in="43.3" data-out="46.7">
+      <span>Brokers</span><b>&rarr;</b><span>Sumi</span><b>&rarr;</b><span>Your computer</span>
+    </div>
+
+    <!-- end card -->
+    <div id="end">
+      <svg id="logo" class="t" data-in="47.2" viewBox="0 0 24 24" fill="none">
+        <path
+          id="enso"
+          d="M17.9 6.3A8.4 8.4 0 1 0 20.4 12.6"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+        />
+      </svg>
+      <div id="word" class="t" data-in="47.5">Sumi</div>
+      <div id="tag" class="t" data-in="47.85">
+        A private trading journal <em>that lives on your computer.</em>
+      </div>
+      <div id="foot" class="t" data-in="48.45">macOS · Windows · Linux · Free and open source</div>
+    </div>
+
+    <svg id="cursor" viewBox="0 0 30 30">
+      <path
+        d="M4 3 L4 24 L9.5 19 L13 27 L16.6 25.4 L13.2 17.6 L20.5 17.6 Z"
+        fill="#fff"
+        stroke="#000"
+        stroke-width="1.4"
+        stroke-linejoin="round"
+      />
+    </svg>
+    <div id="ring1" class="ring"></div>
+    <div id="ring2" class="ring"></div>
+    <div id="vignette"></div>
+    <div id="noise"></div>
+
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+      const lerp = (a, b, p) => a + (b - a) * p;
+      const ease = {
+        inOut: (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+        out: (p) => 1 - Math.pow(1 - p, 3),
+        outExpo: (p) => (p >= 1 ? 1 : 1 - Math.pow(2, -10 * p)),
+        inOutQuint: (p) => (p < 0.5 ? 16 * p ** 5 : 1 - Math.pow(-2 * p + 2, 5) / 2),
+        linear: (p) => p,
+      };
+      const app = () => $("#app").contentDocument;
+
+      // Intro: 18 weeks x 5 weekdays of P&L, deterministic, tinted like Sumi's calendar.
+      const ig = $("#introGrid");
+      const DAYS = [];
+      let seed = 11;
+      const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 90; i++) {
+        const el = document.createElement("i");
+        const r = rnd();
+        const win = r < 0.58;
+        const size = 0.35 + rnd() * 0.65;
+        DAYS.push({ el, win, size, trade: rnd() > 0.12 });
+        ig.appendChild(el);
+      }
+
+      // ---------- references into the live app (window coordinates = iframe + 28px title bar)
+      const cache = {};
+      const FIND = {
+        nav: (d, a) => [...d.querySelectorAll("nav a")].find((x) => x.textContent.trim() === a),
+        label: (d, a) =>
+          [...d.querySelectorAll(`[aria-label^="${a}"]`)].find(
+            (x) => x.getClientRects().length && x.getBoundingClientRect().width > 0,
+          ),
+        // the month's best day, so the shot doesn't depend on which dates the demo data landed on
+        bestday: (d) => {
+          let best = null,
+            max = 0;
+          for (const el of d.querySelectorAll("[aria-label]")) {
+            const m = /^\d{4}-\d\d-\d\d, \+\$([\d,.]+)/.exec(el.getAttribute("aria-label"));
+            const v = m ? parseFloat(m[1].replace(/,/g, "")) : 0;
+            if (v > max) ((max = v), (best = el));
+          }
+          return best;
+        },
+        check: (d, a) =>
+          [...d.querySelectorAll("label")]
+            .find((x) => x.textContent.trim() === a)
+            ?.querySelector("button"),
+        sel: (d, a) => d.querySelector(a),
+        text: (d, a) =>
+          [...d.querySelectorAll("h1,h2,h3,p,span,div,button,a,label")].find(
+            (x) => x.children.length === 0 && x.textContent.trim() === a,
+          ),
+        card: (d, a) => {
+          const h = [...d.querySelectorAll("h2,h3,p,span,div")].find(
+            (x) => x.children.length === 0 && x.textContent.trim() === a,
+          );
+          return (
+            h?.closest("[data-slot=card], section, article") ?? h?.parentElement?.parentElement
+          );
+        },
+        row: (d, a) => [...d.querySelectorAll("tbody tr")].find((r) => r.textContent.includes(a)),
+        item: (d, a) =>
+          [...d.querySelectorAll('[role="menuitem"]')].find((x) =>
+            x.textContent.trim().startsWith(a),
+          ),
+        input: (d, a) => d.querySelector(`input[aria-label="${a}"], textarea[aria-label="${a}"]`),
+        star: (d, a) => d.querySelectorAll('[aria-label*="star" i]')[Number(a) - 1],
+      };
+      function ref(name) {
+        const d = app();
+        if (!d) return cache[name];
+        const i = name.indexOf(":");
+        const kind = i < 0 ? name : name.slice(0, i);
+        const arg = i < 0 ? "" : name.slice(i + 1);
+        const el = FIND[kind]?.(d, arg);
+        if (el) {
+          const r = el.getBoundingClientRect();
+          if (r.width || r.height)
+            cache[name] = { x: r.x + r.width / 2, y: r.y + r.height / 2 + 28, r };
+        }
+        return cache[name];
+      }
+      window.__ref = ref;
+      function pt(spec) {
+        if (Array.isArray(spec)) return { x: spec[0], y: spec[1] };
+        const [name, dx = 0, dy = 0] = spec.split("|").map((v, i) => (i ? Number(v) : v));
+        const p = ref(name);
+        return p ? { x: p.x + dx, y: p.y + dy } : { x: 720, y: 464 };
+      }
+
+      // ---------- camera keyframes: f = window point that lands on stage point `at`
+      const DASH = "card:Daily net cumulative P&L";
+      const K = [
+        { t: 0, f: [720, 464], at: [960, 1620], s: 0.66, rx: 34, ry: 0, o: 0 },
+        { t: 3.2, f: [720, 464], at: [960, 1620], s: 0.66, rx: 34, ry: 0, o: 0 },
+        { t: 5.3, f: [720, 464], at: [960, 650], s: 0.73, rx: 9, ry: 0, o: 1, e: "out" },
+        { t: 8.2, f: [720, 464], at: [960, 640], s: 0.755, rx: 0, ry: 0, o: 1, e: "inOut" },
+        // dashboard: chart cards on the right, words on the left
+        { t: 9.5, f: DASH, at: [1330, 600], s: 1.35, e: "inOutQuint" },
+        { t: 14.0, f: DASH, at: [1320, 590], s: 1.4, e: "linear" },
+        // pull back, Calendar, previous month
+        { t: 14.8, f: [720, 464], at: [960, 560], s: 0.9, e: "inOutQuint" },
+        { t: 16.45, f: [720, 464], at: [960, 560], s: 0.9, e: "linear" },
+        { t: 17.4, f: [640, 520], at: [540, 560], s: 1.12, e: "inOutQuint" },
+        { t: 20.7, f: [640, 520], at: [550, 552], s: 1.16, e: "linear" },
+        // pull back, Trades, open a winner
+        { t: 21.5, f: [720, 464], at: [960, 560], s: 0.9, e: "inOutQuint" },
+        { t: 23.5, f: [720, 464], at: [960, 560], s: 0.9, e: "linear" },
+        { t: 24.4, f: [1236, 660], at: [1590, 600], s: 1.3, e: "inOutQuint" },
+        { t: 28.6, f: [1236, 660], at: [1580, 592], s: 1.34, e: "linear" },
+        // pull back, Reports, Ask
+        { t: 29.4, f: [720, 464], at: [960, 560], s: 0.9, e: "inOutQuint" },
+        { t: 30.1, f: [720, 464], at: [960, 560], s: 0.9, e: "linear" },
+        { t: 31.0, f: [836, 420], at: [960, 700], s: 1.2, e: "inOutQuint" },
+        { t: 35.4, f: [836, 420], at: [960, 690], s: 1.24, e: "linear" },
+        // whole window for day / night
+        { t: 36.3, f: [720, 464], at: [960, 640], s: 0.78, e: "inOutQuint" },
+        { t: 41.7, f: [720, 464], at: [960, 640], s: 0.8, e: "linear" },
+        // local first: window swings to the right
+        { t: 43.0, f: [720, 464], at: [1380, 560], s: 0.6, rx: 3, ry: -17, e: "inOutQuint" },
+        { t: 46.8, f: [720, 464], at: [1365, 560], s: 0.62, rx: 3, ry: -15, e: "linear" },
+        { t: 47.7, f: [720, 464], at: [960, 900], s: 0.45, rx: 20, ry: 0, o: 0, e: "inOut" },
+        { t: 99, f: [720, 464], at: [960, 900], s: 0.45, rx: 20, ry: 0, o: 0 },
+      ];
+      for (let i = 1; i < K.length; i++)
+        for (const k of ["f", "at", "s", "rx", "ry", "o"])
+          if (K[i][k] === undefined) K[i][k] = K[i - 1][k];
+
+      function camera(t) {
+        let i = 0;
+        while (i < K.length - 2 && K[i + 1].t <= t) i++;
+        const a = K[i],
+          b = K[i + 1];
+        const p = ease[b.e || "inOut"](clamp((t - a.t) / (b.t - a.t)));
+        const fa = pt(a.f),
+          fb = pt(b.f);
+        return {
+          fx: lerp(fa.x, fb.x, p),
+          fy: lerp(fa.y, fb.y, p),
+          tx: lerp(a.at[0], b.at[0], p),
+          ty: lerp(a.at[1], b.at[1], p),
+          s: lerp(a.s, b.s, p),
+          rx: lerp(a.rx, b.rx, p),
+          ry: lerp(a.ry, b.ry, p),
+          o: lerp(a.o, b.o, p),
+        };
+      }
+
+      // ---------- cursor keyframes (window coordinates); v = visibility. Clicks must match render.mjs.
+      const M = [
+        { t: 9.9, p: DASH + "|180|0", v: 0 },
+        { t: 10.3, p: DASH + "|120|-40", v: 1 },
+        { t: 10.9, p: DASH + "|-80|-70" },
+        { t: 13.0, p: DASH + "|150|-150" },
+        { t: 13.6, p: DASH + "|200|-200", v: 0 },
+        { t: 14.4, p: [520, 520], v: 0 },
+        { t: 14.65, p: [440, 400], v: 1 },
+        { t: 15.0, p: "nav:Calendar" },
+        { t: 15.35, p: "nav:Calendar" },
+        { t: 15.9, p: [1100, 300] },
+        { t: 16.15, p: "label:Previous month" },
+        { t: 16.45, p: "label:Previous month" },
+        { t: 16.9, p: "label:Previous month|-60|60" },
+        { t: 17.9, p: "bestday|10|6" },
+        { t: 19.8, p: "bestday|24|14" },
+        { t: 20.4, p: "bestday|90|100", v: 0 },
+        { t: 21.2, p: [520, 520], v: 0 },
+        { t: 21.45, p: [440, 420], v: 1 },
+        { t: 21.8, p: "nav:Trades" },
+        { t: 22.15, p: "nav:Trades" },
+        { t: 22.6, p: "row:ETHUSDT|-260|0" },
+        { t: 22.95, p: "row:ETHUSDT|-260|0" },
+        { t: 23.5, p: [900, 520], v: 0 },
+        { t: 24.4, p: [1100, 640], v: 0 },
+        { t: 24.75, p: "label:Rate 4 stars|30|40", v: 1 },
+        { t: 25.15, p: "label:Rate 4 stars" },
+        { t: 25.6, p: "label:Rate 4 stars" },
+        { t: 26.15, p: "check:Reviewed" },
+        { t: 26.55, p: "check:Reviewed" },
+        { t: 27.2, p: "check:Reviewed|60|80", v: 0 },
+        { t: 29.0, p: [520, 520], v: 0 },
+        { t: 29.2, p: [440, 420], v: 1 },
+        { t: 29.6, p: "nav:Reports" },
+        { t: 29.95, p: "nav:Reports" },
+        { t: 31.0, p: "label:Ask your journal a question|-200|30" },
+        { t: 31.4, p: "label:Ask your journal a question|-300|0" },
+        { t: 31.75, p: "label:Ask your journal a question|-300|0" },
+        { t: 32.2, p: "label:Ask your journal a question|-220|60", v: 0 },
+        { t: 36.2, p: [520, 520], v: 0 },
+        { t: 36.45, p: [440, 520], v: 1 },
+        { t: 36.85, p: "nav:Dashboard" },
+        { t: 37.2, p: "nav:Dashboard" },
+        { t: 37.7, p: "label:Appearance" },
+        { t: 38.0, p: "label:Appearance" },
+        { t: 38.35, p: "item:Light" },
+        { t: 38.65, p: "item:Light" },
+        { t: 39.3, p: [700, 520] },
+        { t: 39.9, p: "label:Appearance" },
+        { t: 40.2, p: "label:Appearance" },
+        { t: 40.55, p: "item:Dark" },
+        { t: 40.85, p: "item:Dark" },
+        { t: 41.4, p: [640, 600], v: 0 },
+        { t: 99, p: [640, 600], v: 0 },
+      ];
+      for (let i = 1; i < M.length; i++) if (M[i].v === undefined) M[i].v = M[i - 1].v;
+      // Times the renderer presses the real mouse at the cursor position.
+      const CLICK_AT = [
+        [15.2, "nav:Calendar"],
+        [16.3, "label:Previous month"],
+        [22.0, "nav:Trades"],
+        [22.8, "row:ETHUSDT"],
+        [25.4, "label:Rate 4 stars"],
+        [26.35, "check:Reviewed"],
+        [29.8, "nav:Reports"],
+        [31.6, "label:Ask your journal a question"],
+        [37.05, "nav:Dashboard"],
+        [37.85, "label:Appearance"],
+        [38.5, "item:Light"],
+        [40.05, "label:Appearance"],
+        [40.7, "item:Dark"],
+      ];
+      const CLICKS = CLICK_AT.map((c) => c[0]);
+      window.__clickAt = CLICK_AT;
+      // True once the element is really on screen in the app (not just remembered from earlier).
+      window.__live = (name) => {
+        delete cache[name];
+        return !!ref(name);
+      };
+      window.__clicks = CLICKS;
+      window.__cache = cache;
+
+      function cursorAt(t) {
+        if (t < M[0].t) return null;
+        let i = 0;
+        while (i < M.length - 2 && M[i + 1].t <= t) i++;
+        const a = M[i],
+          b = M[i + 1];
+        const raw = clamp((t - a.t) / (b.t - a.t));
+        const p = ease.inOut(raw);
+        const pa = pt(a.p),
+          pb = pt(b.p);
+        return { x: lerp(pa.x, pb.x, p), y: lerp(pa.y, pb.y, p), v: lerp(a.v, b.v, ease.out(raw)) };
+      }
+
+      // ---------- text layers
+      const layers = [...document.querySelectorAll(".t")].map((el) => ({
+        el,
+        tin: +el.dataset.in,
+        tout: el.dataset.out ? +el.dataset.out : 1e9,
+      }));
+      function textAt(t) {
+        for (const L of layers) {
+          const pin = ease.out(clamp((t - L.tin) / 0.9));
+          const pout = ease.inOut(clamp((t - (L.tout - 0.55)) / 0.55));
+          const o = pin * (1 - pout);
+          L.el.style.opacity = o.toFixed(3);
+          const y = (1 - pin) * 34 - pout * 18;
+          L.el.style.transform = `translateY(${y.toFixed(2)}px)`;
+          const blur = (1 - pin) * 12 + pout * 6;
+          L.el.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : "none";
+        }
+      }
+
+      function window01(t, a, b, fade = 0.6) {
+        return ease.inOut(clamp((t - a) / fade)) * (1 - ease.inOut(clamp((t - (b - fade)) / fade)));
+      }
+
+      // Stage point under the cursor, for the renderer's real mouse.
+      let lastCursor = null;
+      window.__cursor = () => lastCursor;
+
+      function render(t) {
+        $("#g1").style.transform =
+          `translate(${700 + Math.sin(t * 0.23) * 160}px, ${120 + Math.cos(t * 0.17) * 90}px)`;
+        $("#g2").style.transform =
+          `translate(${-80 + Math.cos(t * 0.19) * 140}px, ${420 + Math.sin(t * 0.21) * 80}px)`;
+        $("#grid").style.transform = `translate(${(-t * 6) % 48}px, ${(-t * 3) % 48}px)`;
+
+        // intro: weeks fill left to right, each day tinted by its result
+        DAYS.forEach((d, n) => {
+          const col = Math.floor(n / 5),
+            row = n % 5;
+          const appear = clamp((t - 0.05 - row * 0.03 - col * 0.02) / 0.4);
+          const on = d.trade && t > 0.3 + col * 0.11 + row * 0.02;
+          const a = on ? 0.35 + d.size * 0.65 : 0;
+          d.el.style.background = on
+            ? d.win
+              ? `rgba(115, 189, 0, ${a * 0.9})`
+              : `rgba(224, 122, 108, ${a * 0.85})`
+            : "rgba(235, 231, 220, 0.07)";
+          d.el.style.boxShadow =
+            on && d.win && d.size > 0.8 ? "0 0 16px rgba(115,189,0,.3)" : "none";
+          d.el.style.opacity = ease.out(appear).toFixed(3);
+          d.el.style.transform = `scale(${(0.6 + 0.4 * ease.out(appear)).toFixed(3)})`;
+        });
+        const introOut = ease.inOut(clamp((t - 3.0) / 0.8));
+        $("#intro").style.opacity = (1 - introOut).toFixed(3);
+        $("#intro").style.transform = `scale(${1 + introOut * 0.08})`;
+        $("#intro").style.filter = introOut > 0.01 ? `blur(${introOut * 10}px)` : "none";
+
+        // end card: the ensō is drawn in one stroke, the way a brush would
+        const enso = $("#enso");
+        const len = enso.getTotalLength();
+        const draw = ease.inOut(clamp((t - 47.25) / 1.1));
+        enso.style.strokeDasharray = `${len} ${len}`;
+        enso.style.strokeDashoffset = (len * (1 - draw)).toFixed(3);
+
+        const c = camera(t);
+        const w = $("#win");
+        w.style.opacity = c.o.toFixed(3);
+        w.style.transform = `translate(${c.tx}px, ${c.ty}px) rotateX(${c.rx}deg) rotateY(${c.ry}deg) scale(${c.s}) translate(${-c.fx}px, ${-c.fy}px)`;
+        const dark = !!app()?.documentElement.classList.contains("dark");
+        $("#titlebar").classList.toggle("dark", dark);
+        w.style.background = dark ? "#171512" : "";
+        $("#sheen").style.opacity = dark ? 0.6 : 1;
+
+        $("#scrimL").style.opacity = Math.max(
+          window01(t, 8.7, 14.2),
+          window01(t, 23.6, 28.8),
+          window01(t, 42.2, 47.0),
+        ).toFixed(3);
+        $("#scrimT").style.opacity = Math.max(
+          window01(t, 30.2, 35.6),
+          window01(t, 36.1, 41.9) * 0.9,
+          window01(t, 4.0, 8.6) * 0.3,
+        ).toFixed(3);
+        $("#scrimR").style.opacity = window01(t, 16.6, 20.9).toFixed(3);
+
+        textAt(t);
+
+        const cur = cursorAt(t);
+        const el = $("#cursor");
+        if (cur && cur.v > 0.01) {
+          const sx = c.tx + (cur.x - c.fx) * c.s,
+            sy = c.ty + (cur.y - c.fy) * c.s;
+          lastCursor = { x: sx, y: sy };
+          const press = CLICKS.reduce(
+            (m, tc) => Math.max(m, 1 - clamp(Math.abs(t - tc) / 0.12)),
+            0,
+          );
+          el.style.opacity = cur.v.toFixed(3);
+          el.style.transform = `translate(${sx - 3}px, ${sy - 3}px) scale(${1 - press * 0.14})`;
+          CLICKS.forEach((tc, i) => {
+            const r = $(i % 2 ? "#ring2" : "#ring1");
+            const d = t - tc;
+            if (d >= 0 && d < 0.55) {
+              const p = ease.out(d / 0.55);
+              r.style.left = sx + "px";
+              r.style.top = sy + "px";
+              r.style.opacity = (1 - p).toFixed(3);
+              r.style.transform = `scale(${1 + p * 2.6})`;
+            } else if (d >= 0.55 && d < 0.7) r.style.opacity = 0;
+          });
+        } else {
+          lastCursor = null;
+          el.style.opacity = 0;
+          $("#ring1").style.opacity = 0;
+          $("#ring2").style.opacity = 0;
+        }
+      }
+      window.__render = render;
+    </script>
+  </body>
+</html>

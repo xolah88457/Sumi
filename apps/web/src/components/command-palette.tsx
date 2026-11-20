@@ -334,14 +334,12 @@ function PaletteBody({
               />
               <span className="min-w-0 flex-1 truncate">{command.label}</span>
               {command.hint ? (
-                <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.06em]">
+                <span className="flex items-center gap-1 text-[13px] tracking-[0.08em]">
                   {command.hint === "Current" && <Check className="size-3.5" aria-hidden />}
                   {command.hint}
                 </span>
               ) : (
-                <span className="font-mono text-[11px] uppercase tracking-[0.06em] opacity-70">
-                  {command.group}
-                </span>
+                <span className="text-[13px] tracking-[0.08em] opacity-70">{command.group}</span>
               )}
             </li>
           );

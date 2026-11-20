@@ -368,7 +368,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
           <Button
             type="button"
             size="sm"
-            variant={outcome === "open" ? "default" : "outline"}
+            variant={outcome === "open" ? "default" : "quiet"}
             onClick={() => setOutcome("open")}
           >
             Open
@@ -384,7 +384,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
           <Button
             type="button"
             size="sm"
-            variant={outcome === "tp_hit" ? "default" : "outline"}
+            variant={outcome === "tp_hit" ? "default" : "quiet"}
             onClick={() => setOutcome("tp_hit")}
           >
             Take profit hit
@@ -392,7 +392,7 @@ export function ManualTradeEntry({ onSaved }: ManualTradeEntryProps) {
           <Button
             type="button"
             size="sm"
-            variant={outcome === "break_even" ? "secondary" : "outline"}
+            variant={outcome === "break_even" ? "secondary" : "quiet"}
             onClick={() => setOutcome("break_even")}
           >
             Break even before fees

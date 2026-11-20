@@ -146,7 +146,7 @@ function Trades() {
         cell: ({ row, getValue }) => (
           <span className="flex items-center gap-2 font-medium">
             {getValue<string>()}
-            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="text-[13px] tracking-[0.08em] text-muted-foreground">
               {row.original.direction}
             </span>
           </span>

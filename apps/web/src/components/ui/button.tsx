@@ -7,19 +7,22 @@ import { cn } from "@/lib/utils";
 import { HoverHint } from "./tooltip";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-[background-color,border-color,color,filter] duration-[120ms] ease-[var(--ease)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-55 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent text-[15px] font-medium transition-[background-color,border-color,color,filter] duration-[120ms] ease-[var(--ease)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-55 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-[0.94]",
+        default: "border-primary bg-primary text-primary-foreground hover:brightness-[0.94]",
         destructive: "bg-destructive text-destructive-foreground hover:brightness-[0.94]",
-        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+        /* The site's secondary button: transparent, accent text, 1px accent outline. */
+        outline: "border-primary bg-transparent text-primary hover:bg-primary/10",
+        /* Neutral hairline pill for chrome (sidebar search, privacy) so the accent stays for actions. */
+        quiet: "border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:brightness-[0.96]",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-primary underline underline-offset-4 hover:brightness-[0.94]",
       },
       size: {
-        default: "h-10 px-5 py-2 pointer-coarse:h-11",
+        default: "h-10 px-[22px] py-2 pointer-coarse:h-11",
         sm: "h-8 px-4 text-[13px] pointer-coarse:h-9",
         lg: "h-11 px-8 text-[15px]",
         icon: "h-10 w-10 pointer-coarse:h-11 pointer-coarse:w-11",

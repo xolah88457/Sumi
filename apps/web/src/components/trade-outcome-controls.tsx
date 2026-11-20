@@ -124,7 +124,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
         <Button
           type="button"
           size="sm"
-          variant={outcome === "tp_hit" ? "default" : "outline"}
+          variant={outcome === "tp_hit" ? "default" : "quiet"}
           disabled={trade.profitTarget == null}
           onClick={() => setOutcome("tp_hit")}
           title={trade.profitTarget != null ? `TP @ ${trade.profitTarget}` : "No planned TP set"}
@@ -134,7 +134,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
         <Button
           type="button"
           size="sm"
-          variant={outcome === "break_even" ? "secondary" : "outline"}
+          variant={outcome === "break_even" ? "secondary" : "quiet"}
           onClick={() => setOutcome("break_even")}
           title="Exit at entry price (gross P&L 0)"
         >
@@ -143,7 +143,7 @@ export function TradeOutcomeControls({ trade, onClosed }: TradeOutcomeControlsPr
         <Button
           type="button"
           size="sm"
-          variant={outcome === "custom" ? "secondary" : "outline"}
+          variant={outcome === "custom" ? "secondary" : "quiet"}
           onClick={() => setOutcome("custom")}
         >
           Custom price

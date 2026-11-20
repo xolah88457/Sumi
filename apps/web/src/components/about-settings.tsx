@@ -368,7 +368,7 @@ export function AboutSettings() {
                       &mdash; {item.copyright}
                     </span>
                   </div>
-                  <Badge variant="outline" className="font-mono text-[13px] uppercase shrink-0">
+                  <Badge variant="outline" className="shrink-0 text-[13px]">
                     MIT
                   </Badge>
                 </summary>

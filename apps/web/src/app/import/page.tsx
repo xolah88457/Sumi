@@ -440,7 +440,7 @@ function FileImport() {
             <Button
               onClick={previewFile}
               disabled={busy || !validTimeZone || (aiEnabled && !aiReady)}
-              variant={aiEnabled ? "default" : "outline"}
+              variant={aiEnabled ? "default" : "quiet"}
             >
               {busy
                 ? aiEnabled

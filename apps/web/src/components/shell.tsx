@@ -131,7 +131,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           >
             <p
               id={labelId}
-              className="journal-sidebar-eyebrow px-3.5 pb-1.5 pt-4 font-mono text-[11px] uppercase leading-none tracking-[0.08em] text-muted-foreground"
+              className="journal-sidebar-eyebrow px-3.5 pb-1.5 pt-4 text-[13px] leading-none tracking-[0.08em] text-muted-foreground"
             >
               {group.label}
             </p>
@@ -155,7 +155,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <HoverHint content={collapsed ? "Search and commands" : null} side="right">
         <Button
           type="button"
-          variant="outline"
+          variant="quiet"
           size="sm"
           className="journal-sidebar-search h-9 w-full justify-start gap-2 px-3 text-muted-foreground hover:text-foreground"
           onClick={() => setPaletteOpen(true)}
@@ -233,7 +233,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <div className="flex flex-col gap-2 p-3 pt-2">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="quiet"
                   size="sm"
                   className="h-9 w-full justify-start gap-2 px-3 text-muted-foreground"
                   onClick={() => {

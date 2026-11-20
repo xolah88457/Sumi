@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Page identity: mono eyebrow, large light serif title, muted lede, and a slot for
+ * Page identity: sentence-case eyebrow (13px, 0.08em), display serif title, muted lede, and a slot for
  * page-level actions. It is the page's h1 and scrolls away with the content.
  */
 function PageHead({
@@ -26,11 +26,11 @@ function PageHead({
     >
       <div className="min-w-0 max-w-[64ch]">
         {eyebrow && (
-          <p className="mb-2 font-mono text-[11px] uppercase leading-none tracking-[0.08em] text-muted-foreground">
+          <p className="mb-3 text-[13px] leading-none tracking-[0.08em] text-muted-foreground">
             {eyebrow}
           </p>
         )}
-        <h1 className="text-balance text-[clamp(32px,2.6vw+14px,44px)] font-normal leading-[1.05] tracking-[-0.035em]">
+        <h1 className="text-balance text-[clamp(34px,2.2vw+18px,48px)] font-normal leading-[1.04] tracking-[-0.04em]">
           {title}
         </h1>
         {lede && <p className="mt-3 text-lg leading-snug text-muted-foreground">{lede}</p>}

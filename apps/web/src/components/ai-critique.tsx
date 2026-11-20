@@ -189,7 +189,7 @@ export function TradeCritiqueSection({ tradeKey }: TradeCritiqueProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span>{formatReviewTimestamp(latestReview.createdAt)}</span>
-                  <span className="rounded-sm bg-secondary px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.08em] text-foreground">
+                  <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[13px] tracking-[0.08em] text-foreground">
                     Latest
                   </span>
                 </div>
