@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
+import { createHash, createPublicKey, verify } from "node:crypto";
 import { accessSync, constants, readFileSync, realpathSync, statSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -59,6 +60,103 @@ export function updaterBuildArgs(env = process.env) {
   return env.TAURI_SIGNING_PRIVATE_KEY || env.TAURI_SIGNING_PRIVATE_KEY_PATH
     ? ["--config", JSON.stringify({ bundle: { createUpdaterArtifacts: true } })]
     : [];
+}
+
+// Updater artifacts per platform; these are the files release.yml collects and signs.
+export function updaterArtifacts(releaseDir, { productName, version }, platform, arch) {
+  const { app, installer } = nativePackages(
+    releaseDir,
+    { productName, version, mainBinaryName: productName },
+    platform,
+    arch,
+  );
+  if (platform === "darwin") return [`${app}.tar.gz`];
+  if (platform === "win32") return [installer];
+  return [app];
+}
+
+export function updaterSigningKeyPresent(env = process.env) {
+  return Boolean(env.TAURI_SIGNING_PRIVATE_KEY || env.TAURI_SIGNING_PRIVATE_KEY_PATH);
+}
+
+const ed25519SpkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
+
+// Minisign text file (as base64 of the whole file, the Tauri encoding) -> line 2 bytes.
+function minisignLine(base64Text, label) {
+  const lines = Buffer.from(String(base64Text).trim(), "base64").toString("utf8").split("\n");
+  if (lines.length < 2 || !lines[1].trim()) throw new Error(`Malformed minisign ${label}`);
+  return Buffer.from(lines[1].trim(), "base64");
+}
+
+// Verify a Tauri updater signature (.sig contents) for `data` against a Tauri public key,
+// both base64-encoded minisign text files. Returns true or throws with the reason.
+export function verifyMinisign(data, signature, pubkey) {
+  const pub = minisignLine(pubkey, "public key");
+  const sigText = Buffer.from(String(signature).trim(), "base64").toString("utf8").split("\n");
+  const sig = minisignLine(signature, "signature");
+  if (pub.length !== 42 || pub.toString("latin1", 0, 2) !== "Ed") {
+    throw new Error("Malformed minisign public key");
+  }
+  if (sig.length !== 74) throw new Error("Malformed minisign signature");
+  const alg = sig.toString("latin1", 0, 2);
+  if (alg !== "ED" && alg !== "Ed") throw new Error(`Unsupported minisign algorithm: ${alg}`);
+  if (!sig.subarray(2, 10).equals(pub.subarray(2, 10))) {
+    throw new Error("Signature key ID does not match the updater public key");
+  }
+  const key = createPublicKey({
+    key: Buffer.concat([ed25519SpkiPrefix, pub.subarray(10)]),
+    format: "der",
+    type: "spki",
+  });
+  const message = alg === "ED" ? createHash("blake2b512").update(data).digest() : data;
+  if (!verify(null, message, key, sig.subarray(10))) {
+    throw new Error("Signature does not verify against the updater public key");
+  }
+  // Global signature covers the signature plus the trusted comment (e.g. the version).
+  const trusted = (sigText[2] || "").replace(/^trusted comment: /, "");
+  const global = Buffer.from((sigText[3] || "").trim(), "base64");
+  if (
+    !sigText[2]?.startsWith("trusted comment: ") ||
+    !verify(null, Buffer.concat([sig.subarray(10), Buffer.from(trusted)]), key, global)
+  ) {
+    throw new Error("Trusted comment does not verify against the updater public key");
+  }
+  return true;
+}
+
+// Fail the build if any artifact's .sig is missing or was not made by the updater key.
+export function verifyUpdaterSignatures(files, pubkey) {
+  if (!pubkey || !pubkey.trim()) {
+    throw new Error(
+      "Updater signing key is set but SUMI_TAURI_UPDATER_PUBKEY is empty; cannot verify signatures.",
+    );
+  }
+  for (const file of files) {
+    let signature;
+    try {
+      signature = readFileSync(`${file}.sig`, "utf8");
+    } catch {
+      throw new Error(`Missing updater signature: ${file}.sig`);
+    }
+    try {
+      verifyMinisign(readFileSync(file), signature, pubkey);
+    } catch (error) {
+      throw new Error(`Updater signature check failed for ${basename(file)}: ${error.message}`);
+    }
+  }
+}
+
+// `tauri build --no-sign` also skips updater signing, so sign the artifacts with the CLI.
+// The key reaches only the signer child process, through its environment; it is never logged.
+export function signUpdaterArtifacts(files, version, env = process.env) {
+  const tauri = require.resolve("@tauri-apps/cli/tauri.js");
+  for (const file of files) {
+    requireFile(file);
+    execFileSync(process.execPath, [tauri, "signer", "sign", "--app-version", version, file], {
+      env,
+      stdio: ["ignore", "ignore", "inherit"],
+    });
+  }
 }
 
 // Secrets that only the Tauri CLI needs; keep them out of the web build and the stager.
@@ -317,6 +415,13 @@ async function run(command, packagePath) {
         ],
         { cwd: tauriDir, env, stdio: "inherit" },
       );
+      if (updaterSigningKeyPresent(process.env)) {
+        const artifacts = updaterArtifacts(releaseDir, config, platform, arch);
+        artifacts.forEach((file) => requireFile(file));
+        if (!plan.sign) signUpdaterArtifacts(artifacts, config.version, process.env);
+        verifyUpdaterSignatures(artifacts, process.env.SUMI_TAURI_UPDATER_PUBKEY);
+        console.log(`Verified updater signatures: ${artifacts.map((f) => basename(f)).join(", ")}`);
+      }
     });
     executable();
     if (platform === "win32") {
