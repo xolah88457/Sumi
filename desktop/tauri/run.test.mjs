@@ -6,7 +6,17 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { checkApp, nativePackages, updaterBuildArgs, withoutSigningSecrets } from "./run.mjs";
+import { createRequire } from "node:module";
+import {
+  checkApp,
+  nativePackages,
+  signUpdaterArtifacts,
+  updaterArtifacts,
+  updaterBuildArgs,
+  verifyMinisign,
+  verifyUpdaterSignatures,
+  withoutSigningSecrets,
+} from "./run.mjs";
 
 async function fixture(t, body) {
   const dir = await mkdtemp(join(tmpdir(), "sumi-tauri-run-test-"));
@@ -202,4 +212,76 @@ test("Apple signing secrets are removed from the environment handed to staging",
     APPLE_TEAM_ID: "j",
   };
   assert.deepEqual(withoutSigningSecrets({ PATH: "/usr/bin", ...apple }), { PATH: "/usr/bin" });
+});
+
+const tauriCli = createRequire(import.meta.url).resolve("@tauri-apps/cli/tauri.js");
+
+function cli(args, env = {}) {
+  return execFileSync(process.execPath, [tauriCli, ...args], {
+    env: { ...process.env, ...env },
+    stdio: ["ignore", "ignore", "ignore"],
+  });
+}
+
+async function keypair(dir, name, password) {
+  const key = join(dir, name);
+  cli(["signer", "generate", "--ci", "-w", key, "-p", password]);
+  return {
+    privateKey: await readFile(key, "utf8"),
+    pubkey: (await readFile(`${key}.pub`, "utf8")).trim(),
+  };
+}
+
+test("updaterArtifacts lists the per-platform updater archives", () => {
+  const config = { productName: "Sumi", version: "1.2.3" };
+  const dir = join("r", "release");
+  assert.deepEqual(updaterArtifacts(dir, config, "darwin", "arm64"), [
+    join(dir, "bundle", "macos", "Sumi.app.tar.gz"),
+  ]);
+  assert.deepEqual(updaterArtifacts(dir, config, "darwin", "x64"), [
+    join(dir, "bundle", "macos", "Sumi.app.tar.gz"),
+  ]);
+  assert.deepEqual(updaterArtifacts(dir, config, "win32", "x64"), [
+    join(dir, "bundle", "nsis", "Sumi_1.2.3_x64-setup.exe"),
+  ]);
+  assert.deepEqual(updaterArtifacts(dir, config, "linux", "x64"), [
+    join(dir, "bundle", "appimage", "Sumi_1.2.3_amd64.AppImage"),
+  ]);
+  assert.throws(() => updaterArtifacts(dir, config, "linux", "arm64"), /Unsupported/);
+});
+
+test("signs with the Tauri CLI and verifies minisign signatures end to end", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "sumi-tauri-sign-test-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const password = "test-password";
+  const good = await keypair(dir, "good", password);
+  const other = await keypair(dir, "other", "");
+  const file = join(dir, "Sumi.app.tar.gz");
+  await writeFile(file, "updater payload");
+
+  signUpdaterArtifacts([file], "1.2.3", {
+    ...process.env,
+    TAURI_SIGNING_PRIVATE_KEY: good.privateKey,
+    TAURI_SIGNING_PRIVATE_KEY_PASSWORD: password,
+  });
+  assert.ok(existsSync(`${file}.sig`));
+  const signature = await readFile(`${file}.sig`, "utf8");
+  assert.match(Buffer.from(signature.trim(), "base64").toString(), /version:1\.2\.3/);
+
+  assert.doesNotThrow(() => verifyUpdaterSignatures([file], good.pubkey));
+  assert.equal(verifyMinisign(Buffer.from("updater payload"), signature, good.pubkey), true);
+
+  assert.throws(() => verifyUpdaterSignatures([file], other.pubkey), /key ID does not match/);
+  assert.throws(() => verifyUpdaterSignatures([file], ""), /SUMI_TAURI_UPDATER_PUBKEY is empty/);
+  assert.throws(() => verifyUpdaterSignatures([file], "not a key"), /Malformed/);
+
+  await writeFile(file, "tampered payload");
+  assert.throws(() => verifyUpdaterSignatures([file], good.pubkey), /does not verify/);
+
+  await rm(`${file}.sig`);
+  assert.throws(() => verifyUpdaterSignatures([file], good.pubkey), /Missing updater signature/);
+  assert.throws(
+    () => signUpdaterArtifacts([join(dir, "absent")], "1.2.3", process.env),
+    /Missing or empty/,
+  );
 });
