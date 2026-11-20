@@ -39,6 +39,7 @@ const webDir = join(root, "apps/web");
 const assets = join(root, ".github/assets");
 const ffmpeg = process.env.FFMPEG || "ffmpeg";
 const skipBuild = process.argv.includes("--skip-build");
+const GIF_MAX_BYTES = 8_000_000;
 const W = 1440;
 const H = 900;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -315,7 +316,9 @@ async function tour(page, d, base, mark) {
   await sleep(600);
   await d.scroll(-430, 600);
   await d.click(page.getByText("Breakdowns", { exact: true }), 600);
-  await sleep(1800);
+  await page.getByText("Group by").first().waitFor({ timeout: 15000 });
+  await d.moveTo(900, 640, 1000); // small drift so the clip doesn't end on the click
+  await sleep(1300);
 }
 
 /* --------------------------------------------------------------- encoding */
@@ -347,22 +350,23 @@ function encode(webm, trimSeconds) {
     mp4,
   ]);
 
-  // GIF: keep it under ~10 MB by stepping down in size/frame rate if needed.
+  // GIF: keep it under 8,000,000 bytes by stepping down in size/frame rate if needed.
   const attempts = [
     [960, 14],
     [960, 12],
     [880, 12],
     [800, 12],
+    [800, 10],
     [720, 10],
   ];
   for (const [width, fps] of attempts) {
     const filter =
       `fps=${fps},scale=${width}:-2:flags=lanczos,split[a][b];` +
-      `[a]palettegen=max_colors=160:stats_mode=diff[p];` +
-      `[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle`;
+      `[a]palettegen=max_colors=128:stats_mode=diff[p];` +
+      `[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`;
     run(ffmpeg, [...quiet, "-i", mp4, "-filter_complex", filter, "-loop", "0", gif]);
-    console.log(`  gif ${width}px @ ${fps}fps -> ${mb(size(gif))}`);
-    if (size(gif) <= 10 * 1048576) break;
+    console.log(`  gif ${width}px @ ${fps}fps -> ${size(gif)} bytes`);
+    if (size(gif) <= GIF_MAX_BYTES) break;
   }
 
   // Poster: the dashboard once the charts have settled.
