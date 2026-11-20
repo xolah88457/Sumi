@@ -1,7 +1,10 @@
 # Design notes
 
-Sumi Paper: warm paper, ink and one muted-navy accent, set in a single serif. It
-shares its vocabulary with the owner's other sites. The app is **light-first** and
+Sumi Paper: warm paper, ink and one sumi-green accent, set in a single serif. It
+mirrors the owner's website (`global.css` of the personal site): the same paper, ivory,
+sand, line and ink tokens, the same serif, the same eyebrows, pill buttons, 14px cards,
+capsule toolbar and accent links. Sumi's own accent there is `#2E6B4E`, and that is the
+accent here, with the website's dark-theme lift (see Tokens). The app is **light-first** and
 follows the operating system until the user picks a theme (see Theme below). Tokens
 live in `apps/web/src/app/globals.css`; charts resolve them at runtime
 (`components/charts/tokens.ts`) so Recharts SVG props use the same theme values as
@@ -20,16 +23,24 @@ the rest of the interface.
 Keep the shadcn names so existing `bg-card` / `text-muted-foreground` utilities work;
 the owner's names are exposed as aliases (`bg-paper`, `bg-ivory`, `bg-sand`).
 
-| token                            | light     | dark      | role                                    |
-| -------------------------------- | --------- | --------- | --------------------------------------- |
-| `--background` (paper)           | `#fbfaf6` | `#171512` | page background                         |
-| `--card`, `--popover` (ivory)    | `#fefdfb` | `#201d19` | raised surfaces, inputs, dialogs        |
-| `--secondary`, `--accent` (sand) | `#ebe9e1` | `#2a2722` | quiet fill: active pill, hover, banners |
-| `--muted`                        | `#f2f0e8` | `#24211d` | hover rows between paper and sand       |
-| `--foreground`                   | `#363433` | `#ebe7dc` | text                                    |
-| `--muted-foreground`             | `#6b6a64` | `#a8a499` | secondary text                          |
-| `--border`, `--input`            | `#dcd9cd` | `#36322b` | hairlines                               |
-| `--primary`, `--brand`, `--ring` | `#3a4b7c` | `#a3b2dd` | the single accent                       |
+| token                            | light     | dark      | role                                                      |
+| -------------------------------- | --------- | --------- | --------------------------------------------------------- |
+| `--background` (paper)           | `#fbfaf6` | `#171512` | page background                                           |
+| `--card`, `--popover` (ivory)    | `#fefdfb` | `#201d19` | raised surfaces, inputs, dialogs                          |
+| `--secondary`, `--accent` (sand) | `#ebe9e1` | `#2a2722` | quiet fill: active pill, hover, banners                   |
+| `--muted`                        | `#f2f0e8` | `#24211d` | hover rows between paper and sand                         |
+| `--foreground`                   | `#363433` | `#ebe7dc` | text                                                      |
+| `--muted-foreground`             | `#6b6a64` | `#a8a499` | secondary text                                            |
+| `--border`, `--input`            | `#dcd9cd` | `#36322b` | hairlines                                                 |
+| `--primary`, `--brand`, `--ring` | `#2e6b4e` | `#71ae8e` | the single accent (Sumi green)                            |
+| `--profit` (text)                | `#356700` | `#73bd00` | signed profit text, deliberately yellower than the accent |
+| `--profit-fill`                  | `#589c00` | `#73bd00` | profit bars and areas                                     |
+
+The dark accent is the website's lift, `oklch(from #2E6B4E max(l, 0.7) c h)`, resolved to
+a hex (`#71ae8e`) because chart code reads `--brand` through `getComputedStyle` and SVG
+presentation attributes must not depend on relative-colour support in the desktop
+WebView. Contrast: accent on paper 6.0:1, white on accent 6.3:1, dark accent on `#171512`
+7.1:1, dark ink on dark accent 7.1:1.
 
 Dark is a warm near-black brown, and surfaces step up in lightness
 (paper < ivory < sand). `--muted-foreground-on-sand` is a slightly darker muted ink
@@ -49,11 +60,17 @@ and filter chips are pills (`rounded-full`, `--radius-pill`).
   `"Charis SIL", Charter, "Bitstream Charter", Georgia, serif`. Licence text ships in
   `app/fonts/OFL-CharisSIL.txt` and `public/licenses/CharisSIL-OFL.txt`; it is listed in
   `desktop/THIRD-PARTY-NOTICES.md`.
-- Headings are weight 400 with tight tracking; hierarchy comes from size. Buttons and
-  active nav are 500.
+- Headings are weight 400 with tight tracking; hierarchy comes from size. Page titles
+  (`PageHead`) use the website's display style at app scale: `clamp(34px, 2.2vw + 18px,
+48px)`, line-height 1.04, tracking `-0.04em` (the site's `--d1` is 66px, too big for a
+  page title in a tool). Buttons and active nav are 500.
+- Eyebrows (`PageHead`, sidebar group labels, chart sub-labels) are sentence case, 13px,
+  muted, tracking `0.08em`. No uppercase, no mono.
+- The lede under a title is muted 18px. Links are accent coloured with a 4px underline
+  offset; explicit `text-*` utilities (muted footers) still win.
 - Figures use `.tnum`: the same serif with tabular lining numerals (Charis digits are
-  fixed width). `font-mono` is for eyebrows, trade IDs and timestamps only.
-- Scale tokens (`--type-xs` 13, `sm` 15, `md` 18, `lg` 21, `xl` 26, `2xl` 32, `d2` 44)
+  fixed width). `font-mono` is for trade IDs, timestamps and keyboard hints only.
+- Scale tokens (`--type-xs` 13, `sm` 15, `md` 18, `lg` 21, `xl` 26, `2xl` 32, `d2` 48)
   are plain CSS variables and deliberately do not remap Tailwind's `text-*` sizes.
 - Motion tokens: `--ease`, `--dur-fast` 120ms, `--dur-med` 180ms, `--dur-slow` 320ms.
 
@@ -72,11 +89,22 @@ unavailable it falls back to light. The desktop window paints
 `components/ui` holds the primitives (button, input, select, card, badge, tabs, table,
 dialog, dropdown, tooltip, calendar, skeleton). Notes:
 
+- `Button`: `default` is the website's primary (filled accent pill), `outline` is its
+  secondary (transparent, accent text, 1px accent outline), `quiet` is a neutral hairline
+  pill for chrome and toggles (sidebar search, privacy, segmented choices, comboboxes) so the
+  accent stays reserved for actions.
+- The toolbar under the page title is the website's capsule: ivory, 1px sand border, fully
+  rounded, over a paper fade while it is stuck.
 - `Card` has `variant="flat"` (top hairline, no box) for strips.
 - `Badge` `profit` / `loss` chips repeat the state in the border: solid for win, dashed
   for loss.
 - `PageHead` (eyebrow, h1, lede, actions), `KpiStrip` (hairline metric strip) and
   `EmptyState` (dashed box with one action) are the building blocks for page layouts.
+
+## Mark
+
+The brand lockup is the plain "Sumi" wordmark with an accent full stop, next to an ensō
+(`SumiMark`, one open brush circle) in the accent. Only Latin text is used in the app.
 
 ## P&L color is never load-bearing
 
@@ -85,6 +113,11 @@ red-green colorblindness trap (validated: the pair fails CVD separation with ΔE
 far under the ≥ 8 target). The convention stays, so the design compensates by making
 color pure reinforcement:
 
+- The accent is green too, so profit moved off the classic pure green: `--profit` sits at
+  OKLCH hue 132 with chroma 0.15 (yellow-green) while the accent is hue 160 with chroma
+  0.08 (muted blue-green). Text contrast: `#356700` on paper 6.5:1, `#73bd00` on dark paper
+  7.8:1; bars `#589c00` 3.3:1 on paper. The accent never colours a number, and profit
+  numbers always carry a `+` sign.
 - Every P&L value renders as **signed text** (`+$171.00` / `−$102.50`) in ink tokens
 - Bars grow from a **zero baseline**: direction is geometry
 - Win/loss ship as **text chips** (`WIN` / `LOSS`) with a solid or dashed border, never

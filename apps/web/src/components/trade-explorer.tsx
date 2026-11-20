@@ -194,7 +194,7 @@ export function TradeExplorer({ query }: { query: string }) {
           <Button
             key={label}
             size="sm"
-            variant={x === nextX && y === nextY ? "secondary" : "outline"}
+            variant={x === nextX && y === nextY ? "secondary" : "quiet"}
             onClick={() => {
               setX(nextX);
               setY(nextY);

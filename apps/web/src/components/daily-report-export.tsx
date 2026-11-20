@@ -631,7 +631,7 @@ export function ReportExport({ source, beforeExport, className, loadRenderer }: 
                   {/* Thumbnails sidebar (4 cols on lg) */}
                   <div className="space-y-2 lg:col-span-4">
                     <div className="flex items-center justify-between text-[13px]">
-                      <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[13px]">
+                      <span className="text-muted-foreground tracking-[0.08em] text-[13px]">
                         Pages ({totalPages})
                       </span>
                       <div className="flex gap-1">

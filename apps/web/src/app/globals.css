@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Sumi Paper: warm paper, ink and one muted-navy accent, matching the owner's
- * other sites (paper #fbfaf6 / ivory #fefdfb / sand #ebe9e1; warm-brown dark).
+ * Sumi Paper: warm paper, ink and one sumi-green accent (#2E6B4E), mirroring the
+ * owner's website (paper #fbfaf6 / ivory #fefdfb / sand #ebe9e1; warm-brown dark).
  * Depth comes from 1px hairlines and surface steps, not shadows. P&L green/red
  * follows the trader convention and is NEVER load-bearing: every value is
  * signed text, bars anchor to zero, win/loss ships as text chips with a
@@ -19,7 +19,7 @@
   --card-foreground: #363433;
   --popover: #fefdfb;
   --popover-foreground: #363433;
-  --primary: #3a4b7c;
+  --primary: #2e6b4e;
   --primary-foreground: #ffffff;
   --secondary: #ebe9e1;
   --secondary-foreground: #363433;
@@ -33,11 +33,11 @@
   --destructive-foreground: #fafafa;
   --border: #dcd9cd;
   --input: #dcd9cd;
-  --ring: #3a4b7c;
+  --ring: #2e6b4e;
   --radius: 14px;
 
   /* The single accent, never the sole carrier of information. */
-  --brand: #3a4b7c;
+  --brand: #2e6b4e;
 
   /* Dialog scrim. */
   --backdrop: rgb(51 48 42 / 0.35);
@@ -48,8 +48,8 @@
   --ink-muted: #6b6a64;
   --gridline: #ebe9e1;
   --baseline: #c9c5b6;
-  --profit: #006300;
-  --profit-fill: #0ca30c;
+  --profit: #356700;
+  --profit-fill: #589c00;
   --loss: #c33535;
   --neutral-mid: #ebe9e1;
 }
@@ -62,7 +62,7 @@
   --card-foreground: #ebe7dc;
   --popover: #201d19;
   --popover-foreground: #ebe7dc;
-  --primary: #a3b2dd;
+  --primary: #71ae8e;
   --primary-foreground: #171512;
   --secondary: #2a2722;
   --secondary-foreground: #ebe7dc;
@@ -75,9 +75,9 @@
   --destructive-foreground: #fafafa;
   --border: #36322b;
   --input: #36322b;
-  --ring: #a3b2dd;
+  --ring: #71ae8e;
 
-  --brand: #a3b2dd;
+  --brand: #71ae8e;
 
   --backdrop: rgb(0 0 0 / 0.55);
   --shadow-pop: 0 12px 32px rgb(0 0 0 / 0.5);
@@ -86,8 +86,8 @@
   --ink-muted: #a8a499;
   --gridline: #2a2722;
   --baseline: #4a463d;
-  --profit: #0ca30c;
-  --profit-fill: #0ca30c;
+  --profit: #73bd00;
+  --profit-fill: #73bd00;
   --loss: #ee7777;
   --neutral-mid: #36322b;
 }
@@ -158,7 +158,7 @@
   --type-lg: 21px;
   --type-xl: 26px;
   --type-2xl: 32px;
-  --type-d2: 44px;
+  --type-d2: 48px;
 }
 
 @layer base {
@@ -175,6 +175,15 @@
   }
   :focus-visible {
     outline-color: var(--ring);
+  }
+  /* Links read as accent text with a 4px underline offset, like the site's \`a\`. Explicit
+     text-* utilities (muted footers, ink links) still win because utilities sit above base. */
+  a,
+  .underline {
+    text-underline-offset: 4px;
+  }
+  a:where(.underline) {
+    color: var(--brand);
   }
 }
 

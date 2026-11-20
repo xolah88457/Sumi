@@ -73,7 +73,7 @@ export function PrivacyToggle({
               : "w-full justify-start gap-2"
         }
         size="sm"
-        variant={enabled ? "secondary" : "outline"}
+        variant={enabled ? "secondary" : "quiet"}
         aria-label={`Privacy mode ${enabled ? "on" : "off"}`}
         aria-pressed={enabled}
         disabled={!ready}

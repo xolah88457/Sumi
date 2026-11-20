@@ -137,7 +137,7 @@ function Missed() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle className="text-[21px] leading-tight tracking-[-0.02em] text-foreground">
                     {t.symbol}{" "}
-                    <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+                    <span className="text-[13px] tracking-[0.08em] text-muted-foreground">
                       {t.direction}
                     </span>
                   </CardTitle>

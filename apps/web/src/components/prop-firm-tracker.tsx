@@ -566,7 +566,7 @@ export function PropFirmTracker() {
                   key={v}
                   role="tab"
                   aria-selected={tab === v}
-                  variant={tab === v ? "secondary" : "outline"}
+                  variant={tab === v ? "secondary" : "quiet"}
                   onClick={() => setTab(v)}
                 >
                   {v === "ledger" ? "Transactions" : label(v)}
