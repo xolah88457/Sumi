@@ -13,7 +13,11 @@ Sumi is a local-first desktop trading journal for macOS, Windows and Linux. Your
 
 Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlgo/trade-journal) (MIT). See [Attribution and license](#attribution-and-license).
 
-https://github.com/user-attachments/assets/75818fc3-4a24-4ffc-8571-a86e9e4bbdc9
+
+
+https://github.com/user-attachments/assets/fd7ddcbd-d2e6-4dcd-a7d7-6a54964834c9
+
+
 
 <sub>Click to watch a 50-second tour, rendered from the real app on demo data. How it is made: [docs/ad](docs/ad/README.md).</sub>
 
