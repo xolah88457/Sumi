@@ -71,10 +71,9 @@
       #grid {
         position: absolute;
         inset: 0;
-        background-image:
-          linear-gradient(rgba(235, 231, 220, 0.026) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(235, 231, 220, 0.026) 1px, transparent 1px);
-        background-size: 48px 48px;
+        /* faint journal ruling */
+        background-image: linear-gradient(rgba(235, 231, 220, 0.03) 1px, transparent 1px);
+        background-size: 100% 56px;
         -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 30%, transparent 100%);
       }
       #noise {
@@ -295,24 +294,15 @@
       #end .t {
         position: relative;
       }
-      /* The intro grid is a P&L calendar: one cell per trading day, tinted by result. */
-      #introGrid {
-        display: grid;
-        grid-template-columns: repeat(18, 26px);
-        grid-auto-flow: column;
-        grid-template-rows: repeat(5, 26px);
-        gap: 9px;
-      }
-      #introGrid i {
-        width: 26px;
-        height: 26px;
-        border-radius: 6px;
-        background: rgba(235, 231, 220, 0.07);
-        display: block;
+      /* The intro is an equity curve drawn as one brush stroke of ink. */
+      #introInk {
+        width: 1240px;
+        height: 330px;
+        overflow: visible;
       }
       #introHead {
         margin-top: 64px;
-        font: 400 136px/1 "Charis SIL";
+        font: 400 124px/1 "Charis SIL";
         letter-spacing: -0.045em;
       }
       #introHead em {
@@ -390,12 +380,31 @@
 
     <!-- intro -->
     <div id="intro">
-      <div id="introGrid"></div>
+      <svg id="introInk" viewBox="0 0 1240 330">
+        <defs>
+          <filter id="inkEdge" x="-5%" y="-20%" width="110%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="4" />
+            <feDisplacementMap in="SourceGraphic" scale="7" />
+          </filter>
+          <filter id="inkBleed" x="-10%" y="-40%" width="120%" height="180%">
+            <feGaussianBlur stdDeviation="7" />
+          </filter>
+          <mask id="dryMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1240" height="330">
+            <rect width="1240" height="330" fill="#fff" />
+            <g id="bristles" fill="none" stroke="#000" stroke-linecap="round"></g>
+          </mask>
+        </defs>
+        <path id="inkBleedPath" fill="#ebe7dc" opacity="0.16" filter="url(#inkBleed)" />
+        <g mask="url(#dryMask)"><path id="inkStroke" fill="#ebe7dc" filter="url(#inkEdge)" /></g>
+        <circle id="inkDot" r="0" fill="#71ae8e" />
+      </svg>
       <div id="introHead">
-        <span class="t" data-in="1.05" style="position: relative; display: inline-block"
-          >Know your</span
+        <span class="t" data-in="1.15" style="position: relative; display: inline-block"
+          >Every trade,</span
         >
-        <em class="t" data-in="1.35" style="position: relative; display: inline-block">edge.</em>
+        <em class="t" data-in="1.45" style="position: relative; display: inline-block"
+          >written down.</em
+        >
       </div>
     </div>
 
@@ -535,19 +544,111 @@
       };
       const app = () => $("#app").contentDocument;
 
-      // Intro: 18 weeks x 5 weekdays of P&L, deterministic, tinted like Sumi's calendar.
-      const ig = $("#introGrid");
-      const DAYS = [];
+      // Intro: an equity curve as one brush stroke. A deterministic walk with an edge: it dips, recovers
+      // and ends at its high. The stroke presses in, wavers with the hand, and runs dry at the end.
       let seed = 11;
       const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-      for (let i = 0; i < 90; i++) {
-        const el = document.createElement("i");
-        const r = rnd();
-        const win = r < 0.58;
-        const size = 0.35 + rnd() * 0.65;
-        DAYS.push({ el, win, size, trade: rnd() > 0.12 });
-        ig.appendChild(el);
+      const INK = (() => {
+        const raw = [0];
+        for (let i = 1; i < 30; i++) {
+          const dip = i > 11 && i < 16 ? -1.6 : 0;
+          raw.push(raw[i - 1] + 0.75 + (rnd() - 0.5) * 2.2 + dip);
+        }
+        raw[raw.length - 1] = Math.max(...raw) + 0.6;
+        const lo = Math.min(...raw),
+          hi = Math.max(...raw);
+        const knots = raw.map((v, i) => [
+          30 + (i / (raw.length - 1)) * 1170,
+          290 - ((v - lo) / (hi - lo)) * 250,
+        ]);
+        // Catmull-Rom through the knots
+        const pts = [];
+        for (let i = 0; i < knots.length - 1; i++) {
+          const p0 = knots[Math.max(0, i - 1)],
+            p1 = knots[i],
+            p2 = knots[i + 1],
+            p3 = knots[Math.min(knots.length - 1, i + 2)];
+          for (let k = 0; k < 14; k++) {
+            const u = k / 14,
+              u2 = u * u,
+              u3 = u2 * u;
+            const f = (a, b, c, d) =>
+              0.5 *
+              (2 * b +
+                (-a + c) * u +
+                (2 * a - 5 * b + 4 * c - d) * u2 +
+                (-a + 3 * b - 3 * c + d) * u3);
+            pts.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]);
+          }
+        }
+        pts.push(knots[knots.length - 1]);
+        const n = pts.length;
+        const phase = [rnd() * 6.28, rnd() * 6.28];
+        const width = pts.map((p, i) => {
+          const s = i / (n - 1);
+          const a = pts[Math.max(0, i - 2)],
+            b = pts[Math.min(n - 1, i + 2)];
+          const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+          const nib = 0.45 + 0.85 * Math.abs(Math.sin(ang - 0.6)); // a flat brush held at an angle
+          const press =
+            Math.min(1, s / 0.03) ** 0.5 * (1 + 0.5 * Math.exp(-(((s - 0.02) / 0.03) ** 2)));
+          const dry = 1 - 0.7 * Math.max(0, (s - 0.7) / 0.3) ** 1.2;
+          const hand = 1 + 0.14 * Math.sin(s * 19 + phase[0]) + 0.07 * Math.sin(s * 53 + phase[1]);
+          return 10 * nib * press * dry * hand;
+        });
+        const normal = pts.map((p, i) => {
+          const a = pts[Math.max(0, i - 1)],
+            b = pts[Math.min(n - 1, i + 1)];
+          const dx = b[0] - a[0],
+            dy = b[1] - a[1],
+            l = Math.hypot(dx, dy) || 1;
+          return [-dy / l, dx / l];
+        });
+        return { pts, width, normal, n };
+      })();
+      function inkPath(u) {
+        const { pts, width, normal } = INK;
+        const m = Math.max(2, Math.round(u * (INK.n - 1)) + 1);
+        const L = [],
+          R = [];
+        for (let i = 0; i < m; i++) {
+          const [x, y] = pts[i],
+            [nx, ny] = normal[i],
+            w = width[i];
+          L.push(`${(x + nx * w).toFixed(1)},${(y + ny * w).toFixed(1)}`);
+          R.push(`${(x - nx * w).toFixed(1)},${(y - ny * w).toFixed(1)}`);
+        }
+        const tip = pts[m - 1],
+          r = width[m - 1];
+        return {
+          d: `M${L.join("L")}A${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${R[m - 1]}L${R.reverse().join("L")}Z`,
+          tip,
+          r,
+        };
       }
+      // bristle gaps: thin lines along the stroke, offset across it, that open up toward the dry end
+      (() => {
+        const { pts, width, normal, n } = INK;
+        const g = $("#bristles");
+        [-0.55, -0.15, 0.3, 0.62].forEach((off, k) => {
+          const start = Math.floor(n * (0.5 + k * 0.06));
+          const d = pts
+            .slice(start)
+            .map((p, j) => {
+              const i = start + j;
+              return `${(p[0] + normal[i][0] * width[i] * off).toFixed(1)},${(p[1] + normal[i][1] * width[i] * off).toFixed(1)}`;
+            })
+            .join("L");
+          const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          el.setAttribute("d", "M" + d);
+          el.setAttribute("stroke-width", (1.1 + (k % 2) * 0.6).toFixed(1));
+          el.setAttribute(
+            "stroke-dasharray",
+            `${30 + k * 17} ${6 + k * 5} ${80 - k * 9} ${4 + k * 3}`,
+          );
+          g.appendChild(el);
+        });
+      })();
 
       // ---------- references into the live app (window coordinates = iframe + 28px title bar)
       const cache = {};
@@ -586,6 +687,17 @@
           );
         },
         row: (d, a) => [...d.querySelectorAll("tbody tr")].find((r) => r.textContent.includes(a)),
+        // the biggest win among the rows on screen, so the shot doesn't depend on what the demo data drew
+        bestrow: (d) => {
+          let best = null,
+            top = 0;
+          for (const r of [...d.querySelectorAll("tbody tr")].slice(0, 8)) {
+            const m = r.textContent.match(/\+\$([\d,]+\.\d+)/);
+            const v = m ? Number(m[1].replace(/,/g, "")) : 0;
+            if (v > top) ((top = v), (best = r));
+          }
+          return best;
+        },
         item: (d, a) =>
           [...d.querySelectorAll('[role="menuitem"]')].find((x) =>
             x.textContent.trim().startsWith(a),
@@ -695,8 +807,8 @@
         { t: 21.45, p: [440, 420], v: 1 },
         { t: 21.8, p: "nav:Trades" },
         { t: 22.15, p: "nav:Trades" },
-        { t: 22.6, p: "row:ETHUSDT|-260|0" },
-        { t: 22.95, p: "row:ETHUSDT|-260|0" },
+        { t: 22.6, p: "bestrow|-260|0" },
+        { t: 22.95, p: "bestrow|-260|0" },
         { t: 23.5, p: [900, 520], v: 0 },
         { t: 24.4, p: [1100, 640], v: 0 },
         { t: 24.75, p: "label:Rate 4 stars|30|40", v: 1 },
@@ -735,7 +847,7 @@
         [15.2, "nav:Calendar"],
         [16.3, "label:Previous month"],
         [22.0, "nav:Trades"],
-        [22.8, "row:ETHUSDT"],
+        [22.8, "bestrow"],
         [25.4, "label:Rate 4 stars"],
         [26.35, "check:Reviewed"],
         [29.8, "nav:Reports"],
@@ -801,25 +913,19 @@
           `translate(${700 + Math.sin(t * 0.23) * 160}px, ${120 + Math.cos(t * 0.17) * 90}px)`;
         $("#g2").style.transform =
           `translate(${-80 + Math.cos(t * 0.19) * 140}px, ${420 + Math.sin(t * 0.21) * 80}px)`;
-        $("#grid").style.transform = `translate(${(-t * 6) % 48}px, ${(-t * 3) % 48}px)`;
+        $("#grid").style.transform = `translateY(${(-t * 4) % 56}px)`;
 
-        // intro: weeks fill left to right, each day tinted by its result
-        DAYS.forEach((d, n) => {
-          const col = Math.floor(n / 5),
-            row = n % 5;
-          const appear = clamp((t - 0.05 - row * 0.03 - col * 0.02) / 0.4);
-          const on = d.trade && t > 0.3 + col * 0.11 + row * 0.02;
-          const a = on ? 0.35 + d.size * 0.65 : 0;
-          d.el.style.background = on
-            ? d.win
-              ? `rgba(115, 189, 0, ${a * 0.9})`
-              : `rgba(224, 122, 108, ${a * 0.85})`
-            : "rgba(235, 231, 220, 0.07)";
-          d.el.style.boxShadow =
-            on && d.win && d.size > 0.8 ? "0 0 16px rgba(115,189,0,.3)" : "none";
-          d.el.style.opacity = ease.out(appear).toFixed(3);
-          d.el.style.transform = `scale(${(0.6 + 0.4 * ease.out(appear)).toFixed(3)})`;
-        });
+        // intro: the brush crosses in ~1.9 s, then the latest equity lights up
+        const stroke = ease.inOut(clamp((t - 0.15) / 1.9));
+        const ink = inkPath(stroke);
+        $("#inkStroke").setAttribute("d", ink.d);
+        $("#inkBleedPath").setAttribute("d", ink.d);
+        const dot = ease.outExpo(clamp((t - 2.05) / 0.5));
+        $("#inkDot").setAttribute("cx", ink.tip[0].toFixed(1));
+        $("#inkDot").setAttribute("cy", ink.tip[1].toFixed(1));
+        $("#inkDot").setAttribute("r", (dot * 7).toFixed(2));
+        $("#inkDot").style.filter =
+          `drop-shadow(0 0 ${(dot * 14).toFixed(1)}px rgba(113,174,142,.7))`;
         const introOut = ease.inOut(clamp((t - 3.0) / 0.8));
         $("#intro").style.opacity = (1 - introOut).toFixed(3);
         $("#intro").style.transform = `scale(${1 + introOut * 0.08})`;
