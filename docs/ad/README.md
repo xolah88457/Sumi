@@ -6,7 +6,7 @@ The ad in the README (`.github/assets/sumi-ad.mp4`) is rendered from the real ap
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `stage.html` | A 1920x1080 stage. The app sits in an iframe inside a window frame; around it are the backdrop, camera moves, headlines, cursor and click ripples. `window.__render(t)` draws the stage at time `t`. The camera and cursor follow live elements in the app, not fixed pixels. |
 | `render.mjs` | Starts the production server on a free port with a throwaway data dir and demo data, opens the stage in Playwright and steps a fake clock 1/30 s per frame. A real mouse follows the drawn cursor, so hovers, tooltips, menus and clicks happen in the app itself.            |
-| `music.py`   | Synthesizes the soundtrack with numpy: a solo piano theme over soft strings in D major, with chords that change with the scenes and a swell as the ensō is drawn, plus quiet brush, click and key sounds in sync with the picture.                                            |
+| `music.py`   | Synthesizes the soundtrack with numpy: pad chords per scene, a plucked arpeggio, a whoosh for the reveal, clicks and key taps on the on-screen ones, and a bell when the mark is drawn.                                                                                       |
 
 ## Render
 
