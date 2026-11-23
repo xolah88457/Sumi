@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-23
+
+### Changed
+
+- The app icon is now the ensō, matching the mark inside the app.
+- Releases ship one installer per platform (macOS `.dmg`, Windows `.exe`, Linux AppImage) and no longer upload the `.zip`, `.deb` or detached `.sig` files. The in-app updater is unaffected.
+
 ## [0.4.0] - 2026-11-19
 
 ### Added
