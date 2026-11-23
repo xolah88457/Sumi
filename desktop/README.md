@@ -27,7 +27,7 @@ All desktop tests run with `node --test desktop/launch.test.mjs desktop/lib/*.te
 | macOS arm64 | macOS 15 Apple Silicon | WKWebView             | `Sumi.app` (macOS 13+)                                                               |
 | macOS x64   | macOS 15 Intel         | WKWebView             | `Sumi.app` (macOS 13+)                                                               |
 | Windows x64 | Windows Server 2025    | Edge WebView2         | `Sumi_<version>_x64-setup.exe` (NSIS); standalone `sumi.exe` with sibling `runtime/` |
-| Linux x64   | Ubuntu 22.04 LTS       | WebKitGTK 4.1 / GTK 3 | `Sumi_<version>_amd64.deb` and `.AppImage`                                           |
+| Linux x64   | Ubuntu 22.04 LTS       | WebKitGTK 4.1 / GTK 3 | `Sumi_<version>_amd64.AppImage` (release) and `.deb` (CI/local)                      |
 
 The Linux baseline is Ubuntu 22.04 x64 (glibc 2.35) with `libwebkit2gtk-4.1-dev`. Building on a newer distribution can raise the glibc baseline, and AppArmor can restrict unprivileged namespaces; do not disable the WebKit sandbox to make a smoke test pass. 32-bit and Arm Windows/Linux are not supported. Native ASR inference (the ~700 MB Parakeet model) is not run in CI; staging probes the bundled SQLite addon and Silero VAD instead.
 
@@ -101,7 +101,7 @@ Choose **Sumi > Show Journal Data** in the menu to open the folder.
 
 ## Moving from the Electron app
 
-The Electron app does not update itself into this one. Install the new build once (the macOS `Sumi.app` replaces the old one in `/Applications`; on Windows run the new installer; on Linux install the `.deb` or run the AppImage). Open it and your journal is there: it reads the same data directory, including `journal.db`, `.secret`, attachments, voice weights and `preferences.json`. Nothing is copied, moved or deleted. Not carried over: WebView-only state the old Chromium profile kept in `electron/` (all app preferences use the `journal-*` keys stored in `preferences.json`, so the visible settings survive). Back up the data folder before the first launch if you want a safety copy.
+The Electron app does not update itself into this one. Install the new build once (the macOS `Sumi.app` replaces the old one in `/Applications`; on Windows run the new installer; on Linux run the AppImage). Open it and your journal is there: it reads the same data directory, including `journal.db`, `.secret`, attachments, voice weights and `preferences.json`. Nothing is copied, moved or deleted. Not carried over: WebView-only state the old Chromium profile kept in `electron/` (all app preferences use the `journal-*` keys stored in `preferences.json`, so the visible settings survive). Back up the data folder before the first launch if you want a safety copy.
 
 ## Process and network isolation
 
@@ -123,7 +123,7 @@ Updater artifacts and signatures are produced only when `TAURI_SIGNING_PRIVATE_K
 1. the tag matches `package.json`, `desktop/tauri/src-tauri/tauri.conf.json` and `Cargo.toml` versions, and
 2. the tagged commit is on the default branch (named `electron` for historical reasons).
 
-It runs typecheck and tests, builds the macOS arm64, macOS x64, Windows x64 and Linux x64 packages natively (the same matrix as `tauri-ci.yml`), smoke-tests each, and attaches them to a **draft** GitHub Release with `SHA256SUMS.txt` (and `latest.json` when signing is configured). Merging to the default branch never releases. Review the draft, then publish it; the updater feed (`releases/latest/download/latest.json`) only becomes live once the release is published.
+It runs typecheck and tests, builds the macOS arm64, macOS x64, Windows x64 and Linux x64 packages natively (the same matrix as `tauri-ci.yml`), smoke-tests each, and attaches one installer per platform (`.dmg`, Windows setup `.exe`, `.AppImage`) to a **draft** GitHub Release with `SHA256SUMS.txt`. When signing is configured it also attaches the macOS `.app.tar.gz` updater payloads and `latest.json`, which embeds the update signatures (no detached `.sig` files are published). The `.deb` is still built and smoke-tested in CI but is not uploaded. Merging to the default branch never releases. Review the draft, then publish it; the updater feed (`releases/latest/download/latest.json`) only becomes live once the release is published.
 
 Repository settings the owner provides:
 

@@ -13,11 +13,7 @@ Sumi is a local-first desktop trading journal for macOS, Windows and Linux. Your
 
 Sumi is based on [LuxAlgo's open-source trade-journal](https://github.com/LuxAlgo/trade-journal) (MIT). See [Attribution and license](#attribution-and-license).
 
-
-
 https://github.com/user-attachments/assets/fd7ddcbd-d2e6-4dcd-a7d7-6a54964834c9
-
-
 
 <sub>Click to watch a 50-second tour, rendered from the real app on demo data. How it is made: [docs/ad](docs/ad/README.md).</sub>
 
@@ -191,11 +187,11 @@ https://github.com/user-attachments/assets/fd7ddcbd-d2e6-4dcd-a7d7-6a54964834c9
 
 Sumi ships as a desktop app:
 
-| Platform | Architectures                | Packages                              | In-app updates                         |
-| -------- | ---------------------------- | ------------------------------------- | -------------------------------------- |
-| macOS 13 | Apple Silicon (arm64), Intel | `.dmg` (drag to Applications), `.zip` | Signed Tauri updater (when configured) |
-| Windows  | x64 (10/11)                  | NSIS `Sumi_<version>_x64-setup.exe`   | Signed Tauri updater (when configured) |
-| Linux    | x64 (glibc 2.35+)            | `.deb`, `.AppImage`                   | Signed Tauri updater for the AppImage  |
+| Platform | Architectures                | Packages                            | In-app updates                         |
+| -------- | ---------------------------- | ----------------------------------- | -------------------------------------- |
+| macOS 13 | Apple Silicon (arm64), Intel | `.dmg` (drag to Applications)       | Signed Tauri updater (when configured) |
+| Windows  | x64 (10/11)                  | NSIS `Sumi_<version>_x64-setup.exe` | Signed Tauri updater (when configured) |
+| Linux    | x64 (glibc 2.35+)            | `.AppImage`                         | Signed Tauri updater for the AppImage  |
 
 Sumi is a [Tauri](https://tauri.app) app: it uses the operating system's WebView instead of bundling a browser. Release builds are produced by CI from `v<semver>` tags and attached to a draft on this repository's [GitHub Releases](https://github.com/xolah88457/trade-journal/releases). Builds are not code-signed, so macOS Gatekeeper and Windows SmartScreen show a first-launch warning. Build steps, first-launch instructions, data locations, backups, the update system and how to move over from the old Electron app are documented in **[desktop/README.md](desktop/README.md)**. Your journal lives in the same folder the Electron app used, so installing Sumi over an Electron install finds it automatically.
 

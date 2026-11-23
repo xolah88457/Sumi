@@ -291,7 +291,6 @@ jobs:
                 *) echo "::error::Unknown macOS target $TARGET"; exit 1 ;;
               esac
               put "$bundle/dmg/Sumi_${VERSION}_${dmg_arch}.dmg" "Sumi-$VERSION-$TARGET.dmg"
-              ditto -c -k --keepParent "$bundle/macos/Sumi.app" "$out/Sumi-$VERSION-$TARGET.zip"
               if [ "$UPDATER" = "true" ]; then put "$bundle/macos/Sumi.app.tar.gz" "Sumi-$VERSION-$TARGET.app.tar.gz"; fi
               ;;
             win32)
@@ -299,7 +298,6 @@ jobs:
               ;;
             linux)
               put "$bundle/appimage/Sumi_${VERSION}_amd64.AppImage" "Sumi-$VERSION-$TARGET.AppImage"
-              put "$bundle/deb/Sumi_${VERSION}_amd64.deb" "Sumi-$VERSION-$TARGET.deb"
               ;;
           esac
           if [ "$UPDATER" = "true" ]; then
@@ -367,8 +365,10 @@ jobs:
           if ls ./*.sig > /dev/null 2>&1; then
             test "$(ls ./*.sig | wc -l)" -eq 4
             node ../desktop/tauri/release-manifest.mjs . "$VERSION" "$TAG" "$REPO"
+            # The signatures now live inside latest.json; do not upload them separately.
+            rm -f -- ./*.sig
           fi
-          sha256sum -- $(ls | grep -v '^SHA256SUMS.txt$' | grep -v '\.sig$') > SHA256SUMS.txt
+          sha256sum -- $(ls | grep -v '^SHA256SUMS.txt$') > SHA256SUMS.txt
           ls -l
 
       - name: Create draft release
@@ -379,14 +379,14 @@ jobs:
           NOTARIZED: ${{ steps.mac.outputs.notarized }}
         run: |
           if [ "$NOTARIZED" = "true" ]; then
-            MAC_NOTE='**macOS:** signed with an Apple Developer ID and notarized by Apple; it opens without extra steps. Download the .dmg, open it and drag Sumi into Applications (the .zip of Sumi.app is an alternative).'
+            MAC_NOTE='**macOS:** signed with an Apple Developer ID and notarized by Apple; it opens without extra steps. Download the .dmg, open it and drag Sumi into Applications.'
           else
-            MAC_NOTE='**macOS:** this build is not signed by an Apple Developer ID or notarized, so Gatekeeper blocks the first launch. Download the .dmg, open it and drag Sumi into Applications (the .zip of Sumi.app is an alternative), then open Sumi from Applications. Needed once, on first install only: open Sumi once (macOS shows a warning), then go to System Settings > Privacy & Security, scroll to Security and click Open Anyway, and confirm. On macOS 15 and later, Control-click > Open no longer bypasses this. Alternatively, run `xattr -dr com.apple.quarantine /Applications/Sumi.app` in Terminal before opening. Later in-app updates are verified by Sumi'"'"'s own update signature and do not ask again.'
+            MAC_NOTE='**macOS:** this build is not signed by an Apple Developer ID or notarized, so Gatekeeper blocks the first launch. Download the .dmg, open it and drag Sumi into Applications, then open Sumi from Applications. Needed once, on first install only: open Sumi once (macOS shows a warning), then go to System Settings > Privacy & Security, scroll to Security and click Open Anyway, and confirm. On macOS 15 and later, Control-click > Open no longer bypasses this. Alternatively, run `xattr -dr com.apple.quarantine /Applications/Sumi.app` in Terminal before opening. Later in-app updates are verified by Sumi'"'"'s own update signature and do not ask again.'
           fi
           cat > release-notes.md <<EOF
           ## Sumi v${VERSION}
 
-          Sumi for macOS (Apple Silicon and Intel), Windows (x64) and Linux (x64, AppImage and .deb). Checksums are in \`SHA256SUMS.txt\`.
+          Sumi for macOS (Apple Silicon and Intel), Windows (x64) and Linux (x64, AppImage). Checksums are in \`SHA256SUMS.txt\`.
 
           **Upgrading from the Electron app (0.3.x):** install this build once; it will not update itself from the old app. Your journal is found automatically (same data folder). Quit the old app first.
 
